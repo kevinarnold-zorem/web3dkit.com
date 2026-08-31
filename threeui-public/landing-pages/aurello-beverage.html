@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><script id="aura-preview-performance-controller">
+(function() {
+if (window.__auraPreviewPerformanceController) return;
+const nativeRequestAnimationFrame = window.requestAnimationFrame
+? window.requestAnimationFrame.bind(window)
+: function(callback) { return window.setTimeout(function() { callback(Date.now()); }, 16); };
+const nativeCancelAnimationFrame = window.cancelAnimationFrame
+? window.cancelAnimationFrame.bind(window)
+: window.clearTimeout.bind(window);
+const nativeSetInterval = window.setInterval.bind(window);
+let paused = false;
+let nextFrameId = 1;
+const frameRecords = new Map();
+const pausedFrameCallbacks = new Map();
+const style = document.createElement('style');
+style.id = 'aura-preview-performance-style';
+style.textContent = [
+'html[data-aura-preview-paused="true"] *,',
+'html[data-aura-preview-paused="true"] *::before,',
+'html[data-aura-preview-paused="true"] *::after {',
+'  animation-play-state: paused !important;',
+'  transition-duration: 0s !important;',
+'  scroll-behavior: auto !important;',
+'}'
+].join('\n');
+document.head.appendChild(style);
+window.requestAnimationFrame = function(callback) {
+const frameId = nextFrameId++;
+if (paused) {
+pausedFrameCallbacks.set(frameId, callback);
+frameRecords.set(frameId, { paused: true });
+return frameId;
+}
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+return frameId;
+};
+window.cancelAnimationFrame = function(frameId) {
+const record = frameRecords.get(frameId);
+pausedFrameCallbacks.delete(frameId);
+if (record && typeof record.nativeFrameId !== 'undefined') {
+nativeCancelAnimationFrame(record.nativeFrameId);
+}
+frameRecords.delete(frameId);
+};
+window.setInterval = function(callback, delay) {
+const args = Array.prototype.slice.call(arguments, 2);
+return nativeSetInterval(function() {
+if (paused) return;
+callback.apply(this, args);
+}, delay);
+};
+const flushPausedFrames = function() {
+const callbacks = Array.from(pausedFrameCallbacks.entries());
+pausedFrameCallbacks.clear();
+callbacks.forEach(function(entry) {
+const frameId = entry[0];
+const callback = entry[1];
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+});
+};
+const setPaused = function(nextPaused) {
+const shouldPause = Boolean(nextPaused);
+if (paused === shouldPause) return;
+paused = shouldPause;
+document.documentElement.toggleAttribute('data-aura-preview-paused', paused);
+if (!paused) {
+flushPausedFrames();
+}
+};
+window.__auraPreviewPerformanceController = {
+setPaused: setPaused,
+get paused() {
+return paused;
+}
+};
+window.addEventListener('message', function(event) {
+if (event.source !== window.parent) return;
+if (!event.data || event.data.type !== 'aura-preview-performance-mode') return;
+setPaused(event.data.paused);
+});
+})();
+</script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#f04a24" />
+<meta
+name="description"
+content="Aurello Orange Spritz — a bright, bittersweet spritz ready to drink straight from the can."
+/>
+<title>Aurello — Orange Spritz, Ready to Drink</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link
+href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Caveat:wght@600&amp;family=DM+Sans:wght@400;500;600&amp;family=Roboto+Slab:wght@700;800&amp;display=swap"
+rel="stylesheet"
+/>
+<style>
+:root{--red:#ef4b35;--cream:#f7f2e9;--ink:#dc3827}*{box-sizing:border-box}html{scroll-behavior:smooth;background:var(--red)}body{margin:0;overflow-x:hidden;background:var(--red);color:var(--cream);font-family:"DM Sans",sans-serif}a{color:inherit;text-decoration:none}img{display:block;max-width:100%}.header{position:fixed;inset:0 0 auto;height:95px;z-index:10;pointer-events:none}.brand{position:absolute;left:50%;top:20px;transform:translateX(-50%) rotate(-4deg);border-bottom:2px solid currentColor;font:600 35px/1 "Caveat",cursive;letter-spacing:-2px;pointer-events:auto}.brand span{font-size:14px;margin-right:3px}.brand sup{font:700 8px/1 "DM Sans";border:1px solid currentColor;border-radius:50%;padding:2px;margin-left:3px;vertical-align:super}.mark{position:absolute;left:3vw;top:30px;font-size:31px}.menu{position:absolute;right:2.5vw;top:19px;width:60px;height:60px;border:0;border-radius:20px;background:var(--cream);color:var(--red);font-size:25px;pointer-events:auto}.bubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}.bubble{position:absolute;width:var(--s);height:var(--s);border:2px solid currentColor;border-radius:50%;left:var(--x);top:var(--y);opacity:.85;animation:drift var(--d) ease-in-out infinite alternate;animation-delay:var(--delay)}.bubble:after{content:"";position:absolute;width:26%;height:12%;left:17%;top:13%;border-radius:50%;background:currentColor;transform:rotate(-35deg)}@keyframes drift{to{transform:translate3d(var(--dx),-42px,0) scale(.94)}}.hero{height:160vh;position:relative;display:grid;place-items:center;overflow:hidden}.hero h1{position:relative;z-index:2;margin:0;text-align:center;color:var(--cream);line-height:.72}.hero h1 span{display:block;white-space:nowrap}.hero h1 span:first-child{font:400 clamp(55px,8vw,140px)/.75 "Bebas Neue"}.hero h1 span:last-child{font:800 clamp(105px,15vw,255px)/.85 "Roboto Slab";letter-spacing:.03em}.hero .can{position:absolute;z-index:3;width:clamp(270px,25vw,470px);left:50%;top:50%;transform:translate(-50%,-50%) rotate(-16deg);filter:drop-shadow(0 22px 20px rgba(90,20,14,.2));transition:transform .8s cubic-bezier(.16,1,.3,1)}.hero:hover .can{transform:translate(-50%,-57%) rotate(-6deg) scale(1.04)}.scroll{position:absolute;right:2vw;bottom:25px;font-size:11px}.scroll:before{content:"";display:block;width:1px;height:38px;margin:0 auto 8px;background:currentColor}.intro{position:relative;min-height:100vh;overflow:hidden;background:var(--red)}.intro-copy{position:relative;z-index:2;padding:17vh 6vw;width:min(68vw,900px)}.intro h2{margin:0 0 25px;font:400 clamp(62px,9vw,150px)/.82 "Bebas Neue"}.intro h2 em{font-style:normal;font-family:"Roboto Slab"}.intro p{max-width:520px;font-size:clamp(17px,1.4vw,24px);line-height:1.4}.pill{display:inline-flex;align-items:center;justify-content:center;min-width:220px;min-height:57px;margin-top:18px;border:1.5px solid currentColor;border-radius:999px;text-transform:uppercase;font-size:12px;letter-spacing:.07em}.pill:hover{background:var(--cream);color:var(--red)}.intro .can{position:absolute;z-index:2;width:clamp(290px,29vw,550px);right:8vw;bottom:-18vh;transform:rotate(13deg)}.intro .muse{position:absolute;z-index:1;width:min(1000px,76vw);right:-12vw;bottom:-25vh;opacity:.4}.social{position:relative;min-height:105vh;padding:15vh 6vw;overflow:hidden;background:var(--red)}.social h2{position:relative;z-index:3;width:min(58vw,940px);margin:0;font:400 clamp(38px,4.5vw,76px)/1.05 "Bebas Neue"}.social h2 small{font:500 .45em/1 "DM Sans";text-decoration:underline;text-underline-offset:5px;vertical-align:.55em}.phone{position:absolute;z-index:3;right:12vw;top:15vh;width:min(29vw,440px);height:68vh;border:15px solid var(--cream);border-radius:48px;overflow:hidden;transform:rotate(8deg);background:#21100e;box-shadow:20px 20px 0 rgba(205,44,27,.2)}.phone img{width:100%;height:100%;object-fit:cover;filter:saturate(.8) contrast(1.06)}.phone b{position:absolute;z-index:1;left:8%;right:8%;bottom:9%;font:400 clamp(27px,2.4vw,43px)/.95 "Bebas Neue";text-align:center;text-shadow:0 2px 8px #000}.gas{position:relative;min-height:110vh;overflow:hidden;background:var(--red)}.gas h2{position:absolute;z-index:3;left:5vw;top:10vh;margin:0;font:400 clamp(76px,10vw,160px)/.85 "Bebas Neue"}.gas .can{position:absolute;z-index:3;left:50%;bottom:-10vh;width:clamp(330px,30vw,570px);transform:translateX(-50%) rotate(7deg)}.cream-wave{position:absolute;z-index:4;left:-3%;right:-3%;bottom:-1px;height:9vh;background:var(--cream);border-radius:50% 47% 0 0/46% 36% 0 0}.products{padding:13vh 5vw;background:var(--cream);color:var(--red)}.products-intro{max-width:780px;margin:0 auto 8vh;text-align:center}.eyebrow{margin:0;font:400 clamp(42px,5vw,82px)/.9 "Bebas Neue"}.products h2{margin:8px 0 24px;font:400 clamp(76px,11vw,175px)/.76 "Bebas Neue"}.products-intro>p:last-child{max-width:550px;margin:auto;font-size:18px;line-height:1.4}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:2.4vw}.card{position:relative;min-height:650px;padding:33px;border-radius:70px;overflow:hidden;background:#bed0dc;color:var(--cream);display:flex;align-items:end}.card:nth-child(2){background:#e3b4ad}.card:nth-child(3){background:#e4ce92}.card img{position:absolute;top:3%;left:50%;height:73%;max-width:none;width:auto;transform:translateX(-50%) rotate(-5deg);filter:drop-shadow(0 24px 15px rgba(30,35,40,.24))}.card:nth-child(2) img{transform:translateX(-50%) rotate(3deg);filter:hue-rotate(326deg) saturate(.8) drop-shadow(0 24px 15px rgba(60,35,35,.2))}.card:nth-child(3) img{transform:translateX(-50%) rotate(-2deg);filter:hue-rotate(40deg) saturate(.85) drop-shadow(0 24px 15px rgba(60,45,20,.2))}.card span{position:absolute;top:32px;font:400 20px/1 "Bebas Neue";letter-spacing:.08em}.card h3{margin:0;font:400 clamp(45px,4vw,70px)/.8 "Bebas Neue"}.card p{margin:14px 0 0;font-size:11px;letter-spacing:.14em;text-transform:uppercase}.marquee{min-height:58vh;display:flex;align-items:center;overflow:hidden;white-space:nowrap;background:var(--cream);color:var(--red)}.marquee div{font:400 clamp(125px,20vw,350px)/.75 "Bebas Neue"}.contact{position:relative;min-height:85vh;padding:13vh 8vw;overflow:hidden;background:var(--cream);color:var(--red);text-align:center}.contact h2{position:relative;z-index:2;margin:0;font:400 clamp(72px,8vw,138px)/.8 "Bebas Neue"}.contact p{position:relative;z-index:2;max-width:520px;margin:30px auto;font-size:19px}.contact a{position:relative;z-index:2}.contact .muse{position:absolute;right:-15vw;bottom:-22vw;width:min(800px,58vw);filter:brightness(0) saturate(100%) invert(35%) sepia(88%) saturate(1900%) hue-rotate(340deg)}footer{min-height:68vh;position:relative;padding:10vh 6vw;overflow:hidden;background:var(--red)}footer p{position:relative;z-index:2;max-width:350px;line-height:1.5}footer strong{position:absolute;left:-1vw;bottom:-2vw;white-space:nowrap;font:600 clamp(150px,27vw,450px)/.7 "Caveat",cursive;letter-spacing:-2vw;border-bottom:12px solid currentColor}@media(max-width:800px){.header{height:75px}.brand{top:17px;font-size:28px}.mark{top:23px;font-size:25px}.menu{top:12px;width:52px;height:52px}.hero{height:112vh}.hero h1 span:last-child{font-size:19vw}.hero .can{width:47vw}.intro-copy{width:90vw;padding:14vh 6vw}.intro h2{font-size:18vw}.intro .can{right:-4vw;width:55vw}.intro .muse{right:-48vw;width:125vw}.social{min-height:115vh}.social h2{width:86vw;font-size:7.2vw}.phone{right:8vw;top:42vh;width:67vw;height:53vh}.gas{min-height:95vh}.gas h2{font-size:18vw}.gas .can{width:56vw}.cards{grid-template-columns:1fr}.card{min-height:680px}.cards .card:not(:first-child){display:none}.contact .muse{right:-48vw;width:95vw;bottom:-4vw}footer{min-height:65vh}footer strong{font-size:37vw}}
+/* Scroll experience */
+.hero,.intro,.social,.gas{display:block;padding:0;overflow:visible;min-height:0}
+.hero{height:440vh}.intro{height:285vh}.social{height:360vh}.gas{height:275vh}
+.hero-stage,.intro-stage,.social-stage,.gas-stage{position:sticky;top:0;width:100%;height:100vh;min-height:650px;overflow:hidden;background:var(--red)}
+.hero-stage{display:grid;place-items:center}.hero-stage h1{position:relative;z-index:2}
+.intro-copy{position:absolute;left:0;top:0}.intro-stage>.can{position:absolute;will-change:transform}.intro-stage>.muse{opacity:0;will-change:transform,opacity}
+.social-copy{position:absolute;z-index:4;left:6vw;top:14vh}.social-stage .phone{transform:rotate(10deg) translateY(115vh);will-change:transform}
+.story{position:absolute;inset:0;opacity:0;transition:opacity .15s linear}.story.is-active{opacity:1}.story b{position:absolute}.gas-stage h2{position:absolute}.gas-stage>.can{bottom:-70vh;will-change:transform}.gas-muse{position:absolute;z-index:1;right:-12vw;bottom:-25vh;width:min(1400px,100vw);opacity:.55}.gas-stage .cream-wave{transform:translateY(100%)}
+.cards{perspective:1200px}.card{will-change:transform}.marquee div{will-change:transform}.hero-char{will-change:transform,opacity}
+@media(max-width:800px){.hero{height:330vh}.intro{height:235vh}.social{height:300vh}.gas{height:225vh}.hero-stage,.intro-stage,.social-stage,.gas-stage{min-height:620px}.social-copy{left:6vw;top:12vh}.social-stage .phone{top:34vh}.gas-muse{width:145vw;right:-52vw;bottom:-7vh}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bubble{animation:none}.page-citrus-field{display:none}.flavor-selector__can.is-active{animation:none}}
+/* Aurello brand and expanded navigation */
+:root{--red:#f04a24;--cream:#fff3d8;--ink:#c92f19;--wine:#731f17}
+.header{height:88px;padding:0 3vw;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:linear-gradient(to bottom,rgba(240,74,36,.96),rgba(240,74,36,.82));border-bottom:1px solid rgba(255,243,216,.35);backdrop-filter:blur(10px);pointer-events:auto}
+.nav-group{display:flex;align-items:center;gap:clamp(18px,2.5vw,44px);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.nav-group--right{justify-content:flex-end}
+.nav-group a{position:relative;padding:12px 0}
+.nav-group a:after{content:"";position:absolute;left:0;right:100%;bottom:6px;height:1px;background:currentColor;transition:right .25s ease}
+.nav-group a:hover:after,.nav-group a:focus-visible:after{right:0}
+.brand{position:static;transform:rotate(-3deg);border:0;font:800 31px/1 "Roboto Slab",serif;letter-spacing:-.055em;text-transform:uppercase}
+.brand:after{content:"";display:block;width:72%;height:3px;margin:3px auto 0;background:currentColor;border-radius:99px}
+.brand span{display:block;margin:0 0 -2px;font:600 9px/1 "DM Sans";letter-spacing:.22em;text-align:center}
+.brand sup{font-size:6px}.mark{display:none}.menu{display:none;position:static;justify-self:end;cursor:pointer}.mobile-nav{display:none}
+.hero-kicker{position:absolute;z-index:4;left:50%;bottom:10vh;transform:translateX(-50%);margin:0;font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;text-align:center}
+.can{--can-mask:url('spritz-assets/can.png');-webkit-mask-image:var(--can-mask);mask-image:var(--can-mask);-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.section-label{display:inline-block;margin-bottom:24px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}
+.intro-copy{width:min(62vw,900px)}
+.social h2{width:min(61vw,980px)}
+.products{padding-top:15vh}
+.products-intro{max-width:890px}
+.cards{grid-template-columns:1.35fr 1fr 1fr;gap:22px}
+.card{min-height:610px;border-radius:48px}
+.card--product{background:#a9c7d4!important}
+.card--product img{height:76%;top:-1%}
+.card--note{align-items:flex-start;padding:42px;color:var(--wine)}
+.card--note:nth-child(2){background:#efb6a7}
+.card--note:nth-child(3){background:#efd493}
+.card--note .note-number{position:static;display:block;margin-bottom:auto;font:400 22px/1 "Bebas Neue";letter-spacing:.1em}
+.card--note h3{font-size:clamp(46px,4vw,68px)}
+.card--note p{font-size:13px;line-height:1.55;letter-spacing:0;text-transform:none}
+.serve{position:relative;overflow:hidden;padding:15vh 6vw;background:var(--cream);color:var(--red)}
+.serve-head{display:flex;align-items:end;justify-content:space-between;gap:40px;margin-bottom:8vh}
+.serve h2{max-width:850px;margin:0;font:400 clamp(72px,10vw,160px)/.78 "Bebas Neue"}
+.serve-head p{max-width:390px;margin:0 0 10px;font-size:18px;line-height:1.5}
+.serve-steps{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid currentColor}
+.serve-step{padding:38px 4vw 30px 0;border-right:1px solid rgba(240,74,36,.35)}
+.serve-step:not(:first-child){padding-left:4vw}.serve-step:last-child{border-right:0}
+.serve-step span{font:400 24px/1 "Bebas Neue"}.serve-step h3{margin:42px 0 12px;font:400 clamp(42px,5vw,72px)/.85 "Bebas Neue"}.serve-step p{max-width:320px;line-height:1.55}
+.story-band{display:grid;grid-template-columns:1fr 1fr;min-height:92vh;background:var(--wine);color:var(--cream)}
+.story-image{min-height:660px;background:url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/9f0df5da-96e4-4c96-968f-a026332567d7_1600w.png') center 45%/cover no-repeat;filter:saturate(.9) contrast(1.04)}
+.story-copy{display:flex;flex-direction:column;justify-content:center;padding:10vh 8vw}
+.story-copy h2{margin:0;font:400 clamp(68px,8vw,130px)/.78 "Bebas Neue"}.story-copy p{max-width:520px;font-size:18px;line-height:1.6}
+.story-copy .pill{align-self:flex-start}
+.contact{min-height:92vh}.contact h2{max-width:920px;margin-inline:auto}.contact .availability{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
+footer{min-height:56vh}footer strong{font-family:"Roboto Slab",serif;font-weight:800;letter-spacing:-.07em;text-transform:uppercase;border:0}footer strong small{font:600 .12em/1 "DM Sans";letter-spacing:.18em}
+@media(max-width:900px){
+.header{height:74px;grid-template-columns:1fr auto}.nav-group{display:none}.brand{justify-self:start;font-size:27px}.menu{display:block;width:50px;height:50px;border-radius:16px}.mobile-nav{position:fixed;z-index:9;inset:74px 0 auto;padding:28px 6vw 36px;background:var(--cream);color:var(--red);box-shadow:0 18px 40px rgba(90,20,14,.18)}.mobile-nav a{display:block;padding:13px 0;border-bottom:1px solid rgba(240,74,36,.25);font:400 32px/1 "Bebas Neue"}.nav-open .mobile-nav{display:block}.intro-copy{width:92vw}.social h2{width:88vw}.cards{grid-template-columns:1fr}.card--note{display:flex!important;min-height:400px}.serve-head{display:block}.serve-head p{margin-top:30px}.serve-steps{grid-template-columns:1fr}.serve-step,.serve-step:not(:first-child){padding:28px 0;border-right:0;border-bottom:1px solid rgba(240,74,36,.35)}.story-band{grid-template-columns:1fr}.story-image{min-height:58vh}.story-copy{padding:12vh 7vw}.story-copy .pill{align-self:stretch}footer strong{font-size:27vw}}
+/* Header refinement, sticky social cards, and flavour range */
+.header{display:flex;justify-content:space-between;gap:32px}
+.header .brand{order:0;flex:none}
+.header .nav-group{order:1;margin-left:auto}
+.nav-group{gap:clamp(16px,2.1vw,38px)}
+.nav-cta{display:inline-flex!important;align-items:center;justify-content:center;min-height:42px;padding:0 18px!important;border-radius:999px;background:var(--cream);color:var(--red);transition:transform .2s ease,background .2s ease,color .2s ease}
+.nav-cta:hover,.nav-cta:focus-visible{transform:translateY(-2px);background:var(--wine);color:var(--cream)}
+.nav-cta:after{display:none}
+.hero{height:305vh}
+.social{height:335vh}
+.social-stage{overflow:hidden}
+.social-deck{position:absolute;z-index:3;top:13vh;right:7vw;width:min(39vw,560px);height:72vh;min-height:510px}
+.social-card{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;border:12px solid var(--cream);border-radius:42px;background:#21100e;box-shadow:18px 20px 0 rgba(101,25,16,.22);transform-origin:50% 110%}
+.social-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.84) contrast(1.05)}
+.social-card:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(transparent,rgba(35,10,7,.83))}
+.social-card__meta,.social-card h3{position:relative;z-index:1;margin:0 7%}.social-card__meta{margin-bottom:12px;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}.social-card h3{margin-bottom:8%;font:400 clamp(37px,4vw,68px)/.86 "Bebas Neue"}
+.social-card--one{z-index:3;transform:rotate(-4deg)}.social-card--two{z-index:2;transform:rotate(4deg)}.social-card--three{z-index:1;transform:rotate(-2deg)}
+.cards{grid-template-columns:repeat(3,1fr)}
+.card--flavour{align-items:flex-end;padding:33px;color:var(--cream)}
+.card--flavour span{z-index:2}.card--flavour img{height:76%;top:-1%;z-index:1}.card--flavour>div{position:relative;z-index:2}
+.card--orange{background:#a8c7d4!important}.card--lemon{background:#dcc65f!important}.card--grapefruit{background:#e7a3a5!important}
+.card--flavour:nth-child(2) img,.card--flavour:nth-child(3) img{filter:drop-shadow(0 24px 15px rgba(40,35,20,.23));transform:translateX(-50%) rotate(3deg)}
+@media(max-width:900px){.header{display:grid;gap:0}.header .nav-group{display:none}.nav-cta{display:flex!important}.social{height:300vh}.social-copy{z-index:5}.social-deck{top:39vh;right:8vw;width:72vw;height:50vh;min-height:410px}.social-card{border-width:10px;border-radius:30px}.cards{grid-template-columns:1fr}.card--flavour{display:flex!important;min-height:610px}.mobile-nav .nav-cta{margin-top:20px;padding:0 18px!important;color:var(--cream);background:var(--red);font:600 13px/48px "DM Sans";letter-spacing:.08em;text-align:center;text-transform:uppercase}.mobile-nav .nav-cta:hover{transform:none;background:var(--wine)}}
+/* One photographic orange-slice treatment is used throughout the page. */
+.bubble{width:var(--s);height:var(--s);border:0;border-radius:50%;opacity:0;overflow:visible;clip-path:none;background:url('spritz-assets/aurello-orange-slice.png') center/contain no-repeat;box-shadow:0 10px 28px rgba(115,31,23,.12);filter:none;mix-blend-mode:normal;transform:translate3d(0,18vh,0) rotate(var(--r)) scale(.88);animation:citrusRise var(--d) linear infinite;animation-delay:var(--delay);will-change:transform,opacity}
+.bubble:before,.bubble:after{display:none}
+@keyframes citrusRise{0%{transform:translate3d(0,18vh,0) rotate(var(--r)) scale(.88);opacity:0}12%{opacity:.62}82%{opacity:.62}100%{transform:translate3d(var(--dx),calc(var(--rise) * -1),0) rotate(var(--r-end)) scale(1);opacity:0}}
+/* Keep centering, scroll motion and hover polish on separate layers. */
+.hero-can-anchor{position:absolute;z-index:3;left:50%;top:50%;width:clamp(270px,25vw,470px);transform:translate(-50%,-50%)}
+.hero-can-motion{width:100%;transform:rotate(-16deg);filter:drop-shadow(0 22px 20px rgba(90,20,14,.2));will-change:transform,opacity}
+.hero .hero-can-motion>.can{position:static;left:auto;top:auto;width:100%;max-width:none;transform:none;filter:none;transition:transform .8s cubic-bezier(.16,1,.3,1)}
+.hero:hover .hero-can-motion>.can{transform:translateY(-3%) rotate(3deg) scale(1.025)}
+@media(max-width:800px){.hero-can-anchor{width:47vw}}
+/* Ingredient story */
+.ingredients{padding:15vh 6vw;background:var(--wine);color:var(--cream)}
+.ingredients-head{display:grid;grid-template-columns:1.35fr .65fr;align-items:end;gap:7vw;margin-bottom:9vh}
+.ingredients h2{margin:0;font:400 clamp(78px,10vw,160px)/.77 "Bebas Neue"}
+.ingredients-head p{max-width:430px;margin:0 0 12px;font-size:18px;line-height:1.55}
+.ingredient-grid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(255,243,216,.45);border-bottom:1px solid rgba(255,243,216,.45)}
+.ingredient-card{min-height:450px;padding:42px 3.6vw 38px;border-right:1px solid rgba(255,243,216,.32);display:flex;flex-direction:column}
+.ingredient-card:last-child{border-right:0}.ingredient-number{font:400 22px/1 "Bebas Neue";letter-spacing:.12em}
+.ingredient-icon{position:relative;width:116px;height:116px;margin:auto;border:3px solid currentColor;border-radius:50%}
+.ingredient-icon--citrus{background:radial-gradient(circle,currentColor 0 5%,transparent 6% 12%,currentColor 13% 15%,transparent 16%),repeating-conic-gradient(transparent 0 27deg,currentColor 27deg 30deg)}
+.ingredient-icon--botanical:before,.ingredient-icon--botanical:after{content:"";position:absolute;left:50%;bottom:15%;width:2px;height:74%;background:currentColor;transform-origin:bottom}.ingredient-icon--botanical:before{transform:rotate(-34deg)}.ingredient-icon--botanical:after{transform:rotate(34deg)}
+.ingredient-icon--sparkle{border-style:dashed}.ingredient-icon--sparkle:before{content:"✦";position:absolute;inset:0;display:grid;place-items:center;font-size:54px}
+.ingredient-card h3{margin:0 0 12px;font:400 clamp(44px,4vw,66px)/.85 "Bebas Neue"}.ingredient-card p{max-width:330px;margin:0;line-height:1.55}
+/* FAQ */
+.faq{display:grid;grid-template-columns:.8fr 1.2fr;gap:10vw;padding:15vh 7vw;background:#efc9ae;color:var(--wine)}
+.faq h2{margin:0;font:400 clamp(78px,9vw,145px)/.77 "Bebas Neue"}.faq-intro>p{max-width:390px;font-size:18px;line-height:1.55}
+.faq-list{border-top:1px solid currentColor}.faq details{border-bottom:1px solid currentColor}.faq summary{position:relative;padding:28px 48px 28px 0;cursor:pointer;list-style:none;font:400 clamp(28px,3vw,44px)/1 "Bebas Neue"}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:"+";position:absolute;right:0;top:23px;font:400 32px/1 "DM Sans";transition:transform .25s ease}.faq details[open] summary:after{transform:rotate(45deg)}.faq details p{max-width:650px;margin:0;padding:0 48px 28px 0;line-height:1.65}
+@media(max-width:900px){.ingredients-head,.faq{grid-template-columns:1fr}.ingredients-head{gap:30px}.ingredient-grid{grid-template-columns:1fr}.ingredient-card{min-height:360px;border-right:0;border-bottom:1px solid rgba(255,243,216,.32)}.ingredient-card:last-child{border-bottom:0}.ingredient-icon{margin:45px 0}.faq{gap:7vh;padding:12vh 7vw}.faq h2{font-size:24vw}}
+/* Opening sequence transferred from the original Aurello concept. */
+body.is-loading{overflow:hidden}
+.site-loader{position:fixed;z-index:100;inset:0;display:grid;place-items:center;overflow:hidden;background:var(--cream);color:var(--wine);transition:transform .9s cubic-bezier(.76,0,.24,1),visibility 0s .9s}
+.site-loader:before{content:"";position:absolute;inset:0;opacity:.45;background:repeating-radial-gradient(circle at 50% 50%,transparent 0 62px,rgba(115,31,23,.13) 63px 64px);transform:scale(.65);animation:loaderRings 1.8s cubic-bezier(.16,1,.3,1) both}
+.loader-orange{position:absolute;z-index:1;left:50%;top:48%;width:clamp(190px,25vw,420px);max-width:none;filter:drop-shadow(0 24px 20px rgba(89,18,13,.18));animation:loaderCitrus 1.7s cubic-bezier(.16,1,.3,1) both}
+.loader-word{position:relative;z-index:2;width:100%;overflow:hidden;text-align:center;font:800 clamp(84px,19vw,330px)/.72 "Roboto Slab",serif;letter-spacing:-.085em;text-transform:uppercase}.loader-word span{display:block;animation:loaderWord 1.25s .12s cubic-bezier(.16,1,.3,1) both}
+.loader-meta{position:absolute;z-index:3;left:28px;right:28px;bottom:28px;display:flex;justify-content:space-between;font-size:9px;font-weight:600;line-height:1;letter-spacing:.13em;text-transform:uppercase;animation:loaderMeta .6s .65s ease both}
+.loader-line{position:absolute;z-index:3;left:28px;right:28px;bottom:15px;height:1px;background:rgba(89,18,13,.18);overflow:hidden}.loader-line span{display:block;width:100%;height:100%;background:var(--red);transform-origin:left;animation:loaderLine 1.65s .08s cubic-bezier(.65,0,.35,1) both}
+.site-loader.is-dismissing{transform:translateY(-110%);visibility:hidden;pointer-events:none}
+@keyframes loaderRings{from{opacity:0;transform:scale(.35) rotate(-8deg)}to{opacity:.45;transform:scale(1.1) rotate(4deg)}}@keyframes loaderCitrus{0%{opacity:0;transform:translate(-50%,-35%) rotate(-80deg) scale(.45)}55%{opacity:1}100%{transform:translate(-50%,-50%) rotate(8deg) scale(1)}}@keyframes loaderWord{from{transform:translateY(115%)}to{transform:translateY(0)}}@keyframes loaderMeta{from{opacity:0;transform:translateY(8px)}}@keyframes loaderLine{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+/* Stable hero composition: the anchor centers, the inner layer moves. */
+.hero-can-anchor{inset:0;left:auto;top:auto;width:auto;display:grid;place-items:center;transform:none;pointer-events:none;opacity:1!important;visibility:visible!important;animation:heroCanReveal .8s 1.95s cubic-bezier(.16,1,.3,1) both}.hero-can-motion{width:clamp(270px,25vw,470px);opacity:1;visibility:visible}.hero .hero-can-motion>.can{display:block!important;width:100%!important;height:auto!important;opacity:1;visibility:visible}.hero-stage h1{animation:heroCopyReveal .8s 1.98s cubic-bezier(.16,1,.3,1) both}.hero-kicker{animation:heroCopyReveal .7s 2.08s cubic-bezier(.16,1,.3,1) both}
+@keyframes heroCanReveal{from{opacity:0;filter:blur(9px)}to{opacity:1;filter:blur(0)}}@keyframes heroCopyReveal{from{opacity:0;transform:translateY(45px)}to{opacity:1;transform:translateY(0)}}
+/* Editorial golden-hour feature — one story, not a stack of cards. */
+.social{height:255vh}.social-copy{width:min(51vw,850px)}.social-copy h2{width:100%}.social-feature{position:absolute;z-index:3;right:5vw;top:12vh;width:min(43vw,650px);height:75vh;min-height:540px}.social-feature__image{position:relative;height:calc(100% - 92px);margin:0;overflow:hidden;border:1px solid rgba(255,243,216,.72);border-radius:34px 34px 8px 34px;background:var(--wine);clip-path:inset(0 0 0 0 round 34px 34px 8px 34px)}.social-feature__image:after{content:"";position:absolute;inset:32% 0 0;background:linear-gradient(transparent,rgba(35,10,7,.78))}.social-feature__image img{width:100%;height:100%;object-fit:cover;filter:saturate(.82) contrast(1.05);will-change:transform}.social-feature__caption{position:absolute;z-index:1;left:34px;right:34px;bottom:30px;display:flex;align-items:end;justify-content:space-between;gap:24px}.social-feature__caption span{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}.social-feature__caption strong{font:400 clamp(34px,3.4vw,55px)/.84 "Bebas Neue";text-align:right}.social-moments{height:92px;display:grid;grid-template-columns:repeat(3,1fr);align-items:center;border-bottom:1px solid rgba(255,243,216,.62)}.social-moment{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:0 15px;border-right:1px solid rgba(255,243,216,.32);font-size:10px;line-height:1.2;letter-spacing:.09em;text-transform:uppercase}.social-moment:first-child{padding-left:0}.social-moment:last-child{padding-right:0;border-right:0}.social-moment b{font:400 28px/1 "Bebas Neue"}
+/* A more distinctive closing chapter */
+.site-footer{position:relative;min-height:100vh;padding:13vh 6vw 4vh;overflow:hidden;background:var(--wine);color:var(--cream)}.site-footer:before{content:"";position:absolute;left:-5%;right:-5%;top:-10vh;height:15vh;border-radius:0 0 50% 50%;background:var(--cream)}.footer-citrus{position:absolute;right:-5vw;top:4vh;width:clamp(210px,26vw,430px);aspect-ratio:1;background:url('spritz-assets/aurello-orange-slice.png') center/contain no-repeat;opacity:.16;transform:rotate(19deg)}.footer-top{position:relative;z-index:1;display:grid;grid-template-columns:.55fr 1.45fr;gap:8vw;align-items:end}.footer-kicker{max-width:290px;margin:0;font-size:13px;line-height:1.6;letter-spacing:.05em;text-transform:uppercase}.footer-cta{display:inline-block;margin:0;font:400 clamp(66px,8.7vw,145px)/.76 "Bebas Neue";letter-spacing:-.02em}.footer-cta span{display:inline-block;border-bottom:4px solid currentColor;transition:transform .3s ease}.footer-cta:hover span{transform:translateX(12px)}.footer-wordmark{position:relative;z-index:1;margin:13vh -1vw 7vh;padding-top:4vh;border-top:1px solid rgba(255,243,216,.42);font:800 clamp(120px,22vw,365px)/.64 "Roboto Slab",serif;letter-spacing:-.09em;white-space:nowrap}.footer-wordmark small{display:block;margin:0 0 18px .8vw;font:700 10px/1 "DM Sans";letter-spacing:.28em;text-transform:uppercase}.footer-bottom{position:relative;z-index:1;display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:30px;padding-top:26px;border-top:1px solid rgba(255,243,216,.42);font-size:10px;line-height:1.6;letter-spacing:.1em;text-transform:uppercase}.footer-bottom p{margin:0}.footer-bottom p:last-child{text-align:right}.footer-nav{display:flex;gap:26px}.footer-nav a:hover{text-decoration:underline;text-underline-offset:5px}.back-top{display:inline-flex;align-items:center;gap:10px}.back-top:after{content:"↑";display:grid;place-items:center;width:34px;height:34px;border:1px solid currentColor;border-radius:50%;font-size:16px}
+/* Hero product remains unmistakably in front of the title. */
+.hero-stage h1{z-index:2}.hero-stage h1 span:first-child{transform:translateY(-6vh)}.hero-stage h1 span:last-child{transform:translateY(6vh)}.hero-can-anchor{z-index:5}.hero-can-motion{width:clamp(330px,30vw,560px);isolation:isolate}.hero .hero-can-motion>.can{position:relative;z-index:1}
+.can--rendered{-webkit-mask-image:none!important;mask-image:none!important}
+.hero-can-anchor,.intro-stage>.can{display:none!important}
+.journey-can{position:absolute;z-index:8;left:50%;top:50vh;width:clamp(360px,32vw,540px);pointer-events:none;transform:translate(-50%,-50%) rotate(-16deg);filter:drop-shadow(0 24px 22px rgba(90,20,14,.25));opacity:1;visibility:visible}
+.journey-can .can{position:static!important;display:block!important;width:100%!important;height:auto!important;max-width:none!important;transform:none!important;filter:none!important;-webkit-mask-image:none!important;mask-image:none!important}
+html.has-gsap .journey-can{position:fixed;top:50%;transform:none;will-change:transform,opacity}
+/* Pinned, cinematic three-card stack. */
+.social{height:380vh}.social-copy{width:min(48vw,820px)}
+.social-stack{position:absolute;z-index:4;right:5vw;top:12vh;width:min(42vw,630px);height:74vh;min-height:540px;perspective:1400px}
+.stack-card{--card-bg:var(--wine);position:absolute;inset:0;overflow:hidden;border:1px solid rgba(255,243,216,.8);border-radius:42px;background:var(--card-bg);box-shadow:0 28px 55px rgba(81,18,12,.24);transform-origin:50% 0;will-change:transform,opacity}
+.stack-card--one{z-index:1;--card-bg:#8d3025;transform:translateY(0) scale(.96)}.stack-card--two{z-index:2;--card-bg:#c56a31;transform:translateY(14px) scale(.98)}.stack-card--three{z-index:3;--card-bg:#72502c;transform:translateY(28px)}
+.stack-card__media{position:absolute;inset:0}.stack-card__media:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(30,8,6,.12) 15%,transparent 42%,rgba(31,8,6,.86) 100%)}.stack-card__media img{width:100%;height:100%;object-fit:cover;filter:saturate(.82) contrast(1.08);will-change:transform}
+.stack-card__top,.stack-card__bottom{position:absolute;z-index:2;left:32px;right:32px;display:flex;justify-content:space-between;gap:24px}.stack-card__top{top:28px;padding-bottom:17px;border-bottom:1px solid rgba(255,243,216,.55);font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}.stack-card__bottom{bottom:28px;align-items:end}.stack-card__bottom h3{margin:0;font:400 clamp(48px,5vw,78px)/.79 "Bebas Neue"}.stack-card__bottom p{max-width:150px;margin:0;font-size:10px;line-height:1.45;letter-spacing:.1em;text-align:right;text-transform:uppercase}
+.products-intro,.ingredients-head,.serve-head,.story-copy,.faq-intro,.footer-top,.footer-bottom{will-change:transform,opacity}.story-image{will-change:clip-path,transform}.contact .muse{will-change:transform,opacity}
+/* Intro illustration zooms into a three-scene, full-screen scroll story. */
+.intro-stage>.muse{left:50%;top:50%;right:auto;bottom:auto;width:min(980px,78vw);max-width:none;transform:translate(-50%,-50%);transform-origin:29% 15%;opacity:0;will-change:transform,opacity,filter}
+.intro-lens-reveal{position:absolute;z-index:3;inset:0;overflow:hidden;clip-path:ellipse(0% 0% at 50% 50%);opacity:0;visibility:hidden;pointer-events:none;will-change:clip-path,opacity}
+.intro-lens-reveal img{width:100%;height:100%;object-fit:cover;object-position:center 35%;filter:saturate(.83) contrast(1.08);will-change:transform}.intro-lens-reveal__index{position:absolute;z-index:2;top:12vh;right:5vw;font:400 clamp(38px,5vw,76px)/1 "Bebas Neue"}.intro-lens-reveal__copy{position:absolute;z-index:2;left:5vw;right:5vw;bottom:7vh;display:flex;align-items:end;justify-content:space-between;gap:40px;border-top:1px solid rgba(255,243,216,.7);padding-top:24px;color:var(--cream)}.intro-lens-reveal__copy span{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}.intro-lens-reveal__copy h2{margin:0;font:400 clamp(62px,8.5vw,145px)/.78 "Bebas Neue";text-align:right}
+.social{height:430vh}.social-stage{background:var(--red)}
+.visual-story{position:absolute;z-index:1;inset:0;overflow:hidden;background:transparent}
+.visual-frame{position:absolute;inset:0;margin:0;overflow:hidden;opacity:0;visibility:hidden;transform-origin:center;will-change:transform,opacity,clip-path}
+.visual-frame--two{z-index:1;opacity:1;visibility:visible}.visual-frame--three{z-index:2}
+.visual-frame:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,8,6,.12) 20%,transparent 48%,rgba(28,8,6,.82) 100%)}
+.visual-frame img{width:100%;height:100%;object-fit:cover;filter:saturate(.83) contrast(1.08);will-change:transform}.visual-frame--two img{object-position:center 42%}.visual-frame--three img{object-position:center 44%}
+.visual-frame__index{position:absolute;z-index:2;top:12vh;right:5vw;font:400 clamp(38px,5vw,76px)/1 "Bebas Neue"}
+.visual-frame__copy{position:absolute;z-index:2;left:5vw;right:5vw;bottom:7vh;display:flex;align-items:end;justify-content:space-between;gap:40px;border-top:1px solid rgba(255,243,216,.7);padding-top:24px}
+.visual-frame__copy span{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}.visual-frame__copy h2{width:auto;margin:0;font:400 clamp(62px,8.5vw,145px)/.78 "Bebas Neue";text-align:right}.visual-progress{position:absolute;z-index:5;left:5vw;top:12vh;display:flex;gap:8px;opacity:0}.visual-progress i{display:block;width:38px;height:2px;background:rgba(255,243,216,.36)}.visual-progress i:first-child{background:var(--cream)}
+/* Keep the photographic citrus treatment consistent in the hero and page-wide layer. */
+.bubbles--hero .bubble{background-image:url('spritz-assets/aurello-orange-slice.png');box-shadow:none;filter:drop-shadow(0 12px 12px rgba(80,16,5,.18));animation-name:heroCitrusFall}
+@keyframes heroCitrusFall{0%{transform:translate3d(0,-24vh,0) rotate(var(--r)) scale(.82);opacity:0}12%{opacity:.78}84%{opacity:.72}100%{transform:translate3d(var(--dx),var(--fall),0) rotate(var(--r-end)) scale(1);opacity:0}}
+/* Photographic slices appear after the hero and travel continuously through the viewport. */
+.page-citrus-field{position:fixed;z-index:7;inset:0;overflow:hidden;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .65s ease,visibility .65s;contain:strict}.page-citrus-field.is-visible{opacity:1;visibility:visible}.page-citrus-slice{position:absolute;left:var(--x);top:-24vh;width:var(--s);height:var(--s);background:url('spritz-assets/aurello-orange-slice.png') center/contain no-repeat;opacity:0;filter:blur(var(--blur)) drop-shadow(0 12px 25px rgba(103,26,18,.16));animation:pageCitrusFall var(--d) linear infinite;animation-delay:var(--delay);will-change:transform,opacity}.page-citrus-slice:nth-child(3n){mix-blend-mode:multiply}@keyframes pageCitrusFall{0%{transform:translate3d(0,-18vh,0) rotate(var(--r)) scale(.82);opacity:0}10%{opacity:var(--o)}88%{opacity:var(--o)}100%{transform:translate3d(var(--dx),148vh,0) rotate(var(--r-end)) scale(1.08);opacity:0}}
+.bubbles--intro,.bubbles--gas{display:none}
+/* Horizontal flavour collection transferred from the original Aurello page. */
+.range{position:relative;height:360vh;padding:0;background:var(--cream);color:var(--wine)}
+.range-sticky{position:sticky;top:0;height:100vh;min-height:720px;overflow:hidden;padding:28px}
+.range-intro{position:absolute;z-index:4;top:88px;left:4vw;width:30vw}
+.range-intro .section-label{display:flex;justify-content:space-between;margin:0;padding-bottom:15px;border-bottom:1px solid currentColor}
+.range-intro h2{margin:9vh 0 20px;font:400 clamp(70px,8vw,145px)/.78 "Bebas Neue";letter-spacing:-.035em}.range-intro h2 em{font-family:"Roboto Slab",serif;font-style:normal;font-weight:800}
+.range-intro>p{margin:0;font:700 italic 20px/1.1 "Roboto Slab",serif}
+.range-track{height:calc(100% - 56px);display:flex;gap:22px;padding-left:36vw;will-change:transform}
+.flavor-card{position:relative;flex:0 0 54vw;height:100%;padding:24px;border-radius:12px;overflow:hidden;color:var(--wine)}
+.flavor-orange{background:var(--red);color:var(--cream)}.flavor-lemon{background:#e5cf62;color:#33513b}.flavor-pink{background:#e7a3a5;color:var(--wine)}
+.flavor-head{position:relative;z-index:2;display:flex;justify-content:space-between;font-size:9px;font-weight:700;line-height:1;letter-spacing:.14em;text-transform:uppercase}
+.flavor-card>img{position:absolute;z-index:1;left:50%;top:43%;height:68%;width:auto;max-width:none;transform:translate(-50%,-50%) rotate(-5deg);filter:drop-shadow(0 25px 22px rgba(61,19,13,.22));transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+.flavor-card:hover>img{transform:translate(-50%,-53%) rotate(2deg) scale(1.04)}
+.flavor-copy{position:absolute;z-index:2;left:24px;right:24px;bottom:22px}.flavor-copy>p{margin:0 0 8px;font-size:9px;font-weight:700;line-height:1;letter-spacing:.14em;text-transform:uppercase}
+.flavor-copy h3{margin:0 0 14px;font:400 clamp(42px,5vw,88px)/.88 "Bebas Neue";letter-spacing:-.025em}.flavor-copy>div{display:flex;justify-content:space-between;align-items:end;gap:24px;padding-top:12px;border-top:1px solid currentColor}
+.flavor-copy>div>span{max-width:330px;font:700 15px/1.3 "Roboto Slab",serif}.flavor-copy a{width:42px;height:42px;display:grid;flex:0 0 auto;place-items:center;border:1px solid currentColor;border-radius:50%;transition:transform .3s,background .3s,color .3s}
+.flavor-copy a:hover{transform:rotate(45deg);background:currentColor;color:var(--cream)}.range-hint{position:absolute;z-index:5;bottom:38px;left:4vw;margin:0;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.range-hint span{margin-left:18px}
+.flavor-card--cocktail{color:var(--cream)}.flavor-card--cocktail>img{z-index:0;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:center center;transform:none;filter:saturate(.9) contrast(1.06);transition:transform .7s cubic-bezier(.2,.8,.2,1)}.flavor-card--cocktail:hover>img{transform:scale(1.035)}.flavor-card--cocktail:after{content:"";position:absolute;z-index:1;inset:0;background:linear-gradient(180deg,rgba(30,10,7,.12) 15%,rgba(30,10,7,.02) 43%,rgba(30,10,7,.82) 100%)}.flavor-card--cocktail .flavor-head,.flavor-card--cocktail .flavor-copy{z-index:2}
+/* Interactive can selector inspired by the supplied 3D reference. */
+.flavor-selector{--selector-bg:var(--cream);--selector-blob:#ef4b35;--selector-core:#831b25;position:relative;min-height:100vh;overflow:hidden;background:var(--selector-bg);color:var(--red);transition:background .75s cubic-bezier(.2,.75,.2,1)}
+.flavor-selector[data-index="1"]{--selector-bg:var(--cream);--selector-blob:#d8c35b;--selector-core:#315947;color:#315947}.flavor-selector[data-index="2"]{--selector-bg:var(--cream);--selector-blob:#dc7885;--selector-core:#a8203a}
+.flavor-selector__stage{position:relative;height:100vh;min-height:720px;display:grid;place-items:center;overflow:hidden;isolation:isolate}
+.flavor-selector__blob{position:absolute;z-index:-2;left:50%;top:50%;width:min(76vw,980px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:43% 57% 54% 46%/56% 42% 58% 44%;background:var(--selector-blob);transition:background .75s cubic-bezier(.2,.75,.2,1);animation:selectorBlob 9s ease-in-out infinite alternate}
+.flavor-selector__blob:after{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:43%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(14deg);border-radius:55% 45% 42% 58%/45% 58% 42% 55%;background:var(--selector-core);transition:background .75s cubic-bezier(.2,.75,.2,1);animation:selectorCore 7s ease-in-out infinite alternate}
+@keyframes selectorBlob{to{transform:translate(-50%,-50%) rotate(6deg) scale(1.035);border-radius:57% 43% 46% 54%/44% 58% 42% 56%}}@keyframes selectorCore{to{transform:translate(-50%,-50%) rotate(-10deg) scale(1.07);border-radius:42% 58% 56% 44%/58% 44% 56% 42%}}
+.flavor-selector__heading{position:absolute;z-index:5;left:50%;top:7vh;transform:translateX(-50%);width:90%;text-align:center}.flavor-selector__heading span{display:block;margin-bottom:10px;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}.flavor-selector__heading h2{margin:0;font:400 clamp(54px,6vw,100px)/.86 "Bebas Neue";letter-spacing:-.03em}
+.flavor-selector__can-well{position:absolute;z-index:3;inset:0;perspective:1200px;outline:none}.flavor-selector__can{position:absolute;left:50%;top:50%;height:min(52vh,540px);width:auto;max-width:none;opacity:0;transform:translate(-50%,-50%) rotateY(72deg) scale(.78);transform-origin:50% 50%;filter:drop-shadow(0 34px 25px rgba(61,19,13,.26));will-change:transform,opacity}.flavor-selector__can.is-active{opacity:1;transform:translate(-50%,-50%) rotateY(0) rotateZ(-4deg) scale(1);animation:selectorCanIdleTurn 5.8s ease-in-out infinite}.has-gsap .flavor-selector__can.is-active{animation:none}.has-gsap .flavor-selector__detail{display:block}.has-gsap .flavor-selector__detail.is-active{animation:none}
+.flavor-selector__can.is-leaving-next,.flavor-selector__can.is-leaving-prev{opacity:1;transform:translate(-50%,-50%) rotateY(0) rotateZ(-4deg) scale(1)}.flavor-selector__can.is-leaving-next{animation:selectorCanExitNext .72s cubic-bezier(.55,0,.2,1) both}.flavor-selector__can.is-entering-next{animation:selectorCanEnterNext .78s cubic-bezier(.16,1,.3,1) both}.flavor-selector__can.is-leaving-prev{animation:selectorCanExitPrev .72s cubic-bezier(.55,0,.2,1) both}.flavor-selector__can.is-entering-prev{animation:selectorCanEnterPrev .78s cubic-bezier(.16,1,.3,1) both}
+@keyframes selectorCanIdleTurn{0%,100%{transform:translate(-50%,-50%) rotateY(-12deg) rotateZ(-4deg) scale(1)}50%{transform:translate(-50%,-50%) rotateY(12deg) rotateZ(-2deg) scale(1.02)}}@keyframes selectorCanExitNext{to{opacity:0;transform:translate(-135%,-50%) rotateY(-82deg) rotateZ(-13deg) scale(.78)}}@keyframes selectorCanEnterNext{from{opacity:0;transform:translate(35%,-50%) rotateY(82deg) rotateZ(12deg) scale(.78)}to{opacity:1;transform:translate(-50%,-50%) rotateY(0) rotateZ(-4deg) scale(1)}}@keyframes selectorCanExitPrev{to{opacity:0;transform:translate(35%,-50%) rotateY(82deg) rotateZ(12deg) scale(.78)}}@keyframes selectorCanEnterPrev{from{opacity:0;transform:translate(-135%,-50%) rotateY(-82deg) rotateZ(-13deg) scale(.78)}to{opacity:1;transform:translate(-50%,-50%) rotateY(0) rotateZ(-4deg) scale(1)}}
+.flavor-selector__details{position:absolute;z-index:5;left:50%;bottom:5vh;width:min(560px,86vw);transform:translateX(-50%);text-align:center}.flavor-selector__detail{display:none}.flavor-selector__detail.is-active{display:block;animation:selectorCopyIn .55s cubic-bezier(.16,1,.3,1) both}.flavor-selector__detail h3{margin:0;font:400 clamp(50px,5.8vw,92px)/.82 "Bebas Neue";letter-spacing:-.02em}.flavor-selector__detail p{margin:12px 0 0;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.flavor-selector__hint{position:absolute;z-index:5;right:3vw;bottom:3vh;margin:0;font-size:8px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;writing-mode:vertical-rl}@keyframes selectorCopyIn{from{opacity:0;transform:translateY(24px)}}
+/* Separate product chapter: the three cans remain part of the landing page. */
+.can-collection{padding:15vh 5vw;background:var(--cream);color:var(--red)}.can-collection__intro{max-width:860px;margin:0 auto 8vh;text-align:center}.can-collection__intro .eyebrow{margin:0;font:400 clamp(42px,5vw,82px)/.9 "Bebas Neue"}.can-collection__intro h2{margin:8px 0 24px;font:400 clamp(76px,11vw,175px)/.76 "Bebas Neue"}.can-collection__intro p:last-child{max-width:540px;margin:auto;font-size:18px;line-height:1.5}
+.can-collection__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.can-product-card{position:relative;min-height:610px;padding:33px;border-radius:48px;overflow:hidden;color:var(--cream);display:flex;align-items:flex-end}.can-product-card--orange{background:#a8c7d4}.can-product-card--lemon{background:#dcc65f}.can-product-card--pink{background:#e7a3a5}.can-product-card>span{position:absolute;z-index:2;top:32px;font:400 20px/1 "Bebas Neue";letter-spacing:.08em}.can-product-card img,.can-product-card canvas{position:absolute;z-index:1;top:-1%;left:50%;height:76%;width:auto;max-width:none;transform:translateX(-50%) rotate(-5deg);filter:drop-shadow(0 24px 15px rgba(30,35,40,.24))}.can-product-card:nth-child(2) img,.can-product-card:nth-child(3) img,.can-product-card:nth-child(2) canvas,.can-product-card:nth-child(3) canvas{transform:translateX(-50%) rotate(3deg);filter:drop-shadow(0 24px 15px rgba(40,35,20,.23))}.can-product-card>div{position:relative;z-index:2}.can-product-card h3{margin:0;font:400 clamp(45px,4vw,70px)/.8 "Bebas Neue"}.can-product-card p{margin:14px 0 0;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+@media(max-width:800px){.flavor-selector__stage{min-height:660px}.flavor-selector__blob{width:145vw}.flavor-selector__heading{top:9vh}.flavor-selector__heading h2{font-size:16vw}.flavor-selector__can-well{inset:0}.flavor-selector__can{top:50%;height:min(48vh,460px)}.flavor-selector__details{bottom:7vh}.flavor-selector__detail h3{font-size:14vw}.flavor-selector__hint{display:none}.intro-lens-reveal__copy{display:block;bottom:5vh}.intro-lens-reveal__copy h2{margin-top:18px;font-size:16vw;text-align:left}.intro-lens-reveal__index{top:11vh}}
+@media(max-width:900px){.loader-meta{font-size:8px}.hero-can-motion{width:47vw}.social{height:230vh}.social-copy{width:88vw}.social-feature{top:44vh;right:6vw;width:88vw;height:50vh;min-height:440px}.social-feature__image{height:calc(100% - 76px)}.social-moments{height:76px}.social-moment{font-size:8px;padding-inline:8px}.social-moment b{font-size:22px}.footer-top{grid-template-columns:1fr;gap:7vh}.footer-cta{font-size:18vw}.footer-wordmark{margin-top:12vh;font-size:23vw}.footer-bottom{grid-template-columns:1fr;align-items:start}.footer-bottom p:last-child{text-align:left}.footer-nav{flex-wrap:wrap}.footer-citrus{right:-18vw;width:60vw}}
+.gas{height:350vh}.gas-muse{will-change:transform,opacity}.gas-stage h2{will-change:transform,opacity}
+@media(max-width:900px){.loader-word{font-size:24vw}.loader-meta{left:16px;right:16px;bottom:26px;font-size:7px}.loader-meta span:last-child{display:none}.loader-line{left:16px;right:16px}.hero-can-motion{width:58vw}.journey-can{width:70vw}.hero-stage h1 span:first-child{transform:translateY(-3vh)}.hero-stage h1 span:last-child{transform:translateY(3vh)}.intro-stage>.muse{width:135vw}.gas{height:280vh}.social{height:400vh}.visual-frame__copy{display:block;bottom:5vh}.visual-frame__copy h2{margin-top:18px;font-size:16vw;text-align:left}.visual-frame__index{top:11vh}.social-copy{width:88vw}.social-stack{top:42vh;right:6vw;width:88vw;height:52vh;min-height:430px}.stack-card{border-radius:30px}.stack-card__top,.stack-card__bottom{left:22px;right:22px}.stack-card__top{top:21px}.stack-card__bottom{bottom:22px}.stack-card__bottom h3{font-size:12vw}.stack-card__bottom p{font-size:8px}.range{height:auto}.range-sticky{position:relative;height:auto;min-height:0;padding:80px 16px;overflow:visible}.range-intro{position:relative;top:auto;left:auto;width:auto;margin-bottom:50px}.range-intro h2{margin:50px 0 15px;font-size:clamp(70px,19vw,105px)}.range-track{height:auto;display:grid;padding-left:0;transform:none!important;gap:14px}.flavor-card{height:82vh;min-height:620px;width:auto;flex:auto}.flavor-card>img{height:66%}.flavor-card--cocktail>img{height:100%}.flavor-copy h3{font-size:58px}.range-hint{display:none}.can-collection{padding:12vh 6vw}.can-collection__grid{grid-template-columns:1fr}.can-product-card{min-height:610px}.can-collection__intro h2{font-size:18vw}}
+@media(prefers-reduced-motion:reduce){.site-loader{display:none}.hero-can-anchor,.hero-stage h1,.hero-kicker{animation:none}}
+</style>
+<style>
+.bubble{background-image:url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/df098f66-4e7a-4d42-80bc-9f7433e1c9d9_800w.png')!important}.bubbles--hero .bubble{background-image:url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/df098f66-4e7a-4d42-80bc-9f7433e1c9d9_800w.png')!important}.page-citrus-slice{background-image:url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/df098f66-4e7a-4d42-80bc-9f7433e1c9d9_800w.png')!important}.footer-citrus{background-image:url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/df098f66-4e7a-4d42-80bc-9f7433e1c9d9_800w.png')!important}
+</style>
+<style>
+/* Real-time three.js surfaces. Each canvas keeps the exact box its still image
+   occupied, so layout, GSAP choreography and stacking order are unchanged; the
+   photograph is painted into the canvas up front and stays put if WebGL or the
+   textures never arrive. */
+canvas.can,canvas.loader-orange,.can-product-card canvas{display:block;max-width:100%}
+/* The can occupies the middle ~49% of its frame; clipping the empty margins
+   keeps the grab cursor and the hover target on the product itself. */
+canvas.can,.can-product-card canvas{clip-path:inset(0 17% 0 17%)}
+.citrus3d{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none}
+.citrus3d--hero{z-index:1;filter:drop-shadow(0 14px 14px rgba(80,16,5,.2))}
+.citrus3d--page{filter:drop-shadow(0 14px 26px rgba(103,26,18,.18))}
+.footer-citrus{background-image:none!important}
+html.has-aurello-3d .bubbles--hero{display:none}
+html.has-aurello-3d .page-citrus-slice{display:none}
+html.has-aurello-3d .footer-citrus{opacity:.24}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+  <body class="">
+    <div class="site-loader" aria-hidden="true">
+      <canvas
+        class="loader-orange"
+        width="1254"
+        height="1254"
+        data-citrus3d="single"
+        data-citrus-src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/df098f66-4e7a-4d42-80bc-9f7433e1c9d9_1600w.png"
+      ></canvas>
+      <div class="loader-word"><span>AURELLO</span></div>
+      <div class="loader-meta">
+        <span>Montréal summer, canned</span>
+        <span>330 ml · 5% alc./vol.</span>
+      </div>
+      <div class="loader-line"><span></span></div>
+    </div>
+    <div class="journey-can" aria-hidden="true">
+      <canvas
+        class="can can--rendered"
+        width="1024"
+        height="1536"
+        data-can3d="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d430a1f6-0920-41f5-950c-97ab36c227fb_1600w.png"
+      ></canvas>
+    </div>
+    <div class="page-citrus-field" aria-hidden="true">
+      <canvas
+        class="citrus3d citrus3d--page"
+        data-citrus3d="page"
+        data-citrus-src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/df098f66-4e7a-4d42-80bc-9f7433e1c9d9_1600w.png"
+      ></canvas>
+    </div>
+    <header class="header">
+      <a class="brand" href="#top">
+        <span>The orange hour</span>
+        Aurello
+        <sup>®</sup>
+      </a>
+      <nav class="nav-group nav-group--right" aria-label="Primary">
+        <a href="#spritz">The Spritz</a>
+        <a href="#taste">Flavours</a>
+        <a href="#inside">Inside</a>
+        <a href="#serve">How to Serve</a>
+        <a href="#story">Our Story</a>
+        <a class="nav-cta" href="#find">Where to Buy</a>
+      </nav>
+      <button
+        class="menu"
+        type="button"
+        aria-label="Open menu"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
+    </header>
+    <nav class="mobile-nav" aria-label="Mobile">
+      <a href="#spritz">The Spritz</a>
+      <a href="#taste">Flavours</a>
+      <a href="#inside">Inside</a>
+      <a href="#serve">How to Serve</a>
+      <a href="#story">Our Story</a>
+      <a href="#faq">FAQ</a>
+      <a class="nav-cta" href="#find">Where to Buy</a>
+    </nav>
+    <main id="top">
+      <section class="hero" id="spritz">
+        <div class="hero-stage">
+          <div
+            aria-hidden="true"
+            style="position:absolute;inset:0;z-index:0;background-image:url('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/e3d26ced-1217-4bff-8dea-de189fe88cb0_1600w.png');background-size:cover;background-position:center;-webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);mask-image:linear-gradient(to bottom, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%);pointer-events:none;"
+          ></div>
+          <div class="bubbles bubbles--hero"></div>
+          <canvas
+            class="citrus3d citrus3d--hero"
+            data-citrus3d="hero"
+            data-citrus-src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/df098f66-4e7a-4d42-80bc-9f7433e1c9d9_1600w.png"
+            aria-hidden="true"
+          ></canvas>
+          <h1>
+            <span>THE ORANGE</span>
+            <span>HOUR</span>
+          </h1>
+          <div class="hero-can-anchor">
+            <div class="hero-can-motion">
+              <canvas
+                class="can can--rendered"
+                width="1024"
+                height="1536"
+                role="img"
+                aria-label="Aurello Orange Spritz ready-to-drink can"
+                data-can3d="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d430a1f6-0920-41f5-950c-97ab36c227fb_1600w.png"
+              ></canvas>
+            </div>
+          </div>
+          <p class="hero-kicker">
+            Bittersweet citrus · bright bubbles · ready when you are
+          </p>
+          <span class="scroll">SCROLL</span>
+        </div>
+      </section>
+      <section class="intro">
+        <div class="intro-stage">
+          <div class="bubbles bubbles--intro"></div>
+          <div class="intro-copy">
+            <span class="section-label">A new ready-to-drink spritz</span>
+            <h2>
+              OPEN. POUR.
+              <br />
+              <em>GLOW.</em>
+            </h2>
+            <p>
+              Aurello brings the vibrant taste of a freshly made orange spritz
+              to one beautifully simple can. Bright citrus, aromatic botanicals
+              and lively bubbles—perfectly balanced and ready for wherever the
+              afternoon takes you.
+            </p>
+            <a class="pill" href="#taste">Meet the can</a>
+          </div>
+          <canvas
+            class="can can--rendered"
+            width="1024"
+            height="1536"
+            role="img"
+            aria-label="Aurello Orange Spritz can"
+            data-can3d="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d430a1f6-0920-41f5-950c-97ab36c227fb_1600w.png"
+          ></canvas>
+          <img
+            class="muse"
+            src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/a9f8f560-a93a-4868-985c-1eebef7ece88_1600w.png"
+            alt="Minimalist line art of a woman with a dragon float"
+          />
+          <div class="intro-lens-reveal" aria-hidden="true">
+            <img
+              src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/2b6be789-24b2-403e-ab05-cbc3f960fde0_3840w.png"
+              alt="Woman with Aperol Spritz on Sunset Balcony"
+            />
+            <span class="intro-lens-reveal__index">01</span>
+            <div class="intro-lens-reveal__copy">
+              <span>Stay for the glow · Golden faces</span>
+              <h2>
+                FOLLOW
+                <br />
+                THE GLOW.
+              </h2>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="social">
+        <div class="social-stage">
+          <div
+            class="visual-story"
+            aria-label="Golden-hour moments, continuing from the opening illustration"
+          >
+            <div class="visual-progress" aria-hidden="true">
+              <i></i>
+              <i></i>
+            </div>
+            <figure class="visual-frame visual-frame--two">
+              <img
+                src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/4514b389-2b6b-453a-b522-8e94f83b0d7c_3840w.png"
+                alt="Friends sharing orange spritzes at a sunny park picnic"
+              />
+              <span class="visual-frame__index">02</span>
+              <figcaption class="visual-frame__copy">
+                <span>Ready when you are · Sunny afternoons</span>
+                <h2>
+                  PACK LIGHT.
+                  <br />
+                  POUR BRIGHT.
+                </h2>
+              </figcaption>
+            </figure>
+            <figure class="visual-frame visual-frame--three">
+              <img
+                src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/145546bc-826c-4841-9ef2-0c995589f156_3840w.png"
+                alt="Friends gathered around a rooftop dinner table at blue hour"
+              />
+              <span class="visual-frame__index">03</span>
+              <figcaption class="visual-frame__copy">
+                <span>Made for golden hours · Long tables</span>
+                <h2>
+                  NO RUSH.
+                  <br />
+                  JUST ONE MORE.
+                </h2>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+      <section class="gas">
+        <div class="gas-stage">
+          <div class="bubbles bubbles--gas"></div>
+          <h2>
+            BRIGHT CITRUS.
+            <br />
+            BOLD BUBBLES.
+          </h2>
+          <img
+            class="muse gas-muse"
+            src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/a9f8f560-a93a-4868-985c-1eebef7ece88_1600w.png"
+            alt="Minimalist line art of a woman with a dragon float"
+          />
+          <canvas
+            class="can can--rendered"
+            width="1024"
+            height="1536"
+            role="img"
+            aria-label="Sparkling Aurello Orange Spritz can"
+            data-can3d="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d430a1f6-0920-41f5-950c-97ab36c227fb_1600w.png"
+          ></canvas>
+          <div class="cream-wave"></div>
+        </div>
+      </section>
+      <section class="products range" id="taste">
+        <div class="range-sticky">
+          <div class="range-intro">
+            <div class="section-label">
+              <span>03</span>
+              <span>Cocktail ideas</span>
+            </div>
+            <h2>
+              THREE WAYS
+              <br />
+              TO
+              <em>SPRITZ.</em>
+            </h2>
+            <p>Three bright serves. One easy ritual.</p>
+          </div>
+          <div class="range-track">
+            <article class="flavor-card flavor-card--cocktail">
+              <div class="flavor-head">
+                <span>01 / ORIGINAL</span>
+                <span>Orange ritual</span>
+              </div>
+              <img
+                src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/c467121f-be98-462f-a472-aa6b156e560d_1600w.png"
+                alt="Ruby-orange Aurello spritz cocktail with an orange garnish"
+              />
+              <div class="flavor-copy">
+                <p>Bitter · Bright · Bubbly</p>
+                <h3>GOLDEN ORANGE</h3>
+                <div>
+                  <span>
+                    Fill a wine glass with ice, pour Aurello Orange Spritz and
+                    finish with a generous orange wedge.
+                  </span>
+                  <a href="#find" aria-label="Find Aurello Orange Spritz">↗</a>
+                </div>
+              </div>
+            </article>
+            <article class="flavor-card flavor-card--cocktail">
+              <div class="flavor-head">
+                <span>02 / LEMON &amp; MINT</span>
+                <span>Garden fresh</span>
+              </div>
+              <img
+                src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/638c100a-dc7f-4cc0-a5a1-453080c62342_1600w.png"
+                alt="Golden lemon Aurello spritz cocktail with lemon and fresh mint"
+              />
+              <div class="flavor-copy">
+                <p>Zesty · Cool · Crisp</p>
+                <h3>LEMON GARDEN</h3>
+                <div>
+                  <span>
+                    Pour chilled Lemon &amp; Mint over ice, add a lemon wheel
+                    and wake it up with fresh mint.
+                  </span>
+                  <a
+                    href="#find"
+                    aria-label="Find Aurello Lemon and Mint Spritz"
+                  >
+                    ↗
+                  </a>
+                </div>
+              </div>
+            </article>
+            <article class="flavor-card flavor-card--cocktail">
+              <div class="flavor-head">
+                <span>03 / PINK GRAPEFRUIT</span>
+                <span>Sunset serve</span>
+              </div>
+              <img
+                src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/d382087e-8cea-461c-9498-1746920f237a_1600w.png"
+                alt="Grapefruit gin tonic cocktail with grapefruit garnish"
+              />
+              <div class="flavor-copy">
+                <p>Juicy · Tart · Floral</p>
+                <h3>PINK SUNSET</h3>
+                <div>
+                  <span>
+                    Serve Pink Grapefruit over clear ice with a grapefruit
+                    half-wheel and a tiny rosemary tip.
+                  </span>
+                  <a
+                    href="#find"
+                    aria-label="Find Aurello Pink Grapefruit Spritz"
+                  >
+                    ↗
+                  </a>
+                </div>
+              </div>
+            </article>
+          </div>
+          <p class="range-hint">
+            Scroll to explore
+            <span>→</span>
+          </p>
+        </div>
+      </section>
+      <section class="can-collection" aria-labelledby="can-collection-title">
+        <div class="can-collection__intro">
+          <p class="eyebrow">THE AURELLO RANGE</p>
+          <h2 id="can-collection-title">
+            MEET THE
+            <br />
+            THREE CANS
+          </h2>
+          <p>
+            Three bright flavours, each ready when the moment is. Chill the can,
+            pick your mood and bring the sparkle wherever you go.
+          </p>
+        </div>
+        <div class="can-collection__grid">
+          <article class="can-product-card can-product-card--orange">
+            <span>01 / ORIGINAL</span>
+            <canvas
+              width="1024"
+              height="1536"
+              role="img"
+              aria-label="Aurello Orange Spritz ready-to-drink can"
+              data-can3d="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/23e00ed3-df33-403a-93aa-5277353a2dd9_1600w.png"
+            ></canvas>
+            <div>
+              <h3>
+                ORANGE
+                <br />
+                SPRITZ
+              </h3>
+              <p>Bittersweet citrus · 5% alc./vol. · 330 ml</p>
+            </div>
+          </article>
+          <article class="can-product-card can-product-card--lemon">
+            <span>02 / ZESTY</span>
+            <canvas
+              width="1024"
+              height="1536"
+              role="img"
+              aria-label="Aurello Lemon and Mint Spritz ready-to-drink can"
+              data-can3d="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/e3ff2dfb-2760-4524-9f3d-53ba803beb62_1600w.png"
+            ></canvas>
+            <div>
+              <h3>
+                LEMON &amp;
+                <br />
+                MINT
+              </h3>
+              <p>Fresh citrus and cool herbs · 5% alc./vol. · 330 ml</p>
+            </div>
+          </article>
+          <article class="can-product-card can-product-card--pink">
+            <span>03 / JUICY</span>
+            <canvas
+              width="1024"
+              height="1536"
+              role="img"
+              aria-label="Aurello Pink Grapefruit Spritz ready-to-drink can"
+              data-can3d="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/aa42ff55-2a2b-4168-8ef8-2a274c90f4c7_1600w.png"
+            ></canvas>
+            <div>
+              <h3>
+                PINK
+                <br />
+                GRAPEFRUIT
+              </h3>
+              <p>Bright, tart and floral · 5% alc./vol. · 330 ml</p>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="ingredients" id="inside">
+        <div class="ingredients-head">
+          <div>
+            <span class="section-label">Inside every sip</span>
+            <h2>
+              THREE BRIGHT
+              <br />
+              IDEAS
+            </h2>
+          </div>
+          <p>
+            Aurello is built around a simple balance: generous citrus, aromatic
+            depth and bubbles that keep the whole thing light on its feet.
+          </p>
+        </div>
+        <div class="ingredient-grid">
+          <article class="ingredient-card">
+            <span class="ingredient-number">01 / FRUIT</span>
+            <div
+              class="ingredient-icon ingredient-icon--citrus"
+              aria-hidden="true"
+            ></div>
+            <div>
+              <h3>
+                SUN-BRIGHT
+                <br />
+                CITRUS
+              </h3>
+              <p>
+                Juicy orange character leads each sip with freshness, colour and
+                a clean bittersweet edge.
+              </p>
+            </div>
+          </article>
+          <article class="ingredient-card">
+            <span class="ingredient-number">02 / DEPTH</span>
+            <div
+              class="ingredient-icon ingredient-icon--botanical"
+              aria-hidden="true"
+            ></div>
+            <div>
+              <h3>
+                AROMATIC
+                <br />
+                BOTANICALS
+              </h3>
+              <p>
+                Layered herbal notes give the spritz its grown-up complexity
+                without weighing it down.
+              </p>
+            </div>
+          </article>
+          <article class="ingredient-card">
+            <span class="ingredient-number">03 / LIFT</span>
+            <div
+              class="ingredient-icon ingredient-icon--sparkle"
+              aria-hidden="true"
+            ></div>
+            <div>
+              <h3>
+                FINE
+                <br />
+                BUBBLES
+              </h3>
+              <p>
+                A lively sparkling finish keeps every can crisp, refreshing and
+                ready for another round.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="serve" id="serve">
+        <div class="serve-head">
+          <div>
+            <span class="section-label">The Aurello ritual</span>
+            <h2>
+              GOOD TO GO
+              <br />
+              IN THREE
+            </h2>
+          </div>
+          <p>
+            A golden-hour serve with maximum refreshment and minimum effort.
+          </p>
+        </div>
+        <div class="serve-steps">
+          <article class="serve-step">
+            <span>01</span>
+            <h3>CHILL</h3>
+            <p>
+              Keep your Aurello cans cold and ready for the moment the sun comes
+              out.
+            </p>
+          </article>
+          <article class="serve-step">
+            <span>02</span>
+            <h3>CRACK</h3>
+            <p>
+              Open the can and enjoy it just as it is, wherever the afternoon
+              finds you.
+            </p>
+          </article>
+          <article class="serve-step">
+            <span>03</span>
+            <h3>POUR</h3>
+            <p>
+              For the full ritual, pour over ice in a wine glass and finish with
+              an orange slice.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section class="story-band" id="story">
+        <div
+          class="story-image"
+          role="img"
+          aria-label="Friends enjoying an outdoor aperitivo"
+          style='background: url("https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/a061b100-bd0e-4c90-9d95-684dbbfa55fa_1600w.png") center 45% / cover no-repeat;'
+        ></div>
+        <div class="story-copy">
+          <span class="section-label">Aperitivo, made easy</span>
+          <h2>
+            THE SPARK
+            <br />
+            OF TOGETHER
+          </h2>
+          <p>
+            Aurello was created for spontaneous plans and joyful connections. We
+            captured the colour, sparkle and bittersweet character of the orange
+            spritz in a can you can take anywhere.
+          </p>
+          <p>All the atmosphere of aperitivo. None of the preparation.</p>
+          <a class="pill" href="#find">Find Aurello</a>
+        </div>
+      </section>
+      <section class="marquee">
+        <div>CHILL · CRACK · POUR ✦ CHILL · CRACK · POUR ✦</div>
+      </section>
+      <section class="faq" id="faq">
+        <div class="faq-intro">
+          <span class="section-label">Good to know</span>
+          <h2>
+            YOUR
+            <br />
+            QUESTIONS
+          </h2>
+          <p>
+            Everything you need before bringing Aurello to your next golden
+            hour.
+          </p>
+        </div>
+        <div class="faq-list">
+          <details open="">
+            <summary>Is Aurello ready to drink?</summary>
+            <p>
+              Yes. Every can is fully mixed and sparkling. Enjoy it chilled
+              straight from the can, or pour it over ice for the full spritz
+              ritual.
+            </p>
+          </details>
+          <details>
+            <summary>How should I serve it?</summary>
+            <p>
+              Chill well, pour into a large wine glass filled with ice and
+              garnish with a fresh orange slice. No measuring or additional
+              ingredients required.
+            </p>
+          </details>
+          <details>
+            <summary>How much alcohol is in each can?</summary>
+            <p>
+              Each 330 ml Aurello can contains 5% alcohol by volume. Please
+              enjoy responsibly.
+            </p>
+          </details>
+          <details>
+            <summary>Can the cans be recycled?</summary>
+            <p>
+              Yes. The aluminium cans are recyclable wherever local collection
+              accepts beverage cans. Check the rules in your area.
+            </p>
+          </details>
+        </div>
+      </section>
+      <section class="contact" id="find">
+        <span class="section-label">Your next orange hour</span>
+        <h2>
+          FIND AURELLO
+          <br />
+          NEAR YOU
+        </h2>
+        <p>
+          Ready for rooftop drinks, park picnics and last-minute get-togethers.
+          Look for the bright orange can at selected retailers.
+        </p>
+        <a class="pill" href="mailto:hello@aurello.com">Where to buy</a>
+        <p class="availability">
+          Availability varies by location · 5% alc./vol.
+        </p>
+        <img
+          class="muse"
+          src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/a9f8f560-a93a-4868-985c-1eebef7ece88_1600w.png"
+          alt="Minimalist line art of a woman with a dragon float"
+        />
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-citrus" aria-hidden="true">
+        <canvas
+          class="citrus3d citrus3d--footer"
+          width="600"
+          height="600"
+          data-citrus3d="single"
+          data-citrus-src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/df098f66-4e7a-4d42-80bc-9f7433e1c9d9_1600w.png"
+        ></canvas>
+      </div>
+      <div class="footer-top">
+        <p class="footer-kicker">
+          Made for spontaneous plans, generous pours and the hour when
+          everything turns golden.
+        </p>
+        <a class="footer-cta" href="#find">
+          FIND YOUR
+          <br />
+          <span>ORANGE HOUR →</span>
+        </a>
+      </div>
+      <div class="footer-wordmark">
+        <small>Bright citrus · bold bubbles · ready to drink</small>
+        AURELLO
+      </div>
+      <div class="footer-bottom">
+        <p>
+          2026 © Aurello
+          <br />
+          5% alc./vol. · Enjoy responsibly
+        </p>
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="#taste">Flavours</a>
+          <a href="#inside">Inside</a>
+          <a href="#serve">Serve</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <p><a class="back-top" href="#top">Back to top</a></p>
+      </div>
+    </footer>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      /* Paint the original product photography into each 3D canvas straight away.
+         It is what shows before three.js is ready, and what stays if it never is.
+         The cross-origin attempt comes first so the canvas is not tainted, with a
+         plain load behind it so the fallback still draws if CORS ever goes away. */
+      document
+        .querySelectorAll('canvas[data-can3d],canvas[data-citrus3d="single"]')
+        .forEach((canvas) => {
+          const src = canvas.dataset.can3d || canvas.dataset.citrusSrc;
+          if (!src) return;
+          const paint = (anonymous) => {
+            const image = new Image();
+            image.decoding = 'async';
+            if (anonymous) image.crossOrigin = 'anonymous';
+            image.onload = () => {
+              if (canvas.dataset.threeReady) return;
+              canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+            };
+            if (anonymous) image.onerror = () => paint(false);
+            image.src = src;
+          };
+          paint(true);
+        });
+    </script>
+    <script type="module" src="aurello-assets/aurello-3d.js"></script>
+    <script>
+      if('scrollRestoration' in history)history.scrollRestoration='manual';
+      window.scrollTo(0,0);
+      const reducedMotion=matchMedia('(prefers-reduced-motion:reduce)').matches;
+      const siteLoader=document.querySelector('.site-loader');
+      if(reducedMotion){siteLoader.classList.add('is-dismissing')}else{
+        document.body.classList.add('is-loading');
+        setTimeout(()=>siteLoader.classList.add('is-dismissing'),1250);
+        setTimeout(()=>document.body.classList.remove('is-loading'),2200);
+      }
+      document.querySelectorAll('img.can[src$="aurello-can.png"]').forEach(can=>{can.src='spritz-assets/aurello-orange-can-clean.png';can.classList.add('can--rendered')});
+      document.querySelectorAll('.bubbles').forEach((field,index)=>{
+        const isHero=field.classList.contains('bubbles--hero');
+        const isMobile=matchMedia('(max-width:800px)').matches;
+        const count=isHero?(isMobile?8:12):([6,5,5,8][index]||6);
+        const lanes=isMobile?[0,9,22,70,84,94]:[0,6,13,21,32,68,77,86,94];
+        for(let i=0;i<count;i++){
+          const bubble=document.createElement('i');bubble.className='bubble';
+          const s=isHero?(isMobile?58+Math.random()*82:82+Math.random()*118):56+Math.random()*64;
+          const rotation=-42+Math.random()*84;
+          bubble.style.setProperty('--s',s+'px');bubble.style.setProperty('--x',lanes[i%lanes.length]+Math.random()*3+'%');bubble.style.setProperty('--y',(isHero?-38+Math.random()*32:68+Math.random()*58)+'%');bubble.style.setProperty('--d',(isHero?16:18)+Math.random()*(isHero?13:14)+'s');bubble.style.setProperty('--delay',-Math.random()*32+'s');bubble.style.setProperty('--dx',-48+Math.random()*96+'px');bubble.style.setProperty('--fall',150+Math.random()*60+'vh');bubble.style.setProperty('--rise',118+Math.random()*34+'vh');bubble.style.setProperty('--r',rotation+'deg');bubble.style.setProperty('--r-end',rotation-45+Math.random()*90+'deg');field.appendChild(bubble);
+        }
+      });
+      const pageCitrusField=document.querySelector('.page-citrus-field');
+      const heroSection=document.querySelector('.hero');
+      if(pageCitrusField&&heroSection&&!reducedMotion){
+        const pageCitrusMobile=matchMedia('(max-width:800px)').matches;
+        const pageCitrusCount=pageCitrusMobile?10:16;
+        for(let i=0;i<pageCitrusCount;i++){
+          const slice=document.createElement('i');slice.className='page-citrus-slice';
+          const rotation=-55+Math.random()*110;
+          slice.style.setProperty('--s',(pageCitrusMobile?42+Math.random()*74:52+Math.random()*118)+'px');slice.style.setProperty('--x',(-3+Math.random()*99)+'%');slice.style.setProperty('--d',(17+Math.random()*20)+'s');slice.style.setProperty('--delay',(-Math.random()*38)+'s');slice.style.setProperty('--dx',(-72+Math.random()*144)+'px');slice.style.setProperty('--r',rotation+'deg');slice.style.setProperty('--r-end',(rotation-120+Math.random()*240)+'deg');slice.style.setProperty('--o',(.34+Math.random()*.42).toFixed(2));slice.style.setProperty('--blur',(Math.random()*1.1).toFixed(2)+'px');pageCitrusField.appendChild(slice);
+        }
+        const togglePageCitrus=()=>pageCitrusField.classList.toggle('is-visible',heroSection.getBoundingClientRect().bottom<=innerHeight*.12);
+        addEventListener('scroll',togglePageCitrus,{passive:true});addEventListener('resize',togglePageCitrus,{passive:true});togglePageCitrus();
+      }
+      const flavorSelector=document.querySelector('.flavor-selector');
+      const selectorCans=flavorSelector?[...flavorSelector.querySelectorAll('.flavor-selector__can')]:[];
+      const selectorDetails=flavorSelector?[...flavorSelector.querySelectorAll('.flavor-selector__detail')]:[];
+      const setSelectorFlavor=index=>{
+        if(!flavorSelector)return;
+        flavorSelector.dataset.index=String(index);
+        selectorCans.forEach((can,canIndex)=>can.classList.toggle('is-active',canIndex===index));
+        selectorDetails.forEach((detail,detailIndex)=>detail.classList.toggle('is-active',detailIndex===index));
+      };
+      setSelectorFlavor(0);
+      const menuButton=document.querySelector('.menu');
+      const closeMenu=()=>{document.body.classList.remove('nav-open');menuButton.setAttribute('aria-expanded','false');menuButton.setAttribute('aria-label','Open menu')};
+      menuButton.addEventListener('click',()=>{const open=document.body.classList.toggle('nav-open');menuButton.setAttribute('aria-expanded',String(open));menuButton.setAttribute('aria-label',open?'Close menu':'Open menu')});
+      document.querySelectorAll('.mobile-nav a').forEach(link=>link.addEventListener('click',closeMenu));
+      if(window.gsap&&window.ScrollTrigger&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
+        document.documentElement.classList.add('has-gsap');
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.set('.journey-can',{opacity:1,xPercent:-50,yPercent:-50,x:0,y:0,rotation:-16,scale:1});
+
+        const titleChars=[...document.querySelectorAll('.hero h1 span')].flatMap(line=>{
+          const chars=[...line.textContent];line.textContent='';
+          return chars.map((char,index)=>{const span=document.createElement('i');span.className='hero-char';span.textContent=char===' '?'\u00a0':char;span.style.display='inline-block';span.dataset.index=index;line.appendChild(span);return span});
+        });
+
+        gsap.timeline({scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom bottom',scrub:1}})
+          .to('.journey-can',{x:'5vw',y:'12vh',rotation:-8,scale:.98,duration:.75,ease:'none'})
+          .to('.journey-can',{x:'26vw',y:'44vh',rotation:5,scale:.9,duration:1.15,ease:'power1.inOut'})
+          .to(titleChars,{x:i=>((i*97)%1000)-500,y:i=>((i*137)%560)-280,rotation:i=>((i%7)-3)*15,scale:i=>.3+(i%4)*.12,opacity:0,duration:1.25,stagger:{amount:.28,from:'center'},ease:'power2.in'},'<.08')
+          .to('.hero-kicker',{yPercent:-120,opacity:0,duration:.45,ease:'power2.in'},'<.15');
+
+        gsap.timeline({scrollTrigger:{trigger:'.intro',start:'top top',end:'bottom bottom',scrub:1}})
+          .from('.intro-copy h2',{opacity:0,y:160,letterSpacing:'.2em',duration:.75})
+          .to('.journey-can',{x:'27vw',y:'17vh',rotation:8,scale:1.06,duration:1.15,ease:'none'},'<')
+          .from('.intro-copy p,.intro-copy .pill',{opacity:0,y:70,stagger:.16,duration:.45},'<.25')
+          .to('.intro-copy',{yPercent:-90,opacity:0,duration:.7})
+          .to('.journey-can',{x:'40vw',y:'58vh',rotation:22,scale:.94,opacity:0,duration:1,ease:'power1.in'},'<')
+          .fromTo('.intro-stage>.muse',{xPercent:-50,yPercent:-50,scale:.45,rotation:-5,opacity:0,filter:'blur(4px)',transformOrigin:'29% 15%'},{xPercent:-50,yPercent:-50,scale:1.05,rotation:0,opacity:.82,filter:'blur(0px)',duration:1.05,ease:'power2.out'},'<.08')
+          .to('.intro-stage>.muse',{xPercent:-50,yPercent:-50,scale:1.12,rotation:0,opacity:0,filter:'blur(0px)',transformOrigin:'29% 15%',duration:1.25,ease:'power2.inOut'})
+          .fromTo('.intro-lens-reveal',{autoAlpha:1,clipPath:'ellipse(0% 0% at 50% 50%)'},{autoAlpha:1,clipPath:'ellipse(92% 118% at 50% 50%)',duration:.92,ease:'power2.inOut'})
+          .fromTo('.intro-lens-reveal img',{scale:1.16},{scale:1,duration:.92,ease:'none'},'<')
+          .from('.intro-lens-reveal__index,.intro-lens-reveal__copy>*',{y:56,opacity:0,stagger:.12,duration:.42},'<.38');
+
+        gsap.set('.visual-frame',{autoAlpha:0});
+        gsap.set('.visual-frame--two',{autoAlpha:1,clipPath:'none'});
+        gsap.timeline({scrollTrigger:{trigger:'.social',start:'top top',end:'bottom bottom',scrub:1}})
+          .to('.visual-progress',{opacity:1,duration:.22})
+          .from('.visual-frame--two .visual-frame__copy>*',{y:70,opacity:0,stagger:.12,duration:.45},'<.08')
+          .to('.visual-frame--two img',{scale:1.08,yPercent:-2,duration:.8,ease:'none'})
+          .fromTo('.visual-frame--three',{clipPath:'inset(0 0 100% 0)',autoAlpha:1},{clipPath:'inset(0 0 0% 0)',autoAlpha:1,duration:.95,ease:'power2.inOut'})
+          .fromTo('.visual-frame--three img',{scale:1.16},{scale:1,duration:.95,ease:'none'},'<')
+          .from('.visual-frame--three .visual-frame__copy>*',{y:70,opacity:0,stagger:.12,duration:.42},'<.43')
+          .to('.visual-progress i:nth-child(2)',{backgroundColor:'#fff3d8',duration:.2},'<')
+          .to('.visual-frame--three img',{scale:1.08,yPercent:-2,duration:.7,ease:'none'});
+
+        gsap.timeline({scrollTrigger:{trigger:'.gas',start:'top top',end:'bottom bottom',scrub:1}})
+          .from('.gas-stage h2',{opacity:0,x:-120,duration:.7})
+          .from('.gas-muse',{scale:1.24,xPercent:18,opacity:0,duration:1},'<.08')
+          .to('.gas-muse',{scale:1.02,xPercent:0,opacity:.65,duration:1.85,ease:'none'})
+          .to('.gas-stage h2',{xPercent:-34,opacity:.88,duration:1.35,ease:'none'},'<')
+          .to('.gas-muse',{xPercent:56,opacity:0,duration:.9,ease:'power1.in'})
+          .to('.gas-stage h2',{xPercent:-128,opacity:0,duration:.85,ease:'power1.in'},'<.12')
+          .to('.gas-stage>.can',{bottom:'-8vh',rotation:-6,scale:1.05,duration:1.05,ease:'power2.out'})
+          .to('.gas-stage>.can',{rotation:7,yPercent:5,duration:.75,ease:'none'})
+          .to('.gas-stage .cream-wave',{yPercent:-100,duration:.6});
+
+        gsap.timeline({scrollTrigger:{trigger:'.range',start:'top 90%',end:'top 20%',scrub:1}})
+          .from('.range-intro .section-label',{opacity:0,y:35,duration:.3})
+          .from('.range-intro h2',{opacity:0,y:95,scale:.94,duration:.55},'<.08')
+          .from('.range-intro>p',{opacity:0,y:35,duration:.3},'<.24');
+        if(!matchMedia('(max-width:900px)').matches){
+          gsap.to('.range-track',{x:()=>-window.innerWidth*1.68,ease:'none',scrollTrigger:{trigger:'.range',start:'top top',end:'bottom bottom',scrub:1,invalidateOnRefresh:true}});
+          gsap.from('.flavor-card>img',{yPercent:12,rotation:0,stagger:.12,ease:'none',scrollTrigger:{trigger:'.range',start:'top 75%',end:'bottom bottom',scrub:1}});
+        }else{
+          gsap.from('.flavor-card',{y:120,opacity:0,stagger:.12,ease:'power2.out',scrollTrigger:{trigger:'.range-track',start:'top 88%',end:'top 35%',scrub:1}});
+        }
+
+        if(flavorSelector){
+          gsap.set(selectorCans,{autoAlpha:0,xPercent:-50,yPercent:-50,rotationY:72,rotationZ:-4,scale:.78});
+          gsap.set(selectorCans[0],{autoAlpha:1,rotationY:0,scale:1});
+          gsap.set(selectorDetails,{autoAlpha:0,y:24});
+          gsap.set(selectorDetails[0],{autoAlpha:1,y:0});
+          gsap.timeline({scrollTrigger:{trigger:flavorSelector,start:'top top',end:'+=240%',pin:true,scrub:1,anticipatePin:1,onUpdate:self=>setSelectorFlavor(self.progress<.34?0:self.progress<.68?1:2)}})
+            .to({}, {duration:.28})
+            .to(selectorCans[0],{autoAlpha:0,xPercent:-135,rotationY:-82,rotationZ:-13,scale:.78,duration:.62,ease:'power2.inOut'})
+            .fromTo(selectorCans[1],{autoAlpha:0,xPercent:35,yPercent:-50,rotationY:82,rotationZ:12,scale:.78},{autoAlpha:1,xPercent:-50,yPercent:-50,rotationY:0,rotationZ:-4,scale:1,duration:.62,ease:'power2.inOut'},'<')
+            .to(selectorDetails[0],{autoAlpha:0,y:-20,duration:.28},'<')
+            .fromTo(selectorDetails[1],{autoAlpha:0,y:24},{autoAlpha:1,y:0,duration:.34},'<.14')
+            .to({}, {duration:.42})
+            .to(selectorCans[1],{autoAlpha:0,xPercent:-135,rotationY:-82,rotationZ:-13,scale:.78,duration:.62,ease:'power2.inOut'})
+            .fromTo(selectorCans[2],{autoAlpha:0,xPercent:35,yPercent:-50,rotationY:82,rotationZ:12,scale:.78},{autoAlpha:1,xPercent:-50,yPercent:-50,rotationY:0,rotationZ:-4,scale:1,duration:.62,ease:'power2.inOut'},'<')
+            .to(selectorDetails[1],{autoAlpha:0,y:-20,duration:.28},'<')
+            .fromTo(selectorDetails[2],{autoAlpha:0,y:24},{autoAlpha:1,y:0,duration:.34},'<.14')
+            .to({}, {duration:.42});
+        }
+
+        gsap.timeline({scrollTrigger:{trigger:'.can-collection',start:'top 88%',end:'top 28%',scrub:1}})
+          .from('.can-collection__intro .eyebrow',{opacity:0,y:55,letterSpacing:'.2em',duration:.35})
+          .from('.can-collection__intro h2',{opacity:0,y:120,scale:.92,duration:.62},'<.08')
+          .from('.can-collection__intro>p:last-child',{opacity:0,y:50,duration:.38},'<.24');
+        gsap.from('.can-product-card',{y:210,rotation:i=>[-5,4,-3][i],scale:.88,stagger:.14,ease:'power3.out',scrollTrigger:{trigger:'.can-collection__grid',start:'top 94%',end:'top 38%',scrub:1}});
+        gsap.from('.can-product-card canvas',{yPercent:22,rotation:i=>[-12,9,-8][i],stagger:.12,ease:'none',scrollTrigger:{trigger:'.can-collection__grid',start:'top 85%',end:'bottom 55%',scrub:1}});
+
+        gsap.timeline({scrollTrigger:{trigger:'.ingredients',start:'top 86%',end:'top 26%',scrub:1}})
+          .from('.ingredients-head h2',{xPercent:-20,opacity:0,duration:.62})
+          .from('.ingredients-head p',{y:70,opacity:0,duration:.42},'<.18');
+        gsap.from('.ingredient-card',{y:i=>i%2?150:-90,opacity:0,stagger:.13,ease:'power2.out',scrollTrigger:{trigger:'.ingredient-grid',start:'top 90%',end:'top 42%',scrub:1}});
+
+        gsap.timeline({scrollTrigger:{trigger:'.serve',start:'top 88%',end:'top 24%',scrub:1}})
+          .from('.serve-head h2',{y:130,opacity:0,clipPath:'inset(100% 0 0 0)',duration:.7})
+          .from('.serve-head p',{x:90,opacity:0,duration:.4},'<.22')
+          .from('.serve-step',{y:110,opacity:0,stagger:.16,duration:.55,ease:'power2.out'},'<.2');
+
+        gsap.timeline({scrollTrigger:{trigger:'.story-band',start:'top 90%',end:'center 35%',scrub:1}})
+          .fromTo('.story-image',{clipPath:'inset(0 100% 0 0)',scale:1.14},{clipPath:'inset(0 0% 0 0)',scale:1,duration:1,ease:'none'})
+          .from('.story-copy>*',{x:90,opacity:0,stagger:.12,duration:.5,ease:'power2.out'},'<.2');
+
+        gsap.to('.marquee div',{xPercent:-45,ease:'none',scrollTrigger:{trigger:'.marquee',start:'top bottom',end:'bottom top',scrub:1}});
+        gsap.from('.marquee',{clipPath:'inset(0 0 100% 0)',ease:'none',scrollTrigger:{trigger:'.marquee',start:'top 96%',end:'top 58%',scrub:1}});
+
+        gsap.timeline({scrollTrigger:{trigger:'.faq',start:'top 88%',end:'top 30%',scrub:1}})
+          .from('.faq-intro h2',{x:-100,opacity:0,duration:.55})
+          .from('.faq-intro p',{y:50,opacity:0,duration:.35},'<.18')
+          .from('.faq details',{y:62,opacity:0,stagger:.1,duration:.42,ease:'power2.out'},'<.12');
+
+        gsap.timeline({scrollTrigger:{trigger:'.contact',start:'top 88%',end:'top 26%',scrub:1}})
+          .from('.contact .section-label',{opacity:0,letterSpacing:'.5em',duration:.35})
+          .from('.contact h2',{y:130,opacity:0,scale:.92,duration:.65},'<.08')
+          .from('.contact p,.contact .pill',{y:70,opacity:0,stagger:.1,duration:.4},'<.2')
+          .from('.contact .muse',{xPercent:35,rotation:18,scale:1.18,opacity:0,duration:.8},'<');
+
+        gsap.timeline({scrollTrigger:{trigger:'.site-footer',start:'top 92%',end:'center 40%',scrub:1}})
+          .from('.footer-top>*',{y:100,opacity:0,stagger:.12,duration:.5})
+          .from('.footer-wordmark',{xPercent:-14,opacity:.18,duration:.8,ease:'none'},'<.12')
+          .from('.footer-bottom>*',{y:45,opacity:0,stagger:.1,duration:.4},'<.38')
+          .from('.footer-citrus',{rotation:-70,scale:.58,opacity:0,duration:.8,ease:'none'},'<.05');
+      }
+    </script>
+  </body>
+</html>

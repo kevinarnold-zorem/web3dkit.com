@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avoid AI Slop — Brick Pile</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0c'/%3E%3Cpath d='M16 7l8 4.6v9.2L16 25l-8-4.2v-9.2z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  /* before first paint, so a light-mode viewer never sees the dark flash */
+  document.documentElement.dataset.theme =
+    matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+</script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:#0b0b0c; --ink:#ececec; --sub:#7c7c80; --dim:#55555a;
+    --veil: radial-gradient(115% 80% at 50% 34%,
+            rgba(255,255,255,.035) 0%, rgba(0,0,0,0) 42%, rgba(0,0,0,.55) 100%);
+    --ui-bd:rgba(255,255,255,.10); --ui-bg:rgba(255,255,255,.035);
+    --ui-fg:#83838b; --ui-on:#ededf0; --ui-onbg:rgba(255,255,255,.11);
+  }
+  :root[data-theme="light"]{
+    --bg:#f1f1ef; --ink:#17171a; --sub:#5d5d64; --dim:#93939b;
+    --veil: radial-gradient(115% 80% at 50% 34%,
+            rgba(255,255,255,.7) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,.10) 100%);
+    --ui-bd:rgba(0,0,0,.13); --ui-bg:rgba(0,0,0,.028);
+    --ui-fg:#6d6d75; --ui-on:#17171a; --ui-onbg:rgba(0,0,0,.075);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    font-family:Geist,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,"Helvetica Neue",Arial,sans-serif;
+    transition:background .35s ease;
+  }
+
+  canvas.art{
+    position:fixed;inset:0;width:100%;height:100%;display:block;
+    cursor:grab;touch-action:none;
+  }
+  canvas.art.holding{cursor:grabbing}
+
+  /* a whisper of falloff so the full bleed doesn't read as flat paint */
+  .vignette{position:fixed;inset:0;pointer-events:none;background:var(--veil)}
+
+  /* ------------------------------------------------------------ controls */
+  .ui{
+    position:fixed; top:clamp(14px,2.4vh,26px); right:clamp(14px,2.2vw,28px);
+    display:flex; align-items:center; gap:8px;
+    font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    z-index:5;
+  }
+  .grp{
+    display:flex; align-items:center; gap:2px;
+    padding:3px; border-radius:999px;
+    border:1px solid var(--ui-bd); background:var(--ui-bg);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  }
+  .chip{
+    appearance:none; border:0; background:transparent; cursor:pointer;
+    font:inherit; letter-spacing:inherit; text-transform:inherit;
+    color:var(--ui-fg); padding:6px 11px; border-radius:999px;
+    transition:color .2s ease, background .2s ease;
+  }
+  .chip:hover{color:var(--ui-on)}
+  .chip.on{color:var(--ui-on); background:var(--ui-onbg)}
+  .dot{
+    appearance:none; border:0; cursor:pointer; padding:0;
+    width:22px; height:22px; border-radius:999px;
+    display:grid; place-items:center; background:transparent;
+    transition:background .2s ease;
+  }
+  .dot::after{
+    content:''; width:11px; height:11px; border-radius:999px;
+    background:var(--d); opacity:.55; transition:opacity .2s ease, transform .2s ease;
+  }
+  .dot:hover::after{opacity:.85}
+  .dot.on{background:var(--ui-onbg)}
+  .dot.on::after{opacity:1; transform:scale(1.12)}
+
+  /* type, centred under the object */
+  .copy{
+    position:fixed;
+    left:50%; bottom:clamp(40px, 9vh, 110px);
+    transform:translateX(-50%);
+    width:min(92vw, 640px);
+    text-align:center;
+    pointer-events:none;
+  }
+  .eyebrow{
+    display:block;
+    font-size:clamp(10px, 1.15vmin, 13px);
+    font-weight:400;
+    letter-spacing:.42em;
+    text-indent:.42em;                     /* keep the block optically centred */
+    color:var(--dim);
+    margin-bottom:clamp(14px, 2.2vmin, 26px);
+  }
+  .rule{
+    width:1px; height:clamp(18px, 3.4vmin, 40px);
+    margin:0 auto clamp(14px, 2.4vmin, 28px);
+    background:linear-gradient(to bottom, var(--ui-bd), transparent);
+  }
+  h1{
+    font-size:clamp(34px, 6.4vmin, 76px);
+    font-weight:500;
+    letter-spacing:-.018em;
+    line-height:1.02;
+    color:var(--ink);
+  }
+  .desc{
+    margin:clamp(12px, 1.8vmin, 22px) auto 0;
+    max-width:36ch;
+    font-size:clamp(13px, 1.85vmin, 19px);
+    font-weight:400;
+    line-height:1.55;
+    color:var(--sub);
+  }
+
+  .hint{
+    position:fixed; left:50%; bottom:clamp(14px, 2.6vh, 30px);
+    transform:translateX(-50%);
+    font-size:clamp(9px, 1vmin, 11px);
+    letter-spacing:.26em; text-indent:.26em;
+    text-transform:uppercase;
+    color:var(--dim); opacity:.55;
+    pointer-events:none;
+    transition:opacity .7s ease;
+    white-space:nowrap;
+  }
+  .hint.gone{opacity:0}
+</style>
+</head>
+<body>
+<canvas class="art" id="art"></canvas>
+<div class="vignette"></div>
+
+<div class="ui">
+  <div class="grp" id="styleGrp">
+    <button class="chip on" data-style="outline">Outline</button>
+    <button class="chip"    data-style="solid">Solid</button>
+    <button class="chip"    data-style="wire">Wire</button>
+  </div>
+  <div class="grp" id="hueGrp">
+    <button class="dot on" data-hue="mono"   style="--d:#e9e9ea" title="Mono"></button>
+    <button class="dot"    data-hue="amber"  style="--d:#ffb347" title="Amber"></button>
+    <button class="dot"    data-hue="cyan"   style="--d:#6bdcff" title="Cyan"></button>
+    <button class="dot"    data-hue="violet" style="--d:#b39dff" title="Violet"></button>
+    <button class="dot"    data-hue="lime"   style="--d:#b8ff85" title="Lime"></button>
+  </div>
+  <div class="grp">
+    <button class="chip" id="themeBtn" data-theme="light">Light</button>
+  </div>
+</div>
+
+<div class="copy">
+  <span class="eyebrow">05 / 08</span>
+  <div class="rule"></div>
+  <h1>Avoid AI Slop</h1>
+  <p class="desc">Generating a hundred variations is free. Knowing which one to keep is the work.</p>
+</div>
+<div class="hint" id="hint">Drag a brick to throw it · drag the space to orbit · double-click to reset</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js"></script>
+<script>
+(() => {
+"use strict";
+
+/* One brick footprint is 1 world unit; the rest follows real LEGO ratios. */
+const HT  = 1.2;       /* brick height                          */
+const SR  = 0.276;     /* stud radius                           */
+const SH  = 0.147;     /* stud height                           */
+const LAM = 0.162;     /* how far light bleeds in from an edge  */
+const GAP = 0.985;     /* a hair of tolerance, like a real seam */
+
+/* ------------------------------------------------------------- structure */
+/* A mountain is a crest, not an apex.  Each ridge here is a line segment
+   carrying a height that falls from one end to the other; the ground drops
+   away from the segment at a fixed rate, faster on one flank than the other,
+   and the massif is the upper envelope of six of them.  The first segment is
+   level, which is what makes the summit a short crest instead of a chimney.
+
+   Two earlier models had to go.  A radial cone, however you shape its profile,
+   can only ever make a pyramid — the silhouette is symmetric by construction.
+   And a shallow apron at the foot reads as a plinth: the slope has to run all
+   the way into the ground for the base to terminate crisply. */
+const PEAK = 13.4;
+const FALL = [3.2, 4.2];        /* fall per cell: [gentle flank, steep flank] */
+const CRESTS = [
+  { A: [-1.50, -1.00], B: [-0.10, -0.10], hA: PEAK,        hB: PEAK        },
+  { A: [-0.10, -0.10], B: [ 2.89,  1.96], hA: PEAK,        hB: PEAK * 0.52 },
+  { A: [ 2.89,  1.96], B: [ 5.10,  3.49], hA: PEAK * 0.52, hB: 0.5         },
+  { A: [-1.50, -1.00], B: [-3.91,  1.19], hA: PEAK,        hB: 0.6         },
+  { A: [-0.40, -0.30], B: [ 1.62, -3.15], hA: PEAK * 0.92, hB: 0.6         },
+  { A: [-0.90, -0.60], B: [-2.21,  3.06], hA: PEAK * 0.95, hB: 0.6         }
+];
+
+function hash(i, j, s){
+  let v = ((i + 97) * 374761393 ^ (j + 131) * 668265263 ^ s * 2246822519) >>> 0;
+  v = Math.imul(v ^ (v >>> 13), 1274126177) >>> 0;
+  return ((v ^ (v >>> 16)) >>> 0) / 4294967296;
+}
+
+function crest(i, j, c){
+  const [ax, ay] = c.A, [bx, by] = c.B;
+  const ex = bx - ax, ey = by - ay, L2 = ex * ex + ey * ey;
+  const t  = Math.min(1, Math.max(0, ((i - ax) * ex + (j - ay) * ey) / L2));
+  const dx = i - (ax + ex * t), dy = j - (ay + ey * t);
+  const flank = FALL[(ex * dy - ey * dx) >= 0 ? 0 : 1];
+  return c.hA + (c.hB - c.hA) * t - flank * Math.hypot(dx, dy);
+}
+
+function height(i, j){
+  let h = -99;
+  for (const c of CRESTS) h = Math.max(h, crest(i, j, c));
+  if (h <= 0) return 0;
+  /* barely any noise — enough to take the machined edge off, no more.  Heavy
+     noise is what turned every earlier version into rubble. */
+  h += (hash(i, j, 1) - 0.5) * 0.18;
+  return h < 0.5 ? 0 : Math.max(1, Math.round(h));
+}
+
+const REACH = 10;
+const HGT = new Map();
+for (let i = -REACH; i <= REACH; i++)
+  for (let j = -REACH; j <= REACH; j++){
+    const h = height(i, j);
+    if (h) HGT.set(i + ',' + j, h);
+  }
+const col = (i, j) => HGT.get(i + ',' + j) || 0;
+/* single bricks stranded on the apron read as crumbs, not as a mountain */
+for (const key of [...HGT.keys()]){
+  const i = +key.slice(0, key.indexOf(',')), j = +key.slice(key.indexOf(',') + 1);
+  if (HGT.get(key) === 1 &&
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, b]) => col(i + a, j + b) >= 2).length < 2)
+    HGT.delete(key);
+}
+
+/* Accents on the summit and along the ridges.  Each is the top of its column
+   by construction, so the brick that drops in has a clear shaft. */
+const LIT_CELLS = [
+  { xz:[-4,  1], tin:0.114, dur:1.54, fall:578,  ease:3.0, tout:4.530 },
+  { xz:[-3,  0], tin:1.409, dur:3.48, fall:2978, ease:9.0, tout:4.730 },
+  { xz:[ 1, -1], tin:2.100, dur:3.70, fall:2395, ease:5.6, tout:4.930 },
+  { xz:[ 0, -4], tin:2.950, dur:2.60, fall:1740, ease:5.0, tout:5.130 },
+  { xz:[ 0,  0], always:true }                                /* the summit */
+].map(s => Object.assign({}, s, { at: [s.xz[0], s.xz[1], col(s.xz[0], s.xz[1]) - 1] }));
+
+const same  = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+const isLit = c => LIT_CELLS.some(l => same(l.at, c));
+
+/* Every column is a solid stack from the floor up.  An earlier version knocked
+   weathering notches out of the faces, but a notch leaves everything above it
+   standing on nothing — including, sometimes, the brick a lit one lands on. */
+const GHOST = [];
+HGT.forEach((h, key) => {
+  const i = +key.slice(0, key.indexOf(',')), j = +key.slice(key.indexOf(',') + 1);
+  for (let k = 0; k < h; k++)
+    if (!isLit([i, j, k])) GHOST.push([i, j, k]);
+});
+
+/* two boulders that came down off the mountain and stopped on the flat —
+   three or four read as litter, two read as scale */
+const STRAY = [[-7.4, 0.2, 0], [6.6, 0.2, 0]];
+GHOST.push(...STRAY);
+
+/* deterministic wobble, so the chaos is the same on every reload */
+function rng(seed){
+  return () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296 - 0.5;
+}
+function wobble(index, level, loose){
+  const r = rng((9781 + index * 26417) >>> 0);
+  r(); r();
+  const k = loose ? 2.4 : 0.32 + level * 0.17;
+  return {
+    dx: r() * 0.075 * k, dy: r() * 0.024 * k, dz: r() * 0.075 * k,
+    rx: r() * 0.055 * k, ry: r() * 0.17  * k, rz: r() * 0.055 * k
+  };
+}
+
+/* ------------------------------------------------------------- animation */
+const LOOP = 6.6;
+/* the lift-off keeps accelerating rather than easing to a stop, so a brick
+   always clears the frame no matter how far the viewer has zoomed out */
+const EXIT = { dur: 1.227, dist: 960 };
+const PX_TO_Y = 1 / (154.2 * 0.81650);       /* the drops were authored in px */
+
+/* ---------------------------------------------------------------- looks */
+/* Two themes x five accents x three drawing styles, all driven from
+   uniforms so a switch never rebuilds the scene. */
+const HUES = {
+  mono:   { dark:[1.00,1.00,1.00], light:[0.14,0.14,0.16] },
+  amber:  { dark:[1.00,0.73,0.36], light:[0.86,0.47,0.06] },
+  cyan:   { dark:[0.44,0.86,1.00], light:[0.04,0.54,0.78] },
+  violet: { dark:[0.74,0.63,1.00], light:[0.42,0.27,0.86] },
+  lime:   { dark:[0.74,1.00,0.55], light:[0.35,0.60,0.10] }
+};
+/* face tones as [top, underside, +/-X, +/-Z] */
+const SHADE = {
+  dark: {
+    outline: [0.086, 0.058, 0.122, 0.086],
+    solid:   [0.175, 0.072, 0.255, 0.140],
+    wire:    [0.020, 0.012, 0.028, 0.020]
+  },
+  /* on paper the tones have to run well below the background or the whole
+     pile dissolves into it — inverted from the dark theme, not mirrored */
+  light: {
+    outline: [0.905, 0.700, 0.775, 0.855],
+    solid:   [0.860, 0.545, 0.660, 0.790],
+    wire:    [0.950, 0.928, 0.937, 0.945]
+  }
+};
+const LINE = {
+  dark:  { col: 0xffffff, a: { outline: 0.50, solid: 0.0, wire: 0.72 } },
+  light: { col: 0x000000, a: { outline: 0.26, solid: 0.0, wire: 0.55 } }
+};
+const BG = { dark: 0x0b0b0c, light: 0xf1f1ef };
+const look = {
+  theme: matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark',
+  hue: 'mono',
+  style: 'outline'
+};
+
+/* ------------------------------------------------------------------ three */
+THREE.ColorManagement.legacyMode = true;     /* write sRGB values directly */
+
+const cv = document.getElementById('art');
+const hint = document.getElementById('hint');
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+renderer.outputEncoding = THREE.LinearEncoding;
+
+const scene = new THREE.Scene();
+
+const VIEW_H = 31;                           /* world units up the screen   */
+const LIFT   = 0.16;                         /* nudge the object off centre */
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
+
+/* x and z are offset so the massif — which sits off the lattice origin —
+   lands on the same centre line as the copy below it */
+const HOME_TARGET = new THREE.Vector3(-0.5, 7.2, 0.2);
+const HOME_DIR    = new THREE.Vector3(1, 1, 1).normalize();
+const DIST = 120;
+
+cam.position.copy(HOME_TARGET).addScaledVector(HOME_DIR, DIST);
+cam.up.set(0, 1, 0);
+cam.lookAt(HOME_TARGET);
+
+const controls = new THREE.OrbitControls(cam, cv);
+controls.target.copy(HOME_TARGET);
+controls.enableDamping = true;
+controls.dampingFactor = 0.075;
+controls.rotateSpeed   = 0.55;
+controls.zoomSpeed     = 0.7;
+controls.enablePan     = false;
+controls.minZoom       = 0.5;
+controls.maxZoom       = 4;
+controls.minPolarAngle = 0.45;
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.update();
+
+/* ------------------------------------------------------------------ shaders */
+const VERT = `
+  varying vec3 vPos;
+  varying vec3 vN;
+  void main(){
+    vPos = position;
+    vN   = normalize(mat3(modelMatrix) * normal);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }`;
+
+/* the four face tones, picked by the normal — one line, no lighting to
+   chase while orbiting */
+const FACET = `
+  float facet(vec3 n, vec4 s){
+    return s.x * max(n.y, 0.0) + s.y * max(-n.y, 0.0)
+         + s.z * abs(n.x)      + s.w * abs(n.z);
+  }`;
+
+const ghostMat = new THREE.ShaderMaterial({
+  uniforms: { uShade: { value: new THREE.Vector4(0.086, 0.058, 0.122, 0.086) } },
+  vertexShader: VERT,
+  fragmentShader: `
+    uniform vec4 uShade;
+    varying vec3 vPos; varying vec3 vN;
+    ${FACET}
+    void main(){
+      gl_FragColor = vec4(vec3(facet(normalize(vN), uShade)), 1.0);
+    }`,
+  polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1
+});
+
+const ghostLineMat = new THREE.LineBasicMaterial({
+  color: 0xffffff, transparent: true, opacity: 0.5
+});
+
+/* Lit brick.  In the dark themes light escapes along the *silhouette* edges —
+   the ones shared with a back-facing neighbour — which keeps the near vertical
+   corner dark; solved in object space so it survives orbiting.  On a light
+   background a glow would simply vanish, so there the same brick renders as a
+   solid saturated block with the same facet shading as its neighbours. */
+const VIEW  = { value: new THREE.Vector3(1, 1, 1).normalize() };
+const GLOW  = { value: new THREE.Color(1, 1, 1) };
+const SOLID = { value: 0 };
+const LSHADE = { value: new THREE.Vector4(1.0, 0.66, 0.82, 0.93) };
+
+function litBoxMat(){
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uHalf:   { value: new THREE.Vector3(0.5, HT / 2, 0.5) },
+      uView:   VIEW, uGlow: GLOW, uSolid: SOLID, uShade: LSHADE,
+      uLambda: { value: LAM },
+      uSil:    { value: 1.05 },
+      uTop:    { value: 0.28 },
+      uStud:   { value: SR }
+    },
+    transparent: true, depthWrite: true,
+    vertexShader: VERT,
+    fragmentShader: `
+      uniform vec3 uHalf; uniform vec3 uView; uniform vec3 uGlow;
+      uniform vec4 uShade; uniform float uSolid;
+      uniform float uLambda; uniform float uSil; uniform float uTop;
+      uniform float uStud;
+      varying vec3 vPos; varying vec3 vN;
+      ${FACET}
+      void main(){
+        vec3 n = normalize(vN);
+        if (uSolid > 0.5){
+          gl_FragColor = vec4(uGlow * facet(n, uShade), 1.0);
+          return;
+        }
+        vec3 v = normalize(uView);
+        vec3 h = uHalf;
+
+        float dSil = 1e9, dTop = 1e9;
+        if (abs(n.x) < 0.5) dSil = min(dSil, v.x > 0.0 ? h.x + vPos.x : h.x - vPos.x);
+        if (abs(n.z) < 0.5) dSil = min(dSil, v.z > 0.0 ? h.z + vPos.z : h.z - vPos.z);
+        if (abs(n.y) < 0.5){
+          dSil = min(dSil, v.y > 0.0 ? h.y + vPos.y : h.y - vPos.y);
+          dTop = v.y > 0.0 ? h.y - vPos.y : h.y + vPos.y;
+        }
+
+        float g = max(uSil * exp(-max(dSil, 0.0) / uLambda),
+                      uTop * exp(-max(dTop, 0.0) / uLambda));
+        float base = 0.463 + 0.510 * max(n.y, 0.0) - 0.100 * max(-n.y, 0.0);
+        float c = min(base + (1.0 - base) * min(g, 1.0), 1.0);
+
+        if (n.y > 0.5){                       /* contact shade round the stud */
+          float ao = exp(-max(length(vPos.xz) - uStud, 0.0) / 0.34);
+          c -= 0.20 * ao;
+        }
+        gl_FragColor = vec4(mix(uGlow * c, vec3(1.0), pow(c, 6.0)), 1.0);
+      }`
+  });
+}
+
+function litStudMat(){
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uR: { value: SR }, uH: { value: SH / 2 }, uLambda: { value: LAM },
+      uGlow: GLOW, uSolid: SOLID, uShade: LSHADE
+    },
+    transparent: true, depthWrite: true,
+    vertexShader: VERT,
+    fragmentShader: `
+      uniform float uR; uniform float uH; uniform float uLambda;
+      uniform vec3 uGlow; uniform vec4 uShade; uniform float uSolid;
+      varying vec3 vPos; varying vec3 vN;
+      ${FACET}
+      void main(){
+        vec3 n = normalize(vN);
+        if (uSolid > 0.5){
+          gl_FragColor = vec4(uGlow * facet(n, uShade) * 0.94, 1.0);
+          return;
+        }
+        float d = max(uR - length(vPos.xz), uH - abs(vPos.y));
+        float g = exp(-max(d, 0.0) / uLambda);
+        float base = 0.800 + 0.070 * max(n.y, 0.0);
+        float c = min(base + (1.0 - base) * g, 1.0);
+        gl_FragColor = vec4(mix(uGlow * c, vec3(1.0), pow(c, 6.0)), 1.0);
+      }`
+  });
+}
+
+/* --------------------------------------------------------------- bloom */
+function haloTexture(){
+  const S = 256, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+  for (let n = 0; n <= 20; n++){
+    const t = n / 20, r = t * 4;
+    g.addColorStop(t, `rgba(255,255,255,${Math.exp(-r*r/2).toFixed(4)})`);
+  }
+  x.fillStyle = g; x.fillRect(0, 0, S, S);
+  return new THREE.CanvasTexture(c);
+}
+const HALO_SIGMA = 0.74;
+const haloTex = haloTexture();
+
+/* ------------------------------------------------------------- geometry */
+const boxGeo   = new THREE.BoxGeometry(1, HT, 1);
+const edgeGeo  = new THREE.EdgesGeometry(boxGeo, 1);
+const studGeo  = new THREE.CylinderGeometry(SR, SR, SH, 32);
+const studEdge = new THREE.EdgesGeometry(studGeo, 25);
+
+function bakeMerge(parts){
+  const geos = parts.map(({ geo, m }) => {
+    const g = (geo.index ? geo.toNonIndexed() : geo.clone());
+    g.applyMatrix4(m);
+    return g;
+  });
+  const total = geos.reduce((n, g) => n + g.attributes.position.count, 0);
+  const pos = new Float32Array(total * 3);
+  const hasN = !!geos[0].attributes.normal;
+  const nor = hasN ? new Float32Array(total * 3) : null;
+  let o = 0;
+  for (const g of geos){
+    pos.set(g.attributes.position.array, o * 3);
+    if (hasN) nor.set(g.attributes.normal.array, o * 3);
+    o += g.attributes.position.count;
+    g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  if (hasN) out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  return out;
+}
+
+/* a dark brick is body and stud welded into one buffer; the lit brick keeps
+   its stud separate because that surface has its own shader */
+const STUD_UP = new THREE.Matrix4().makeTranslation(0, HT / 2 + SH / 2, 0);
+const BRICK_SOLID = bakeMerge([
+  { geo: boxGeo,  m: new THREE.Matrix4() },
+  { geo: studGeo, m: STUD_UP }
+]);
+const BRICK_WIRE = bakeMerge([
+  { geo: edgeGeo,  m: new THREE.Matrix4() },
+  { geo: studEdge, m: STUD_UP }
+]);
+
+/* ------------------------------------------------------ settle the pile */
+/* Each brick is a box, so its world bounds are the rotated half-extents
+   projected onto each axis.  Anything caught overlapping straightens up a
+   little and loose bricks slide further out, until nothing intersects.
+   Pieces that were never in anyone's way keep the whole wobble they were
+   given — so the crowded middle sits square while the rim stays askew. */
+const CLEAR = 0.003;
+const _m = new THREE.Matrix4(), _e = new THREE.Euler();
+function bounds(it){
+  _m.makeRotationFromEuler(_e.set(it.w.rx, it.w.ry, it.w.rz));
+  const e = _m.elements, h = [0.5 * GAP, HT / 2 * GAP, 0.5 * GAP];
+  const c = [it.cell[0] + it.w.dx,
+             it.cell[2] * HT - HT / 2 + it.w.dy,
+             it.cell[1] + it.w.dz];
+  const b = { min: [0, 0, 0], max: [0, 0, 0] };
+  for (let a = 0; a < 3; a++){
+    const x = Math.abs(e[a]) * h[0] + Math.abs(e[4 + a]) * h[1] + Math.abs(e[8 + a]) * h[2];
+    b.min[a] = c[a] - x; b.max[a] = c[a] + x;
+  }
+  return b;
+}
+const clash = (a, b) =>
+  a.min[0] < b.max[0] - CLEAR && a.max[0] > b.min[0] + CLEAR &&
+  a.min[1] < b.max[1] - CLEAR && a.max[1] > b.min[1] + CLEAR &&
+  a.min[2] < b.max[2] - CLEAR && a.max[2] > b.min[2] + CLEAR;
+
+const pieces = [];
+GHOST.forEach((cell, n) => pieces.push({
+  cell: cell.slice(), w: wobble(n, cell[2], n >= GHOST.length - STRAY.length),
+  stray: n >= GHOST.length - STRAY.length
+}));
+LIT_CELLS.forEach((spec, n) => pieces.push({
+  cell: spec.at.slice(), w: wobble(500 + n, spec.at[2], false), lit: n
+}));
+
+for (let pass = 0; pass < 60; pass++){
+  const box = pieces.map(bounds);
+  let hit = false;
+  for (let a = 0; a < pieces.length; a++)
+    for (let b = a + 1; b < pieces.length; b++){
+      if (!clash(box[a], box[b])) continue;
+      hit = true;
+      for (const it of [pieces[a], pieces[b]]){
+        if (it.stray){
+          const d = Math.hypot(it.cell[0], it.cell[1]) || 1;
+          it.cell[0] += it.cell[0] / d * 0.14;
+          it.cell[1] += it.cell[1] / d * 0.14;
+        } else {
+          for (const k of ['dx', 'dy', 'dz', 'rx', 'ry', 'rz']) it.w[k] *= 0.72;
+        }
+      }
+    }
+  if (!hit) break;
+}
+
+/* Nothing may start the scene hanging.  The pass above only guarantees that
+   no two bricks intersect — it does not put anything in *contact*, so a brick
+   can sit a hair above its support and drop the instant physics takes it,
+   which is exactly what the lit ones do now.  So walk the pile bottom-up and
+   lower each brick until it meets the highest thing under it, or the floor.
+   (Running the physics world forward at build time does the same job, but it
+   costs 1.5 s of blocking script and lets the whole massif slump out of the
+   shape it was authored in.) */
+{
+  const box = pieces.map(bounds);
+  const order = pieces.map((_, n) => n)
+                      .sort((a, b) => box[a].min[1] - box[b].min[1]);
+  for (const n of order){
+    const b = box[n];
+    let rest = -HT;                                  /* the floor plane */
+    for (const m of order){
+      const o = box[m];
+      if (m === n || o.max[1] > b.min[1] + CLEAR) continue;   /* not below */
+      if (o.max[0] <= b.min[0] + CLEAR || o.min[0] >= b.max[0] - CLEAR) continue;
+      if (o.max[2] <= b.min[2] + CLEAR || o.min[2] >= b.max[2] - CLEAR) continue;
+      if (o.max[1] > rest) rest = o.max[1];
+    }
+    const drop = b.min[1] - rest;
+    if (drop <= 0) continue;
+    pieces[n].w.dy -= drop;
+    b.min[1] -= drop; b.max[1] -= drop;
+  }
+}
+
+function homePose(it){
+  return {
+    p: new THREE.Vector3(it.cell[0] + it.w.dx,
+                         it.cell[2] * HT - HT / 2 + it.w.dy,
+                         it.cell[1] + it.w.dz),
+    q: new THREE.Quaternion().setFromEuler(new THREE.Euler(it.w.rx, it.w.ry, it.w.rz))
+  };
+}
+
+/* ------------------------------------------------------------- physics */
+const world = new CANNON.World();
+world.gravity.set(0, -14, 0);
+world.broadphase = new CANNON.NaiveBroadphase();
+world.solver.iterations = 12;
+world.allowSleep = true;
+
+const brickMat = new CANNON.Material('brick');
+world.addContactMaterial(new CANNON.ContactMaterial(brickMat, brickMat, {
+  friction: 0.5, restitution: 0.06
+}));
+
+const floor = new CANNON.Body({ mass: 0, material: brickMat, shape: new CANNON.Plane() });
+floor.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+floor.position.y = -HT;                       /* the plane the base sits on */
+world.addBody(floor);
+
+const halfBox = new CANNON.Vec3(0.5 * GAP, HT / 2 * GAP, 0.5 * GAP);
+
+function makeBody(pose, kinematic){
+  const b = new CANNON.Body({
+    mass: kinematic ? 0 : 1.1,
+    material: brickMat,
+    shape: new CANNON.Box(halfBox),
+    linearDamping: 0.04,
+    angularDamping: 0.22
+  });
+  if (kinematic) b.type = CANNON.Body.KINEMATIC;
+  b.position.set(pose.p.x, pose.p.y, pose.p.z);
+  b.quaternion.set(pose.q.x, pose.q.y, pose.q.z, pose.q.w);
+  b.sleepSpeedLimit = 0.14;
+  b.sleepTimeLimit  = 0.4;
+  world.addBody(b);
+  if (!kinematic) b.sleep();                  /* asleep, so the pile holds its pose */
+  return b;
+}
+
+/* ---------------------------------------------------------------- build */
+const bricks = [];        /* everything you can grab */
+const pickable = [];
+const wires = [];
+
+for (const it of pieces){
+  if (it.lit !== undefined) continue;
+  const home = homePose(it);
+  const grp  = new THREE.Group();
+  const mesh = new THREE.Mesh(BRICK_SOLID, ghostMat);
+  const wire = new THREE.LineSegments(BRICK_WIRE, ghostLineMat);
+  grp.add(mesh, wire);
+  grp.scale.setScalar(GAP);
+  grp.position.copy(home.p);
+  grp.quaternion.copy(home.q);
+  grp.traverse(o => { o.renderOrder = 0; });
+  scene.add(grp);
+  const rec = { grp, home, body: makeBody(home, false) };
+  bricks.push(rec);
+  wires.push(wire);
+  mesh.userData.brick = rec;
+  pickable.push(mesh);
+}
+
+const lits = LIT_CELLS.map((spec, n) => {
+  const it   = pieces.find(q => q.lit === n);
+  const home = homePose(it);
+  const grp  = new THREE.Group();
+  /* plain box here — BRICK_SOLID's welded stud would z-fight this one */
+  const box  = new THREE.Mesh(boxGeo, litBoxMat());
+  const stud = new THREE.Mesh(studGeo, litStudMat());
+  stud.position.y = HT / 2 + SH / 2;
+  grp.add(box, stud);
+  grp.traverse(o => { o.renderOrder = 2; });
+  grp.scale.setScalar(GAP);
+  grp.position.copy(home.p);
+  grp.quaternion.copy(home.q);
+
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: haloTex, color: 0xffffff, transparent: true,
+    blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false,
+    opacity: 0.21
+  }));
+  halo.scale.setScalar(HALO_SIGMA * 8);
+  halo.renderOrder = 1;
+  scene.add(halo, grp);
+  grp.visible = halo.visible = false;
+
+  /* dynamic like everything else — the script only borrows it while it is
+     actually flying, see `driven` in the loop */
+  const rec = { spec, grp, halo, home, baseY: home.p.y, fired: false, pulse: -9,
+                loose: false, driven: false, seat: new THREE.Vector3(),
+                body: makeBody(home, false) };
+  bricks.push(rec);
+  box.userData.brick = rec;
+  pickable.push(box);
+  return rec;
+});
+
+
+/* ------------------------------------------------------------ particles */
+const PER   = 40;                              /* sparks per impact */
+const GRAV  = 6.4;
+const pN    = LIT_CELLS.length * PER;
+const pPos  = new Float32Array(pN * 3);
+const pVel  = new Float32Array(pN * 3);
+const pAge  = new Float32Array(pN).fill(-1);
+const pSeed = new Float32Array(pN);
+{
+  const r = rng(20260811);
+  for (let n = 0; n < pN; n++){
+    const i = n % PER;
+    const a  = (i / PER) * Math.PI * 2 + r() * 0.5;
+    const sp = 1.5 + (r() + 0.5) * 2.1;
+    pVel[n * 3]     = Math.cos(a) * sp;
+    pVel[n * 3 + 1] = 0.7 + (r() + 0.5) * 2.2;
+    pVel[n * 3 + 2] = Math.sin(a) * sp;
+    pSeed[n] = r() + 0.5;
+  }
+}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('aVel',     new THREE.BufferAttribute(pVel, 3));
+pGeo.setAttribute('aBirth',   new THREE.BufferAttribute(pAge, 1));
+pGeo.setAttribute('aSeed',    new THREE.BufferAttribute(pSeed, 1));
+pGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1, 0), 60);
+
+const pMat = new THREE.ShaderMaterial({
+  uniforms: { uTime: { value: 0 }, uPx: { value: 100 }, uG: { value: GRAV },
+              uCol: { value: new THREE.Color(1, 1, 1) }, uA: { value: 1 } },
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  vertexShader: `
+    attribute vec3 aVel; attribute float aBirth; attribute float aSeed;
+    uniform float uTime; uniform float uPx; uniform float uG;
+    varying float vA;
+    void main(){
+      float life = 0.45 + 0.45 * aSeed;
+      float age  = uTime - aBirth;
+      float k    = age / life;
+      if (aBirth < 0.0 || k < 0.0 || k > 1.0){
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        gl_PointSize = 0.0; vA = 0.0; return;
+      }
+      vec3 p = position + aVel * age - vec3(0.0, 0.5 * uG * age * age, 0.0);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      float fade = 1.0 - k;
+      vA = pow(fade, 1.4);
+      gl_PointSize = max(uPx * (0.055 + 0.075 * aSeed) * (0.3 + 0.7 * fade), 1.5);
+    }`,
+  fragmentShader: `
+    uniform vec3 uCol; uniform float uA;
+    varying float vA;
+    void main(){
+      float r = length(gl_PointCoord - 0.5) * 2.0;
+      float a = exp(-r * r * 3.4) * vA * uA;
+      if (a < 0.004) discard;
+      gl_FragColor = vec4(uCol, a);
+    }`
+});
+const sparks = new THREE.Points(pGeo, pMat);
+sparks.renderOrder = 3;
+scene.add(sparks);
+
+function burst(slot, x, y, z, now){
+  const a = slot * PER;
+  for (let n = a; n < a + PER; n++){
+    const vx = pVel[n * 3], vz = pVel[n * 3 + 2];
+    const r  = (0.5 * GAP + 0.03) / Math.max(0.001, Math.hypot(vx, vz));
+    pPos[n * 3]     = x + vx * r;
+    pPos[n * 3 + 1] = y + 0.03;
+    pPos[n * 3 + 2] = z + vz * r;
+    pAge[n] = now;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  pGeo.attributes.aBirth.needsUpdate   = true;
+}
+
+/* -------------------------------------------------------- apply a look */
+function applyLook(){
+  const th = look.theme, st = look.style;
+  document.documentElement.dataset.theme = th;
+
+  renderer.setClearColor(BG[th], 1);
+  ghostMat.uniforms.uShade.value.fromArray(SHADE[th][st]);
+
+  ghostLineMat.color.setHex(LINE[th].col);
+  ghostLineMat.opacity = LINE[th].a[st];
+  const showWire = ghostLineMat.opacity > 0;
+  for (const w of wires) w.visible = showWire;
+
+  const glow = HUES[look.hue][th];
+  GLOW.value.setRGB(glow[0], glow[1], glow[2]);
+  SOLID.value = th === 'light' ? 1 : 0;
+
+  for (const L of lits){
+    const m = L.halo.material;
+    if (th === 'light'){
+      m.blending = THREE.NormalBlending;
+      m.opacity  = 0.12;
+      m.color.setRGB(glow[0], glow[1], glow[2]);
+    } else {
+      m.blending = THREE.AdditiveBlending;
+      m.opacity  = 0.21;
+      m.color.setRGB(1, 1, 1);
+    }
+    m.needsUpdate = true;
+  }
+
+  if (th === 'light'){
+    pMat.blending = THREE.NormalBlending;
+    pMat.uniforms.uCol.value.setRGB(glow[0], glow[1], glow[2]);
+    pMat.uniforms.uA.value = 0.85;
+  } else {
+    pMat.blending = THREE.AdditiveBlending;
+    pMat.uniforms.uCol.value.setRGB(1, 1, 1);
+    pMat.uniforms.uA.value = 1;
+  }
+  pMat.needsUpdate = true;
+
+  document.querySelectorAll('[data-style]').forEach(b =>
+    b.classList.toggle('on', b.dataset.style === st));
+  document.querySelectorAll('[data-hue]').forEach(b => {
+    b.classList.toggle('on', b.dataset.hue === look.hue);
+    const c = HUES[b.dataset.hue][th];        /* the swatch is the real accent */
+    b.style.setProperty('--d', `rgb(${c.map(v => Math.round(v * 255)).join(',')})`);
+  });
+  const tb = document.getElementById('themeBtn');
+  tb.textContent = th === 'dark' ? 'Light' : 'Dark';
+  tb.dataset.theme = th === 'dark' ? 'light' : 'dark';
+}
+
+document.getElementById('styleGrp').addEventListener('click', e => {
+  const b = e.target.closest('[data-style]');
+  if (b){ look.style = b.dataset.style; applyLook(); }
+});
+document.getElementById('hueGrp').addEventListener('click', e => {
+  const b = e.target.closest('[data-hue]');
+  if (b){ look.hue = b.dataset.hue; applyLook(); }
+});
+document.getElementById('themeBtn').addEventListener('click', e => {
+  look.theme = e.currentTarget.dataset.theme;
+  applyLook();
+});
+
+/* ------------------------------------------------------------ animation */
+const IMPACT = 0.05;                 /* world units above the seat = "landed" */
+
+function litOffset(spec, t){
+  if (spec.always) return { on: true, dy: 0 };
+  if (t < spec.tin) return { on: false, dy: 0 };
+  if (t < spec.tout){
+    const u = Math.min(1, (t - spec.tin) / spec.dur);
+    return { on: true, dy: spec.fall * Math.pow(1 - u, spec.ease) };
+  }
+  const v = Math.max(0, (t - spec.tout) / EXIT.dur);
+  return { on: true, dy: EXIT.dist * 16 * Math.pow(v, 5) };
+}
+
+/* --------------------------------------------------------------- input */
+/* Grab a brick and it comes alive: the body turns dynamic, a velocity spring
+   drags it to the pointer, and letting go leaves whatever speed it had — so
+   it flies, and whatever it hits wakes up and gets knocked about.  Drag the
+   empty space instead and you orbit, exactly as before. */
+const ray   = new THREE.Raycaster();
+const ptr   = new THREE.Vector2();
+const plane = new THREE.Plane();
+const hitPt = new THREE.Vector3();
+const grabOffset = new THREE.Vector3();
+const camDir = new THREE.Vector3();
+let held = null;
+
+function toNDC(ev){
+  const r = cv.getBoundingClientRect();
+  ptr.set((ev.clientX - r.left) / r.width * 2 - 1,
+          -((ev.clientY - r.top) / r.height * 2 - 1));
+}
+
+function wakeAround(p, radius){
+  for (const b of bricks){
+    if (b.body.type === CANNON.Body.KINEMATIC) continue;
+    if (Math.hypot(b.body.position.x - p.x,
+                   b.body.position.y - p.y,
+                   b.body.position.z - p.z) < radius) b.body.wakeUp();
+  }
+}
+
+/* Hand a lit brick to the script (kinematic, flown along the loop) or back to
+   the physics world (dynamic, standing on whatever is under it). */
+function drive(rec, scripted){
+  const b = rec.body;
+  if (scripted === rec.driven) return;
+  rec.driven = scripted;
+  if (scripted){
+    b.type = CANNON.Body.KINEMATIC;
+    b.mass = 0;
+    b.updateMassProperties();
+    /* lift from wherever it actually came to rest, not from the authored cell */
+    rec.seat.set(b.position.x, b.position.y, b.position.z);
+    b.wakeUp();                        /* kinematic bodies must not be asleep */
+  } else {
+    b.type = CANNON.Body.DYNAMIC;
+    b.mass = 1.1;
+    b.updateMassProperties();
+    b.velocity.set(0, 0, 0);
+    b.angularVelocity.set(0, 0, 0);
+    b.wakeUp();
+  }
+}
+
+function goDynamic(rec){
+  const b = rec.body;
+  if (b.type === CANNON.Body.KINEMATIC){
+    b.type = CANNON.Body.DYNAMIC;
+    b.mass = 1.1;
+    b.updateMassProperties();
+    b.velocity.set(0, 0, 0);
+  }
+  if (rec.spec){
+    rec.loose = true;                          /* it leaves the scripted loop */
+    rec.driven = false;
+    rec.grp.visible = rec.halo.visible = true;
+  }
+  b.wakeUp();
+}
+
+cv.addEventListener('pointerdown', ev => {
+  if (ev.button !== 0) return;
+  toNDC(ev);
+  ray.setFromCamera(ptr, cam);
+  const hit = ray.intersectObjects(pickable, false)[0];
+  if (!hit) return;                            /* empty space → orbit */
+
+  const rec = hit.object.userData.brick;
+  goDynamic(rec);
+  wakeAround(rec.body.position, 3.2);
+
+  controls.enabled = false;
+  cv.classList.add('holding');
+  cv.setPointerCapture(ev.pointerId);
+
+  plane.setFromNormalAndCoplanarPoint(cam.getWorldDirection(camDir).negate(), hit.point);
+  grabOffset.copy(rec.grp.position).sub(hit.point);
+  hitPt.copy(rec.grp.position);
+  held = rec;
+  hint.classList.add('gone');
+});
+
+addEventListener('pointermove', ev => {
+  if (!held) return;
+  toNDC(ev);
+  ray.setFromCamera(ptr, cam);
+  if (ray.ray.intersectPlane(plane, hitPt)) hitPt.add(grabOffset);
+});
+
+function release(ev){
+  if (!held) return;
+  held = null;
+  controls.enabled = true;
+  cv.classList.remove('holding');
+  if (ev && ev.pointerId !== undefined && cv.hasPointerCapture(ev.pointerId))
+    cv.releasePointerCapture(ev.pointerId);
+}
+addEventListener('pointerup', release);
+addEventListener('pointercancel', release);
+
+/* ----------------------------------------------------------------- loop */
+const still = matchMedia('(prefers-reduced-motion: reduce)');
+const ndc = new THREE.Vector3();
+let tOffset = 0;
+
+function layout(){
+  const w = innerWidth, h = innerHeight;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false);
+  const aspect = w / h;
+  const vh = Math.max(VIEW_H, 11.5 / aspect);  /* keep it in frame when tall */
+  const shift = vh * LIFT;
+  cam.top    =  vh / 2 - shift;
+  cam.bottom = -vh / 2 - shift;
+  cam.left   = -vh * aspect / 2;
+  cam.right  =  vh * aspect / 2;
+  cam.updateProjectionMatrix();
+}
+
+let flight = null;
+function flyStep(){
+  if (!flight) return;
+  const u = Math.min(1, (performance.now() - flight.t0) / 700);
+  const e = 1 - Math.pow(1 - u, 4);
+  cam.position.lerpVectors(flight.fromPos, flight.toPos, e);
+  controls.target.lerpVectors(flight.fromTgt, HOME_TARGET, e);
+  cam.zoom = flight.fromZoom + (1 - flight.fromZoom) * e;
+  cam.updateProjectionMatrix();
+  if (u >= 1) flight = null;
+}
+
+function resetPile(){
+  release();
+  for (const b of bricks){
+    b.body.velocity.set(0, 0, 0);
+    b.body.angularVelocity.set(0, 0, 0);
+    b.body.position.set(b.home.p.x, b.home.p.y, b.home.p.z);
+    b.body.quaternion.set(b.home.q.x, b.home.q.y, b.home.q.z, b.home.q.w);
+    b.grp.position.copy(b.home.p);
+    b.grp.quaternion.copy(b.home.q);
+    if (b.spec){                                /* back into the loop */
+      b.loose = false; b.fired = false; b.pulse = -9;
+      b.driven = true;                          /* re-armed; the loop decides */
+      b.body.type = CANNON.Body.KINEMATIC;
+      b.body.mass = 0;
+      b.body.updateMassProperties();
+      b.body.wakeUp();                          /* kinematic: the script moves it */
+      b.seat.copy(b.home.p);
+    } else {
+      b.body.sleep();
+    }
+  }
+  pAge.fill(-1);
+  pGeo.attributes.aBirth.needsUpdate = true;
+  tOffset = performance.now() / 1000;
+}
+
+let last = 0;
+function tick(now){
+  const s  = now / 1000;
+  const dt = last ? Math.min(0.05, s - last) : 1 / 60;
+  last = s;
+  const t = still.matches ? 4.0 : (s - tOffset) % LOOP;
+
+  pMat.uniforms.uTime.value = s;
+  pMat.uniforms.uPx.value =
+    renderer.domElement.height * cam.zoom / (cam.top - cam.bottom);
+
+  /* the held brick is dragged by its velocity, so throwing comes for free */
+  if (held){
+    const b = held.body;
+    b.wakeUp();
+    b.velocity.set((hitPt.x - b.position.x) * 16,
+                   (hitPt.y - b.position.y) * 16,
+                   (hitPt.z - b.position.z) * 16);
+    b.angularVelocity.scale(0.85, b.angularVelocity);
+  }
+
+  /* scripted bricks nobody has grabbed keep flying their loop */
+  lits.forEach((L, n) => {
+    if (L.loose) return;
+    const st = litOffset(L.spec, t);
+    if (!st.on){
+      drive(L, true);                          /* parked above, out of the way */
+      L.grp.visible = L.halo.visible = false; L.fired = false; return;
+    }
+
+    const dy = st.dy * PX_TO_Y;
+    if (dy < IMPACT){
+      /* it has landed: hand it back to gravity, and it stays that way until
+         the exit lifts it again.  From here it rests on whatever is under it
+         and anything thrown at it knocks it about. */
+      drive(L, false);
+    } else {
+      drive(L, true);
+      const y = L.seat.y + dy;
+      L.body.velocity.set(0, (y - L.body.position.y) / Math.max(dt, 1e-4), 0);
+      L.body.position.set(L.seat.x, y, L.seat.z);
+      L.grp.position.set(L.seat.x, y, L.seat.z);
+      L.halo.position.copy(L.grp.position);
+    }
+
+    if (!L.spec.always && !L.fired && dy < IMPACT){
+      L.fired = true;
+      if (!still.matches){
+        burst(n, L.grp.position.x, L.grp.position.y - HT / 2, L.grp.position.z, s);
+        L.pulse = s;
+        wakeAround(L.body.position, 1.9);      /* the landing jostles the pile */
+      }
+    }
+
+    let hs = HALO_SIGMA * 8;
+    const k = (s - L.pulse) / 0.34;
+    if (k >= 0 && k < 1) hs *= 1 + 0.5 * (1 - k) * (1 - k);
+    L.halo.scale.setScalar(hs);
+
+    ndc.copy(L.grp.position).project(cam);
+    L.grp.visible = L.halo.visible = ndc.y < 1.4;
+  });
+
+  world.step(1 / 60, dt, 3);
+
+  /* physics owns every brick that isn't being driven by the script */
+  for (const b of bricks){
+    if (b.body.type === CANNON.Body.KINEMATIC) continue;
+    const p = b.body.position, q = b.body.quaternion;
+    b.grp.position.set(p.x, p.y, p.z);
+    b.grp.quaternion.set(q.x, q.y, q.z, q.w);
+    if (b.halo) b.halo.position.copy(b.grp.position);
+  }
+
+  flyStep();
+  controls.update();
+  VIEW.value.subVectors(cam.position, controls.target).normalize();
+  renderer.render(scene, cam);
+  requestAnimationFrame(tick);
+}
+
+controls.addEventListener('start', () => hint.classList.add('gone'));
+
+cv.addEventListener('dblclick', () => {
+  resetPile();
+  flight = {
+    t0: performance.now(),
+    fromPos: cam.position.clone(),
+    fromTgt: controls.target.clone(),
+    fromZoom: cam.zoom,
+    toPos: HOME_TARGET.clone().addScaledVector(HOME_DIR, DIST)
+  };
+});
+
+addEventListener('resize', layout);
+applyLook();
+layout();
+tOffset = performance.now() / 1000;
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

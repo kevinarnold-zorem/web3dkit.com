@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WP9FS3ECK"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-5WP9FS3ECK');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const palettes = new Set(["mono", "sepia", "azure", "moss", "mauve"]);
+        try {
+          const savedTheme = localStorage.getItem("threeui-theme");
+          const lightPalette = localStorage.getItem("threeui-palette-light");
+          const darkPalette = localStorage.getItem("threeui-palette-dark");
+          const mode = savedTheme === "light" || savedTheme === "system" ? savedTheme : "dark";
+          if (mode === "system") root.removeAttribute("data-theme");
+          else root.dataset.theme = mode;
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const scheme = mode === "system" ? (prefersDark ? "dark" : "light") : mode;
+          root.dataset.scheme = scheme;
+          const palette = scheme === "dark" ? darkPalette : lightPalette;
+          root.dataset.palette = palettes.has(palette) ? palette : "mono";
+        } catch {
+          root.dataset.theme = "dark";
+          root.dataset.scheme = "dark";
+          root.dataset.palette = "mono";
+        }
+      })();
+    </script>
+    <meta name="description" content="Browse motion design components for interactive websites, including cinematic transitions, responsive animation, and production-ready source." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ThreeUI" />
+    <meta property="og:title" content="Web Motion Design Components | ThreeUI" />
+    <meta property="og:description" content="Browse motion design components for interactive websites, including cinematic transitions, responsive animation, and production-ready source." />
+    <meta property="og:url" content="https://threeui.com/motion-design" />
+    <meta property="og:image" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/threeui-media/thumbnails/threeui-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta property="og:image:secure_url" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/threeui-media/thumbnails/threeui-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:image:alt" content="Web Motion Design Components preview" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Web Motion Design Components | ThreeUI" />
+    <meta name="twitter:description" content="Browse motion design components for interactive websites, including cinematic transitions, responsive animation, and production-ready source." />
+    <meta name="twitter:image" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/threeui-media/thumbnails/threeui-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta name="twitter:image:alt" content="Web Motion Design Components preview" />
+    <link rel="canonical" href="https://threeui.com/motion-design" />
+    <link rel="icon" href="/threeui-mark.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Web Motion Design Components | ThreeUI</title>
+    <script type="module" crossorigin src="/assets/index-fOQwe-l-.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-x9bNS8sK.css">
+      <script id="threeui-structured-data" type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"Web motion design components","description":"Browse motion design components for interactive websites, including cinematic transitions, responsive animation, and production-ready source.","url":"https://threeui.com/motion-design","hasPart":[{"@type":"TechArticle","name":"Installation","url":"https://threeui.com/installation"},{"@type":"TechArticle","name":"MCP","url":"https://threeui.com/mcp"},{"@type":"WebPage","name":"Pricing","url":"https://threeui.com/pricing"},{"@type":"WebPage","name":"Sponsorship","url":"https://threeui.com/sponsorship"}],"mainEntity":{"@type":"ItemList","numberOfItems":16,"itemListElement":[{"@type":"ListItem","position":1,"name":"React Orbits — Full Film","url":"https://threeui.com/motion-design/react-orbits/film"},{"@type":"ListItem","position":2,"name":"React Orbits — Cutdown","url":"https://threeui.com/motion-design/react-orbits/cutdown"},{"@type":"ListItem","position":3,"name":"Mechanical Wallet Motion — Cascade","url":"https://threeui.com/motion-design/keyboard-cascade/cascade"},{"@type":"ListItem","position":4,"name":"Mechanical Wallet Motion — Slots","url":"https://threeui.com/motion-design/keyboard-cascade/slots"},{"@type":"ListItem","position":5,"name":"Cathode Session — Session","url":"https://threeui.com/motion-design/cathode-session/session"},{"@type":"ListItem","position":6,"name":"Cathode Session — Angles","url":"https://threeui.com/motion-design/cathode-session/angles"},{"@type":"ListItem","position":7,"name":"Cathode Session — Charts","url":"https://threeui.com/motion-design/cathode-session/charts"},{"@type":"ListItem","position":8,"name":"Emberline Signal","url":"https://threeui.com/motion-design/emberline-signal"},{"@type":"ListItem","position":9,"name":"Iridis Spectrum","url":"https://threeui.com/motion-design/iridis-spectrum"},{"@type":"ListItem","position":10,"name":"Glitter Pilot","url":"https://threeui.com/motion-design/glitter-pilot"},{"@type":"ListItem","position":11,"name":"Liquid Minutes","url":"https://threeui.com/motion-design/liquid-minutes"},{"@type":"ListItem","position":12,"name":"Retro Shift Gate","url":"https://threeui.com/motion-design/retro-shift-gate"},{"@type":"ListItem","position":13,"name":"Understory Sting — Understory Sting","url":"https://threeui.com/motion-design/understory-motion/understory"},{"@type":"ListItem","position":14,"name":"Sylva Sting — Sylva Sting","url":"https://threeui.com/motion-design/sylva-motion/sylva"},{"@type":"ListItem","position":15,"name":"Sylva Sting — Sylva Survey","url":"https://threeui.com/motion-design/sylva-motion/sylva-sequence"},{"@type":"ListItem","position":16,"name":"Meng Timeline","url":"https://threeui.com/motion-design/meng-timeline"}]}}</script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

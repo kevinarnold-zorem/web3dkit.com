@@ -1,0 +1,2176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Trochil — field intelligence for the systems that never hold still. A procedural halftone hummingbird rendered with three.js in a single HTML file.">
+<title>Trochil — Field intelligence for the systems that never hold still</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><rect width="20" height="20" fill="%23000"/><g fill="%23fff"><circle cx="2" cy="2" r="2.60"/><circle cx="6" cy="2" r="2.13"/><circle cx="10" cy="2" r="1.66"/><circle cx="14" cy="2" r="1.19"/><circle cx="18" cy="2" r="0.72"/><circle cx="2" cy="6" r="2.34"/><circle cx="6" cy="6" r="1.87"/><circle cx="10" cy="6" r="1.40"/><circle cx="14" cy="6" r="0.93"/><circle cx="18" cy="6" r="0.46"/><circle cx="2" cy="10" r="2.08"/><circle cx="6" cy="10" r="1.61"/><circle cx="10" cy="10" r="1.14"/><circle cx="14" cy="10" r="0.67"/><circle cx="18" cy="10" r="0.28"/><circle cx="2" cy="14" r="1.82"/><circle cx="6" cy="14" r="1.35"/><circle cx="10" cy="14" r="0.88"/><circle cx="14" cy="14" r="0.41"/><circle cx="18" cy="14" r="0.28"/><circle cx="2" cy="18" r="1.57"/><circle cx="6" cy="18" r="1.10"/><circle cx="10" cy="18" r="0.63"/><circle cx="14" cy="18" r="0.28"/><circle cx="18" cy="18" r="0.28"/></g></svg>'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Instrument+Serif&family=Newsreader:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ------------------------------------------------------------------
+   1rem === 1 design pixel in a 1440 x 840 reference frame.
+   Every measurement below is taken from that frame, and the scale
+   follows whichever axis runs out first: a narrow window shrinks the
+   composition as it always did, and a short one now shrinks it too
+   rather than cropping the band off the bottom.
+------------------------------------------------------------------ */
+html{ font-size: clamp(0.80px, min(100vw / 1440, 100vh  / 840), 1.28px); }
+html{ font-size: clamp(0.80px, min(100vw / 1440, 100svh / 840), 1.28px); }
+
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+
+:root{
+  --cw:     924rem;                                  /* container width */
+  --edge-l: calc((100vw - var(--cw)) / 2);           /* left rule       */
+  --edge-r: calc(100vw - var(--edge-l));             /* right rule      */
+  --mid-x:  calc(var(--edge-l) + 487.3rem);          /* band divider    */
+  --nav-h:  64rem;
+  --band-h: 247.5rem;          /* below the section rule         */
+  --rule:   rgba(255,255,255,.105);
+  --ink:    #fff;
+  --ink-2:  rgba(255,255,255,.79);
+  --ease:   cubic-bezier(.22,.61,.36,1);
+  color-scheme: dark;
+}
+
+body{
+  background:#000;
+  color:var(--ink);
+  font-family:"Geist",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow:hidden;
+  height:100svh;
+}
+
+/* ---------- the three.js hummingbird sits behind everything ---------- */
+#gl{
+  position:fixed; inset:0; width:100%; height:100%;
+  display:block; z-index:0; pointer-events:none;
+}
+
+/* ---------- hairline grid ---------- */
+.rules{ position:fixed; inset:0; z-index:1; pointer-events:none; }
+.rules i{ position:absolute; background:var(--rule); display:block; }
+.rules .v{ top:0; bottom:0; width:1px; transform:scaleY(0); }
+.rules .h{ left:0; right:0; height:1px; transform:scaleX(0); }
+.rules .vl{ left:var(--edge-l); transform-origin:50% 50%; }
+.rules .vr{ left:var(--edge-r); transform-origin:50% 50%; }
+/* the page is measured in svh but the overlay is a fixed inset:0 box, and
+   on a phone those two are a browser toolbar apart -- so the rules that
+   mark the band are anchored to the same svh the band itself uses, or the
+   section hairline floats free of the section it is drawing            */
+.rules .vm{ left:var(--mid-x); top:calc(100svh - var(--band-h)); bottom:auto;
+            height:var(--band-h); transform-origin:50% 0; }
+.rules .hn{ top:var(--nav-h); transform-origin:0 50%; }
+.rules .hs{ top:calc(100svh - var(--band-h)); bottom:auto; transform-origin:100% 50%; }
+.go .rules i{ transform:scale(1); transition:transform 1.15s var(--ease); }
+.go .rules .vl{ transition-delay:.10s }
+.go .rules .vr{ transition-delay:.02s }
+.go .rules .vm{ transition-delay:.34s }
+.go .rules .hn{ transition-delay:0s }
+.go .rules .hs{ transition-delay:.18s }
+
+/* ---------- page shell ---------- */
+.page{
+  position:relative; z-index:2;
+  height:100svh; display:flex; flex-direction:column;
+}
+
+/* ---------- nav ---------- */
+header{
+  height:var(--nav-h); flex:none;
+  display:flex; align-items:center;
+  padding-top:5rem;                       /* reference optically centres at y=34.5 */
+  padding-left:calc(var(--edge-l) + 5.5rem);
+  padding-right:calc(100vw - var(--edge-r));
+}
+.brand{ display:flex; align-items:center; gap:5.4rem; text-decoration:none; }
+.mark{
+  width:25rem; height:25rem; flex:none;
+  display:grid; grid-template:repeat(5,1fr)/repeat(5,1fr);
+}
+.mark i{ background:#fff; border-radius:50%; transform:scale(var(--v,1)); }
+.wordmark{
+  font-family:"Newsreader",Georgia,serif; font-weight:400;
+  font-size:22rem; line-height:1; letter-spacing:.004em;
+  color:#fff; transform:translateY(.6rem);
+}
+nav{ display:flex; gap:32.5rem; margin-left:58.6rem; }
+nav a, .signin{
+  font-size:13rem; line-height:1; color:var(--ink-2);
+  text-decoration:none; letter-spacing:.002em;
+  transition:color .25s ease;
+}
+nav a:hover,.signin:hover{ color:#fff; }
+.nav-right{ margin-left:auto; display:flex; align-items:center; gap:36rem; }
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:9rem;
+  font-size:15rem; font-weight:500; line-height:1; letter-spacing:.001em;
+  text-decoration:none; border:0; cursor:pointer;
+  transition:background .25s ease, border-color .25s ease, color .25s ease;
+}
+.btn-ghost{
+  height:47rem; padding:0 20rem;
+  border:1px solid rgba(255,255,255,.32); color:#fff;
+  background:rgba(0,0,0,.18);
+}
+.btn-ghost:hover{ border-color:rgba(255,255,255,.6); background:rgba(255,255,255,.06); }
+.nav-cta{ padding:0 18rem; }
+.arrow{ width:15rem; height:15rem; flex:none; }
+
+/* ---------- liquid metal controls --------------------------------------
+   The buttons keep the editorial rectangle they already had; what changes
+   is the surface.  A dispersion shader paints a family of parallel bands
+   through the face, a travelling chromatic hairline takes over from the
+   1px border, the cursor drags the sheet as it crosses, and a press throws
+   a faceted crease out from where it landed.
+
+   Everything below the .lm-on gate is additive: without WebGL2 the solid
+   and ghost buttons declared above are exactly what ships.
+------------------------------------------------------------------------ */
+.lm{ position:relative; display:inline-flex; align-self:center; }
+.lm-plate, .lm-fx{ position:absolute; pointer-events:none; opacity:0; }
+.lm-plate{
+  inset:0; z-index:0;
+  background:#0b0c0e;
+  /* a lit face needs its own dark to sit on: the shadow lands on the
+     halftone behind and cuts the button out of the bird                */
+  box-shadow:
+    0 4.8rem 10.5rem rgba(0,0,0,.74),
+    0 14.3rem 31.4rem rgba(0,0,0,.66),
+    0 29.5rem 61.9rem rgba(0,0,0,.48);
+  transition:background .38s var(--ease), box-shadow .38s var(--ease), opacity .5s ease;
+}
+.lm-fx{ left:50%; top:50%; transform:translate(-50%,-50%); z-index:1; display:block;
+        transition:opacity .5s ease; }
+.lm > .btn{ position:relative; z-index:2; }
+
+.lm-on .lm-plate, .lm-on .lm-fx{ opacity:1; }
+/* the shader owns the outline and the face now, so the CSS ones stand down */
+.lm-on > .btn, .lm-on > .btn:hover{
+  border-color:transparent; background:none; color:#fff;
+}
+.lm-on > .btn:focus-visible{ outline:2rem solid rgba(255,255,255,.5); outline-offset:5rem; }
+
+/* the secondary keeps a thinner face, so the bird still reads through it */
+.lm[data-lm="quiet"] .lm-plate{
+  background:rgba(5,6,8,.72);
+  box-shadow:0 5rem 14rem rgba(0,0,0,.6), 0 16rem 38rem rgba(0,0,0,.42);
+}
+/* lit: deepen the ground so the bright face keeps its edge */
+.lm-hot .lm-plate{
+  background:#08090a;
+  box-shadow:
+    0 5.7rem 12.4rem rgba(0,0,0,.82),
+    0 19rem 40.9rem rgba(0,0,0,.74),
+    0 40.9rem 85.7rem rgba(0,0,0,.6);
+}
+.lm[data-lm="quiet"].lm-hot .lm-plate{ background:rgba(6,7,9,.86); }
+/* pressed: the control settles onto the page, so the shadow tightens */
+.lm-press .lm-plate{
+  background:#070809;
+  box-shadow:
+    0 2.4rem 6.2rem rgba(0,0,0,.84),
+    0 7.6rem 19rem rgba(0,0,0,.72),
+    0 16.2rem 38.1rem rgba(0,0,0,.54);
+  transition-duration:.1s;
+}
+@media (prefers-reduced-motion: reduce){
+  .lm-plate, .lm-fx{ transition-duration:.01ms !important; }
+}
+
+/* ---------- hero ---------- */
+/* the hero block sits centred between the nav rule and the section rule */
+main{
+  flex:1 1 auto; position:relative; min-height:0;
+  padding-left:var(--edge-l);
+  display:flex; flex-direction:column; justify-content:center; align-items:flex-start;
+}
+h1{
+  font-family:"Instrument Serif",Georgia,serif; font-weight:400;
+  font-size:74rem; line-height:67.6rem; letter-spacing:0;
+  margin-top:0; margin-left:5rem;
+  color:#fff; text-wrap:balance;
+}
+/* the wipe is done entirely with clip-path, and it opens well past the
+   line box on both sides — the headline is set tighter than its own
+   ascenders and descenders, so an overflow:hidden here would slice the
+   tail off every g and y                                              */
+h1 span{ display:block; }
+h1 u{
+  display:block; text-decoration:none;
+  clip-path:inset(-14% 0 116% 0);
+}
+.go h1 u{ clip-path:inset(-14% 0 -46% 0); transition:clip-path .82s var(--ease); }
+.go h1 span:nth-child(1) u{ transition-delay:1.02s }
+.go h1 span:nth-child(2) u{ transition-delay:1.14s }
+.go h1 span:nth-child(3) u{ transition-delay:1.26s }
+
+.cta{ display:flex; gap:11.7rem; margin-top:8.6rem; margin-left:7.4rem; }
+.btn-solid{
+  height:47.6rem; padding:0 22rem;
+  background:#ededed; color:#000;
+}
+.btn-solid:hover{ background:#fff; }
+.cta .btn-ghost{ height:47.6rem; padding:0 21rem; }
+
+/* ---------- lower band ---------- */
+.band{ flex:none; height:var(--band-h); position:relative; }
+.card{
+  position:absolute; left:calc(var(--mid-x) + 42.4rem); top:50.7rem; width:348rem;
+}
+.card .mark{ width:22rem; height:22rem; }
+.card .eyebrow{
+  font-size:11rem; font-weight:500; line-height:1;
+  margin-top:15rem; text-transform:uppercase; letter-spacing:.13em;
+  color:rgba(255,255,255,.44);
+}
+.card h2{
+  font-size:16rem; font-weight:600; line-height:1;
+  margin-top:9.5rem; letter-spacing:.002em;
+}
+.card p{
+  font-size:15rem; line-height:20.2rem; margin-top:17.8rem;
+  color:rgba(255,255,255,.96); letter-spacing:.001em;
+}
+
+/* ---------- reveal ---------- */
+.fade{ opacity:0; transform:translateY(11rem); }
+.go .fade{ opacity:1; transform:none; transition:opacity .9s var(--ease), transform .9s var(--ease); }
+.go .d1{ transition-delay:.62s } .go .d2{ transition-delay:.72s }
+.go .d3{ transition-delay:.80s } .go .d4{ transition-delay:1.62s }
+.go .d5{ transition-delay:1.80s }
+
+@media (max-width: 900px){
+  /* the stacked frame is 430 x 560 design pixels; same two-axis rule */
+  html{ font-size: min(100vw / 430, 100vh  / 560, 1.16px); }
+  html{ font-size: min(100vw / 430, 100svh / 560, 1.16px); }
+  :root{ --cw: calc(100vw - 44rem); --nav-h: 58rem; --band-h: 196rem; }
+  .rules .vm{ display:none; }
+  header{ padding-top:0; padding-left:calc(var(--edge-l) + 2rem);
+          padding-right:var(--edge-l); }
+  .brand{ gap:6rem } .mark{ width:20rem; height:20rem }
+  .wordmark{ font-size:19rem }
+  nav, .signin{ display:none }
+  .nav-right{ gap:0 }
+  .nav-cta{ width:auto; height:36rem; padding:0 14rem; font-size:13rem; gap:7rem }
+  .nav-cta .arrow{ width:13rem; height:13rem }
+  h1{ font-size:42rem; line-height:41rem; margin-top:0; margin-left:2rem }
+  .cta{ margin-top:26rem; margin-left:2rem; gap:9rem }
+  .btn-solid, .cta .btn-ghost{ height:44rem; padding:0 18rem; font-size:14rem }
+  .card{ left:calc(var(--edge-l) + 2rem); top:34rem;
+         width:min(calc(100vw - 88rem), 400rem) }
+  .card h2{ font-size:15rem } .card p{ font-size:14rem; line-height:19.5rem }
+}
+
+/* ---------- tablet ------------------------------------------------------
+   The stacked treatment is right down here, but a 700px-wide window has
+   room for the full nav, and hiding it only to leave the bar half empty
+   reads as a phone layout stretched.  The links come back as soon as they
+   fit next to the call to action.
+----------------------------------------------------------------------- */
+@media (min-width: 700px) and (max-width: 900px){
+  nav{ display:flex; gap:22rem; margin-left:30rem }
+  .signin{ display:inline }
+  .nav-right{ gap:22rem }
+}
+
+/* ---------- short viewports ---------------------------------------------
+   Under roughly a landscape phone there is no honest way to keep the
+   single-screen composition: shrinking it far enough to fit takes the body
+   copy below eight pixels.  So the frame is released instead of cropped --
+   the page scrolls, the band follows the hero rather than being pinned to
+   the floor, and the three rules that measure the band stand down because
+   the page no longer holds that height.  The header and the band carry the
+   hairline themselves, so the grid still reads while it moves.
+------------------------------------------------------------------------ */
+@media (max-height: 500px){
+  html{ font-size: clamp(0.80px, 100vw / 1440, 1.12px); }
+  body{ height:auto; min-height:100svh; overflow:visible }
+  /* the control shaders paint past their button on purpose; with the
+     page no longer locked to the viewport that bleed would open a
+     sideways scroll, so the shell clips the horizontal axis only     */
+  .page{ height:auto; min-height:100svh; overflow-x:clip }
+  .rules .hn, .rules .hs, .rules .vm{ display:none }
+  header{ border-bottom:1px solid var(--rule) }
+  main{ flex:1 0 auto; min-height:auto; justify-content:flex-start;
+        padding-top:42rem; padding-bottom:38rem }
+  h1{ font-size:52rem; line-height:50rem; margin-left:5rem }
+  .cta{ margin-top:24rem; margin-left:5rem; flex-wrap:wrap }
+  .band{ flex:none; height:auto; border-top:1px solid var(--rule);
+         padding:30rem 0 40rem calc(var(--edge-l) + 5rem) }
+  .card{ position:static; width:auto; max-width:400rem;
+         padding-right:var(--edge-l) }
+}
+/* the stacked layout sets its copy 2rem off the rule, not 5rem */
+@media (max-height: 500px) and (max-width: 900px){
+  h1{ margin-left:2rem } .cta{ margin-left:2rem }
+  .band{ padding-left:calc(var(--edge-l) + 2rem) }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .go .rules i, .go h1 span b, .go .fade{ transition-duration:.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+
+<div class="rules" aria-hidden="true">
+  <i class="v vl"></i><i class="v vr"></i><i class="v vm"></i>
+  <i class="h hn"></i><i class="h hs"></i>
+</div>
+
+<div class="page">
+  <header>
+    <a class="brand fade d1" href="#">
+      <span class="mark" id="markA" aria-hidden="true"></span>
+      <span class="wordmark">Trochil</span>
+    </a>
+    <nav class="fade d2">
+      <a href="#">Field notes</a><a href="#">Method</a><a href="#">Team</a>
+    </nav>
+    <div class="nav-right fade d3">
+      <a class="signin" href="#">Log in</a>
+      <span class="lm" data-lm="primary">
+        <i class="lm-plate" aria-hidden="true"></i>
+        <canvas class="lm-fx" aria-hidden="true"></canvas>
+        <a class="btn btn-ghost nav-cta" href="#">Request access
+          <svg class="arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2.6 8h10.2M8.7 3.9 12.8 8l-4.1 4.1" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </a>
+      </span>
+    </div>
+  </header>
+
+  <main>
+    <h1>
+      <span><u>Field intelligence</u></span>
+      <span><u>for the systems that</u></span>
+      <span><u>never hold still</u></span>
+    </h1>
+    <div class="cta fade d4">
+      <span class="lm" data-lm="primary">
+        <i class="lm-plate" aria-hidden="true"></i>
+        <canvas class="lm-fx" aria-hidden="true"></canvas>
+        <a class="btn btn-solid" href="#">Request access</a>
+      </span>
+      <span class="lm" data-lm="quiet">
+        <i class="lm-plate" aria-hidden="true"></i>
+        <canvas class="lm-fx" aria-hidden="true"></canvas>
+        <a class="btn btn-ghost" href="#">See the method
+          <svg class="arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2.6 8h10.2M8.7 3.9 12.8 8l-4.1 4.1" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </a>
+      </span>
+    </div>
+  </main>
+
+  <section class="band">
+    <div class="card fade d5">
+      <span class="mark" id="markB" aria-hidden="true"></span>
+      <p class="eyebrow">01 — Field note</p>
+      <h2>Meet Trochil</h2>
+      <p>A sensing layer for live systems. Trochil reads every channel at once
+         and holds a steady picture while the conditions underneath it move.</p>
+    </div>
+  </section>
+</div>
+
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+<script>
+/* ==================================================================
+   Trochil hero — procedural halftone hummingbird
+   ------------------------------------------------------------------
+   0. the pointer drives it: move the mouse (or rest on a control) and
+      the bird shrinks, flies to a standoff from the cursor and points
+      its beak at it; leave it alone and it drifts back to the hero pose
+   1. a hummingbird is generated as a ~390k point cloud: spindle body,
+      head, beak, an eleven-feather tail and two wings of ten primaries
+      plus six secondaries, all mottled by a 3d value-noise fbm
+   2. the wings are skinned in the vertex shader; every wing particle
+      carries a random phase offset inside the stroke, so the wing
+      renders as a real swept motion-blur fan rather than a smear
+   3. points accumulate additively into a half-float buffer: the
+      buffer holds *density*, not colour
+   4. the composite pass maps density through an ember->gold ramp,
+      screens it with a 45 degree halftone dot grid, and adds a
+      smooth un-screened bloom underneath
+   ================================================================== */
+(function () {
+'use strict';
+
+/* ---------- brand mark: a 5x5 halftone ramp, dense corner to open corner --- */
+function markScale(r, c){
+  return Math.max(0.14, Math.min(1.42, 1.30 - 0.235 * (c + r * 0.55)));
+}
+function buildMark(el){
+  for (var r = 0; r < 5; r++) for (var c = 0; c < 5; c++){
+    var cell = document.createElement('i');
+    cell.style.setProperty('--v', markScale(r, c).toFixed(3));
+    el.appendChild(cell);
+  }
+}
+buildMark(document.getElementById('markA'));
+buildMark(document.getElementById('markB'));
+
+var T = { reveal: 0.08, flightStart: 0.10, flightEnd: 4.60 };
+function ease(t){ return t <= 0 ? 0 : t >= 1 ? 1 : 1 - Math.pow(1 - t, 3); }
+function easeIO(t){ return t <= 0 ? 0 : t >= 1 ? 1 : (t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3) / 2); }
+
+var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var start = performance.now() / 1000;
+/* the html reveal (rules wipe in, headline unclips, blocks fade up),
+   independent of webgl                                                */
+function runChoreography(now){
+  setTimeout(function(){ document.body.classList.add('go'); }, now ? 0 : T.reveal * 1000);
+}
+
+/* ================================================================== */
+/*  Tunables — exposed for live tweaking                              */
+/* ================================================================== */
+var CFG = window.__cfg = {
+  gain:      1.00,   /* density -> ramp position                       */
+  curve:     0.52,   /* tone curve on the density before the ramp      */
+  dotMax:    0.735,  /* max dot radius, in lattice cells               */
+  dotGamma:  0.56,   /* dot radius response                            */
+  cellCss:   4.20,   /* halftone lattice spacing, css px               */
+  glow:      0.13,   /* bloom strength                                 */
+  glowGain:  2.35,   /* bloom ramp position multiplier                 */
+  pointSize: 6.50,   /* point diameter in css px at the design frame    */
+  bright:    0.155,  /* global particle intensity                      */
+  wing:      2.20,   /* wing intensity multiplier                      */
+  beat:      5.40,   /* wingbeats per second                           */
+  flora:     0.62,   /* flower intensity, relative to the bird          */
+  floraSize: 2.60,   /* flower splat size, relative to the bird         */
+  floraPose: { ax: 206, ay: 1002, dist: 7.30, scale: 1.0 },
+  blurSpan:  0.24,   /* wing motion-blur window, in stroke periods      */
+  freeze:    false,  /* debug: hold the pose below                     */
+  exposure:  1.00,
+  /* az/el aim the beak in view space, spin rolls about the body axis */
+  pose:      { ax: 1118, ay: 350, dist: 4.25, scale: 1.0,
+               az: 0.30, el: 0.95, spin: 1.50, flap: 1.0 }
+};
+
+/* ================================================================== */
+/*  Hummingbird point cloud                                           */
+/* ================================================================== */
+var PART_BODY = 0, PART_WING_R = 4, PART_WING_L = 5;
+var SHOULDER = new THREE.Vector3(0.16, 0.10, 0.075);
+
+function rnd(){ return Math.random(); }
+function rndn(){ /* ~gaussian */ return (rnd()+rnd()+rnd()+rnd()-2) * 0.7071; }
+
+/* --- tiny 3d value-noise fbm: gives the cloud its organic mottling --- */
+function h3(i, j, k){
+  var n = (i * 374761393 + j * 668265263 + k * 1274126177) | 0;
+  n = (n ^ (n >>> 13)) | 0;
+  n = Math.imul(n, 1274126177) | 0;
+  return (((n ^ (n >>> 16)) >>> 0) / 4294967295);
+}
+function vnoise(x, y, z){
+  var i = Math.floor(x), j = Math.floor(y), k = Math.floor(z);
+  var fx = x - i, fy = y - j, fz = z - k;
+  fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy); fz = fz * fz * (3 - 2 * fz);
+  function L(a, b, t){ return a + (b - a) * t; }
+  return L(L(L(h3(i,j,k),   h3(i+1,j,k),   fx), L(h3(i,j+1,k),   h3(i+1,j+1,k),   fx), fy),
+           L(L(h3(i,j,k+1), h3(i+1,j,k+1), fx), L(h3(i,j+1,k+1), h3(i+1,j+1,k+1), fx), fy), fz);
+}
+function fbm(x, y, z){
+  return 0.54 * vnoise(x, y, z)
+       + 0.29 * vnoise(x * 2.13 + 11.3, y * 2.13 + 7.1, z * 2.13 + 3.7)
+       + 0.17 * vnoise(x * 4.37 + 31.7, y * 4.37 + 17.9, z * 4.37 + 23.1);
+}
+function mottle(x, y, z, freq, amt){
+  return 1.0 - amt + amt * 2.0 * fbm(x * freq + 5.0, y * freq + 9.0, z * freq + 2.0);
+}
+
+function buildBird(){
+  var P = [], PART = [], INT = [], RND = [], SIZ = [];
+
+  function push(x,y,z, part, inten, size, r0,r1){
+    P.push(x,y,z); PART.push(part); INT.push(inten); SIZ.push(size);
+    RND.push(r0, r1, rnd());
+  }
+
+  /* ---- body: a tapered spindle along +X ---- */
+  var NB = 92000;
+  for (var i = 0; i < NB; i++){
+    var s  = rnd();
+    var R  = 0.222 * Math.pow(Math.sin(Math.PI * (0.10 + 0.82 * s)), 0.62);
+    var cx = -0.46 + 0.88 * s;
+    var cy = -0.03 + 0.16 * s * s;
+    /* centre-weighted radial fill */
+    var rr = Math.pow(rnd(), 0.62);
+    var th = rnd() * Math.PI * 2, ph = Math.acos(2 * rnd() - 1);
+    var sx = Math.sin(ph) * Math.cos(th), sy = Math.sin(ph) * Math.sin(th), sz = Math.cos(ph);
+    var bx = cx + sx * R * rr * 0.62, by = cy + sy * R * rr, bz = sz * R * rr * 0.92;
+    push(bx, by, bz, PART_BODY,
+         (1.0 - 0.18 * rr) * mottle(bx, by, bz, 3.2, 0.72), 1.0, rnd(), rnd());
+  }
+
+  /* ---- head ---- */
+  var NH = 26000;
+  for (i = 0; i < NH; i++){
+    var rh = Math.pow(rnd(), 0.55) * 0.168;
+    var t2 = rnd() * Math.PI * 2, p2 = Math.acos(2 * rnd() - 1);
+    var hx = 0.525 + Math.sin(p2) * Math.cos(t2) * rh,
+        hy = 0.145 + Math.sin(p2) * Math.sin(t2) * rh,
+        hz = Math.cos(p2) * rh * 0.95;
+    push(hx, hy, hz, PART_BODY, 1.05 * mottle(hx, hy, hz, 4.4, 0.55), 1.0, rnd(), rnd());
+  }
+
+  /* ---- beak: long, fine, slightly lifted ---- */
+  var NK = 9000;
+  for (i = 0; i < NK; i++){
+    var s3 = Math.pow(rnd(), 0.85);
+    var rb = 0.040 * (1 - s3 * 0.92) + 0.004;
+    var a3 = rnd() * Math.PI * 2, u3 = Math.sqrt(rnd());
+    push(0.640 + 0.54 * s3 + Math.cos(a3) * rb * u3 * 0.45,
+         0.190 + 0.100 * s3 + Math.sin(a3) * rb * u3,
+         Math.cos(a3 + 1.3) * rb * u3,
+         PART_BODY, 0.85 - 0.45 * s3, 0.90, rnd(), rnd());
+  }
+
+  /* ---- tail: flat fan of 7 feathers ---- */
+  var NT = 44000, FE = 11;
+  for (i = 0; i < NT; i++){
+    var fi  = Math.floor(rnd() * FE);
+    var k4  = (fi - (FE - 1) / 2) / ((FE - 1) / 2);      /* -1 .. 1 */
+    var ang = k4 * 0.36;
+    var s4  = Math.pow(rnd(), 0.68);
+    var len = 0.72 * (1 - 0.30 * k4 * k4);
+    /* feathers widen outward so the fan reads as one continuous plume */
+    var w   = 0.030 + 0.062 * Math.pow(s4, 0.7);
+    var lat = (rnd() * 2 - 1) * w;
+    var dx = -Math.cos(ang), dz = Math.sin(ang);
+    push(-0.42 + dx * len * s4 - dz * lat,
+         0.02 - 0.09 * s4 * s4 + rndn() * 0.014,
+         dz * len * s4 + dx * lat,
+         PART_BODY,
+         (1.05 - 0.40 * s4) * (0.80 + 0.20 * Math.cos(lat / (w + 1e-4) * 2.1))
+           * mottle(k4 * 2.0, s4 * 3.0, 0.0, 1.5, 0.62),
+         0.95, rnd(), rnd());
+  }
+
+  /* ---- wings: 10 primaries + 6 secondaries, real gaps between them ---- */
+  var NW = 96000, NPRI = 10, NSEC = 6, NF = NPRI + NSEC;
+  var shX = 0.185, shZ = 0.075, wrX = 0.020, wrZ = 0.560;   /* shoulder -> wrist */
+  for (var side = 0; side < 2; side++){
+    var sgn = side === 0 ? 1 : -1;
+    for (i = 0; i < NW; i++){
+      var fi = Math.floor(rnd() * NF), bx, bz, phi, L, wid, dim;
+      if (fi < NPRI){                                   /* primaries */
+        var tp = fi / (NPRI - 1);                       /* 0 outer .. 1 inner */
+        bx = wrX + (shX - wrX) * tp * 0.20;
+        bz = wrZ + (shZ - wrZ) * tp * 0.20;
+        phi = -0.10 + tp * 1.42;                        /* fan, +Z toward -X   */
+        L   = 0.74 - 0.15 * tp;
+        wid = 0.050 + 0.012 * tp;
+        dim = 1.00 - 0.10 * tp;
+      } else {                                          /* secondaries */
+        var ts = (fi - NPRI) / (NSEC - 1);
+        bx = wrX + (shX - wrX) * (0.22 + 0.74 * ts);
+        bz = wrZ + (shZ - wrZ) * (0.22 + 0.74 * ts);
+        phi = 1.44 + 0.20 * ts;
+        L   = 0.33 - 0.09 * ts;
+        wid = 0.060;
+        dim = 0.86;
+      }
+      var dx = -Math.sin(phi), dz = Math.cos(phi);
+      var u5 = Math.pow(rnd(), 0.58);                   /* along the feather   */
+      var hw = wid * Math.pow(Math.sin(Math.PI * Math.min(1, 0.09 + u5 * 0.94)), 0.50)
+                   * (1 - 0.22 * u5);
+      var lat = (rnd() * 2 - 1) * hw;
+      var wx = bx + dx * L * u5 - dz * lat;
+      var wz = bz + dz * L * u5 + dx * lat;
+      var wy = SHOULDER.y + 0.045 * Math.sin(Math.PI * u5) - 0.075 * u5 * u5
+                          + rndn() * 0.010;
+      /* denser along the shaft, thinning to the vane edge */
+      var vane = 1.0 - 0.42 * Math.pow(Math.abs(lat) / (hw + 1e-5), 1.6);
+      push(wx + rndn() * 0.006, wy, sgn * wz + rndn() * 0.006,
+           side === 0 ? PART_WING_R : PART_WING_L,
+           0.98 * dim * vane * (1 - 0.34 * u5 * u5)
+             * mottle(u5 * 2.6, fi * 0.55, sgn * 1.7, 1.0, 0.52),
+           0.92, rnd(), rnd());
+    }
+    /* coverts: the fleshy shoulder patch that closes the wing root */
+    for (i = 0; i < 14000; i++){
+      var uc = rnd(), vc = rnd();
+      var cx2 = shX + (wrX - shX) * uc - vc * 0.16 * (1 - 0.4 * uc);
+      var cz2 = shZ + (wrZ - shZ) * uc;
+      push(cx2 + rndn() * 0.012, SHOULDER.y + 0.02 * Math.sin(Math.PI * uc) + rndn() * 0.016,
+           sgn * cz2 + rndn() * 0.012,
+           side === 0 ? PART_WING_R : PART_WING_L,
+           0.95 * (1 - 0.35 * vc) * mottle(uc * 3.0, vc * 3.0, sgn, 1.4, 0.5),
+           0.95, rnd(), rnd());
+    }
+  }
+
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('aPart',    new THREE.Float32BufferAttribute(PART, 1));
+  g.setAttribute('aInt',     new THREE.Float32BufferAttribute(INT, 1));
+  g.setAttribute('aSize',    new THREE.Float32BufferAttribute(SIZ, 1));
+  g.setAttribute('aRnd',     new THREE.Float32BufferAttribute(RND, 3));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,0,0), 3.0);
+  return g;
+}
+
+/* ================================================================== */
+/*  Renderer / scene                                                  */
+/* ================================================================== */
+var canvas   = document.getElementById('gl');
+var DEBUG    = location.search.indexOf('dbg') >= 0;
+var renderer = null;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: false,
+                                       preserveDrawingBuffer: DEBUG,
+                                       powerPreference: 'high-performance' });
+} catch (e) { /* no webgl: the page still runs, just without the bird */ }
+if (!renderer){
+  canvas.style.display = 'none';
+  runChoreography(true);
+  return;
+}
+renderer.setClearColor(0x000000, 1);
+var DPR = Math.min(window.devicePixelRatio || 1, 2);
+renderer.setPixelRatio(DPR);
+
+var scene  = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+camera.position.set(0, 0, 0);
+
+var bird = new THREE.Object3D();
+scene.add(bird);
+
+var pointsMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime:     { value: 0 },
+    uSize:     { value: 4.0 },
+    uBright:   { value: 1.0 },
+    uWing:     { value: 1.6 },
+    uBlurSpan: { value: 0.0 },
+    uOmega:    { value: 0.0 },
+    uFlap:     { value: new THREE.Vector3(0.70, 0.46, 0.16) }, /* sweep, twist, elevation */
+    uShoulder: { value: SHOULDER },
+    uAmp:      { value: 1.0 },
+    uFade:     { value: 1.0 }
+  },
+  vertexShader: [
+    'attribute float aPart; attribute float aInt; attribute float aSize; attribute vec3 aRnd;',
+    'uniform float uTime, uSize, uBlurSpan, uOmega, uAmp, uFade, uBright, uWing;',
+    'uniform vec3 uFlap; uniform vec3 uShoulder;',
+    'varying float vInt;',
+    'mat3 rotX(float a){ float c=cos(a),s=sin(a); return mat3(1.,0.,0., 0.,c,s, 0.,-s,c); }',
+    'mat3 rotY(float a){ float c=cos(a),s=sin(a); return mat3(c,0.,-s, 0.,1.,0., s,0.,c); }',
+    'mat3 rotZ(float a){ float c=cos(a),s=sin(a); return mat3(c,s,0., -s,c,0., 0.,0.,1.); }',
+    'void main(){',
+    '  vec3 p = position;',
+    '  float inten = aInt;',
+    '  if (aPart > 3.5){',
+    '    float side = (aPart < 4.5) ? 1.0 : -1.0;',
+    '    float t    = uTime - aRnd.x * uBlurSpan;',
+    '    float w    = uOmega;',
+    '    float sweep = uFlap.x * uAmp * sin(w * t);',
+    '    float twist = uFlap.y * uAmp * cos(w * t);',
+    '    float elev  = uFlap.z * uAmp * sin(2.0 * w * t + 0.55);',
+    '    vec3  pv = vec3(uShoulder.x, uShoulder.y, side * uShoulder.z);',
+    '    vec3  q  = p - pv;',
+    '    q = rotZ(twist) * q;',
+    '    q = rotX(elev * side) * q;',
+    '    q = rotY(sweep * side) * q;',
+    '    p = q + pv;',
+    '    inten *= uWing;',
+    '  }',
+    '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
+    '  gl_Position = projectionMatrix * mv;',
+    '  float tw = 0.80 + 0.20 * sin(uTime * (2.2 + aRnd.y * 7.0) + aRnd.z * 43.0);',
+    '  vInt = inten * tw * uFade * uBright;',
+    '  gl_PointSize = uSize * aSize / max(0.35, -mv.z);',
+    '}'
+  ].join('\n'),
+  fragmentShader: [
+    'varying float vInt;',
+    'void main(){',
+    '  vec2 d = gl_PointCoord - 0.5;',
+    '  float r2 = dot(d, d) * 4.0;',
+    '  if (r2 > 1.0) discard;',
+    '  float a = exp(-r2 * 2.55) - 0.078;',
+    '  gl_FragColor = vec4(vec3(vInt * max(a, 0.0)), 1.0);',
+    '}'
+  ].join('\n'),
+  blending: THREE.AdditiveBlending,
+  depthTest: false, depthWrite: false, transparent: true
+});
+
+var cloud = new THREE.Points(buildBird(), pointsMat);
+cloud.frustumCulled = false;
+bird.add(cloud);
+
+
+/* ==================================================================
+   Flowers — the same cloud treatment, planted in the bottom-left
+   ------------------------------------------------------------------
+   trumpet blossoms on leaning stems: what a hummingbird would be
+   feeding from.  they render into the same density buffer as the
+   bird, so the ramp, the halftone screen and the bloom all apply
+   without a second post pass.
+   ================================================================== */
+function buildFlowers(){
+  var P = [], INT = [], SIZ = [], RND = [], SWAY = [];
+  function push(x, y, z, inten, size, stemT, phase){
+    P.push(x, y, z); INT.push(inten); SIZ.push(size);
+    RND.push(rnd(), rnd(), rnd()); SWAY.push(stemT, phase);
+  }
+  /* base x, base z, lean x, lean z, height, blossom tilt, scale */
+  var STEMS = [
+    [-0.62, -0.10,  -0.30, -0.04, 1.28, -0.55, 1.00],
+    [-0.26,  0.16,  -0.10,  0.12, 1.62, -0.30, 1.12],
+    [ 0.02, -0.20,   0.16, -0.14, 1.05, -0.75, 0.86],
+    [ 0.30,  0.10,   0.34,  0.10, 1.44, -0.42, 1.04],
+    [ 0.58, -0.06,   0.52, -0.02, 0.86, -0.85, 0.78],
+    [-0.44,  0.30,  -0.44,  0.24, 0.70, -0.95, 0.70]
+  ];
+  var V = new THREE.Vector3(), A = new THREE.Vector3(),
+      U1 = new THREE.Vector3(), U2 = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+
+  for (var si = 0; si < STEMS.length; si++){
+    var S = STEMS[si], bx = S[0], bz = S[1], lx = S[2], lz = S[3],
+        h = S[4], tilt = S[5], fs = S[6];
+    var phase = si * 1.97;
+
+    function onStem(u, out){
+      return out.set(bx + lx * u * u, h * u, bz + lz * u * u);
+    }
+
+    /* ---- stalk ---- */
+    var NS = 9000;
+    for (var i = 0; i < NS; i++){
+      var u = rnd();
+      onStem(u, V);
+      var rr = (0.021 * (1 - 0.5 * u)) * Math.sqrt(rnd());
+      var th = rnd() * Math.PI * 2;
+      push(V.x + Math.cos(th) * rr, V.y + rndn() * 0.006, V.z + Math.sin(th) * rr,
+           0.62 * (0.65 + 0.35 * u) * mottle(u * 5.0, si * 2.0, 0.0, 1.6, 0.45),
+           0.95, u, phase);
+    }
+
+    /* ---- leaves ---- */
+    for (var lf = 0; lf < 3; lf++){
+      var lu = 0.22 + lf * 0.20, lang = phase * 1.3 + lf * 2.3;
+      onStem(lu, V);
+      var lx2 = Math.cos(lang), lz2 = Math.sin(lang), NL = 4200;
+      for (i = 0; i < NL; i++){
+        var s2 = Math.pow(rnd(), 0.7), w2 = (rnd() * 2 - 1);
+        var hw = 0.125 * Math.sin(Math.PI * Math.min(1, 0.16 + s2 * 0.84)) * (1 - 0.16 * s2);
+        var ll = 0.34 - lf * 0.04;
+        push(V.x + lx2 * s2 * ll - lz2 * w2 * hw,
+             V.y + 0.10 * s2 - 0.16 * s2 * s2 + rndn() * 0.008,
+             V.z + lz2 * s2 * ll + lx2 * w2 * hw,
+             0.44 * (1 - 0.35 * s2) * (1 - 0.30 * Math.abs(w2))
+               * mottle(s2 * 3.0, w2 * 2.0, si, 1.4, 0.55),
+             0.95, lu + s2 * 0.06, phase);
+      }
+    }
+
+    /* ---- blossom: a flared bell with five scalloped lobes ---- */
+    onStem(1.0, V);
+    A.set(lx * 2.0, h, lz * 2.0).normalize();            /* stem tangent   */
+    A.y += tilt; A.z += 0.62;                            /* nod, and open  */
+    A.normalize();                                       /* toward the eye */
+    U1.crossVectors(A, UP); if (U1.lengthSq() < 1e-4) U1.set(1, 0, 0);
+    U1.normalize(); U2.crossVectors(A, U1).normalize();
+
+    var TUBE = 0.30 * fs, THROAT = 0.055 * fs, FLARE = 0.285 * fs;
+
+    /* throat: a slim tube widening out of the stem */
+    var NT2 = 9000;
+    for (i = 0; i < NT2; i++){
+      var u3 = rnd();
+      var rt = (0.022 + (THROAT - 0.022) * Math.pow(u3, 1.5)) * (0.80 + 0.20 * rnd());
+      var a3 = rnd() * Math.PI * 2;
+      push(V.x + A.x * u3 * TUBE + (U1.x * Math.cos(a3) + U2.x * Math.sin(a3)) * rt,
+           V.y + A.y * u3 * TUBE + (U1.y * Math.cos(a3) + U2.y * Math.sin(a3)) * rt,
+           V.z + A.z * u3 * TUBE + (U1.z * Math.cos(a3) + U2.z * Math.sin(a3)) * rt,
+           (0.55 + 0.85 * u3 * u3) * mottle(u3 * 4.0, a3, si, 1.8, 0.40),
+           0.95, 1.0, phase);
+    }
+
+    /* corolla: one surface of revolution, its rim scalloped into five
+       lobes — reads as a flower from any angle, which five separate
+       petal sheets did not                                            */
+    var NC = 26000;
+    var mx = V.x + A.x * TUBE, my = V.y + A.y * TUBE, mz = V.z + A.z * TUBE;
+    for (i = 0; i < NC; i++){
+      var uc = Math.pow(rnd(), 0.72);                    /* throat -> rim  */
+      var th2 = rnd() * Math.PI * 2;
+      var lobe = 1.0 + 0.22 * Math.cos(th2 * 5.0 + si);
+      var R2 = (THROAT + (FLARE - THROAT) * Math.pow(uc, 1.45)) * lobe;
+      var ax2 = uc * 0.16 * fs - 0.10 * fs * uc * uc;    /* rim curls back */
+      var jit = rndn() * 0.006 * fs;
+      push(mx + A.x * (ax2 + jit) + (U1.x * Math.cos(th2) + U2.x * Math.sin(th2)) * R2,
+           my + A.y * (ax2 + jit) + (U1.y * Math.cos(th2) + U2.y * Math.sin(th2)) * R2,
+           mz + A.z * (ax2 + jit) + (U1.z * Math.cos(th2) + U2.z * Math.sin(th2)) * R2,
+           (1.30 - 0.80 * uc) * (0.80 + 0.20 * Math.cos(th2 * 5.0 + si))
+             * mottle(uc * 3.2, th2 * 1.4, si * 1.5, 1.6, 0.42),
+           0.92, 1.0, phase);
+    }
+
+    /* stamens out of the throat, brightest at the anthers */
+    var NST = 3000;
+    for (i = 0; i < NST; i++){
+      var fk = Math.floor(rnd() * 5), fa = fk * 1.257 + si;
+      var s5 = rnd(), off = 0.026 * fs;
+      var sp = TUBE + s5 * 0.30 * fs;
+      push(V.x + A.x * sp + (U1.x * Math.cos(fa) + U2.x * Math.sin(fa)) * off * (0.3 + s5) + rndn() * 0.004,
+           V.y + A.y * sp + (U1.y * Math.cos(fa) + U2.y * Math.sin(fa)) * off * (0.3 + s5) + rndn() * 0.004,
+           V.z + A.z * sp + (U1.z * Math.cos(fa) + U2.z * Math.sin(fa)) * off * (0.3 + s5) + rndn() * 0.004,
+           0.40 + 1.45 * Math.pow(s5, 3.5), 0.9, 1.0, phase);
+    }
+  }
+
+  /* a couple of unopened buds, for the ragged-hedge feel */
+  for (var bd = 0; bd < 3; bd++){
+    var bbx = -0.78 + bd * 0.62, bbz = -0.24 + bd * 0.22, bh = 0.52 + bd * 0.16;
+    for (i = 0; i < 5200; i++){
+      var ub = rnd();
+      var rb2 = ub < 0.72
+        ? 0.016 * (1 - 0.4 * ub)                                  /* stalk */
+        : 0.052 * Math.sin(Math.PI * ((ub - 0.72) / 0.28)) + 0.010; /* bud  */
+      var ab = rnd() * Math.PI * 2, ur = Math.sqrt(rnd());
+      push(bbx + bd * 0.05 * ub * ub + Math.cos(ab) * rb2 * ur,
+           bh * ub,
+           bbz + Math.sin(ab) * rb2 * ur,
+           (ub < 0.72 ? 0.50 : 0.95) * mottle(ub * 5.0, ab, bd, 1.8, 0.45),
+           0.95, ub, bd * 2.4 + 1.1);
+    }
+  }
+
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.setAttribute('aInt',  new THREE.Float32BufferAttribute(INT, 1));
+  g.setAttribute('aSize', new THREE.Float32BufferAttribute(SIZ, 1));
+  g.setAttribute('aRnd',  new THREE.Float32BufferAttribute(RND, 3));
+  g.setAttribute('aSway', new THREE.Float32BufferAttribute(SWAY, 2));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.8, 0), 3.0);
+  return g;
+}
+
+var flowerMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime:   { value: 0 },
+    uSize:   { value: 4.0 },
+    uBright: { value: 1.0 },
+    uFade:   { value: 0.0 },
+    uSway:   { value: 0.10 }
+  },
+  vertexShader: [
+    'attribute float aInt; attribute float aSize; attribute vec3 aRnd; attribute vec2 aSway;',
+    'uniform float uTime, uSize, uBright, uFade, uSway;',
+    'varying float vInt;',
+    'void main(){',
+    '  vec3 p = position;',
+    /* wind: everything above the base leans, the tips lean most */
+    '  float k = aSway.x * aSway.x;',
+    '  float w = sin(uTime * 0.85 + aSway.y) * 0.58 + sin(uTime * 0.33 + aSway.y * 1.7) * 0.42;',
+    '  p.x += w * uSway * k;',
+    '  p.z += cos(uTime * 0.61 + aSway.y * 0.8) * uSway * 0.55 * k;',
+    '  p.y -= abs(w) * uSway * 0.16 * k;',
+    '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
+    '  gl_Position = projectionMatrix * mv;',
+    '  float tw = 0.84 + 0.16 * sin(uTime * (1.6 + aRnd.y * 5.0) + aRnd.z * 43.0);',
+    '  vInt = aInt * tw * uFade * uBright;',
+    '  gl_PointSize = uSize * aSize / max(0.35, -mv.z);',
+    '}'
+  ].join('\n'),
+  fragmentShader: pointsMat.fragmentShader,
+  blending: THREE.AdditiveBlending,
+  depthTest: false, depthWrite: false, transparent: true
+});
+
+var bed = new THREE.Object3D();
+scene.add(bed);
+var flowers = new THREE.Points(buildFlowers(), flowerMat);
+flowers.frustumCulled = false;
+bed.add(flowers);
+
+/* ================================================================== */
+/*  Post chain                                                        */
+/* ================================================================== */
+function makeRT(w, h){
+  return new THREE.WebGLRenderTarget(Math.max(2, w | 0), Math.max(2, h | 0), {
+    minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+    format: THREE.RGBAFormat, type: THREE.HalfFloatType,
+    depthBuffer: false, stencilBuffer: false
+  });
+}
+var rtScene = makeRT(2, 2), rtA = makeRT(2, 2), rtB = makeRT(2, 2),
+    rtC = makeRT(2, 2), rtD = makeRT(2, 2);
+
+var quadScene = new THREE.Scene();
+var quadCam   = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+var quadGeo   = new THREE.PlaneGeometry(2, 2);
+var quadMesh  = new THREE.Mesh(quadGeo, null);
+quadScene.add(quadMesh);
+function blit(mat, target){
+  quadMesh.material = mat;
+  renderer.setRenderTarget(target || null);
+  renderer.render(quadScene, quadCam);
+}
+
+var VERT_QUAD = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+
+var copyMat = new THREE.ShaderMaterial({
+  uniforms: { tSrc: { value: null } },
+  vertexShader: VERT_QUAD,
+  fragmentShader: 'uniform sampler2D tSrc; varying vec2 vUv;' +
+                  'void main(){ gl_FragColor = texture2D(tSrc, vUv); }',
+  depthTest: false, depthWrite: false
+});
+
+var blurMat = new THREE.ShaderMaterial({
+  uniforms: { tSrc: { value: null }, uStep: { value: new THREE.Vector2() } },
+  vertexShader: VERT_QUAD,
+  fragmentShader: [
+    'uniform sampler2D tSrc; uniform vec2 uStep; varying vec2 vUv;',
+    'void main(){',
+    '  vec4 s = texture2D(tSrc, vUv) * 0.2270270270;',
+    '  s += (texture2D(tSrc, vUv + uStep * 1.3846153846) + texture2D(tSrc, vUv - uStep * 1.3846153846)) * 0.3162162162;',
+    '  s += (texture2D(tSrc, vUv + uStep * 3.2307692308) + texture2D(tSrc, vUv - uStep * 3.2307692308)) * 0.0702702703;',
+    '  gl_FragColor = s;',
+    '}'
+  ].join('\n'),
+  depthTest: false, depthWrite: false
+});
+
+var compMat = new THREE.ShaderMaterial({
+  uniforms: {
+    tScene: { value: null }, tGlow: { value: null }, tGlow2: { value: null },
+    uRes:   { value: new THREE.Vector2(2, 2) },
+    uCell:  { value: 8.5 },
+    uGain:  { value: CFG.gain },
+    uCurve: { value: CFG.curve },
+    uDot:   { value: new THREE.Vector2(CFG.dotMax, CFG.dotGamma) },
+    uGlow:  { value: CFG.glow },
+    uGlowGain: { value: CFG.glowGain },
+    uExposure: { value: CFG.exposure }
+  },
+  vertexShader: VERT_QUAD,
+  fragmentShader: [
+    'precision highp float;',
+    'uniform sampler2D tScene, tGlow, tGlow2;',
+    'uniform vec2 uRes, uDot;',
+    'uniform float uCell, uGain, uGlow, uGlowGain, uExposure, uCurve;',
+    'varying vec2 vUv;',
+    'const float K = 0.70710678;',
+    /* ember -> gold ramp sampled straight off the reference frame */
+    'vec3 ramp(float u){',
+    '  u = clamp(u, 0.0, 1.0);',
+    '  vec3 c1 = vec3(0.247, 0.125, 0.012);',
+    '  vec3 c2 = vec3(0.596, 0.412, 0.094);',
+    '  vec3 c3 = vec3(0.902, 0.725, 0.161);',
+    '  vec3 c4 = vec3(0.985, 0.868, 0.212);',
+    '  vec3 c = c1 * smoothstep(0.0, 0.135, u);',
+    '  c = mix(c, c2, smoothstep(0.115, 0.375, u));',
+    '  c = mix(c, c3, smoothstep(0.360, 0.625, u));',
+    '  c = mix(c, c4, smoothstep(0.615, 1.000, u));',
+    '  return c;',
+    '}',
+    'void main(){',
+    '  vec2 pix = vUv * uRes;',
+    /* 45 degree halftone lattice: sample the source at the dot centre */
+    '  mat2 R  = mat2(K, -K, K, K);',
+    '  mat2 Ri = mat2(K,  K, -K, K);',
+    '  vec2 lp = (R * pix) / uCell;',
+    '  vec2 id = floor(lp) + 0.5;',
+    '  vec2 cp = Ri * (id * uCell);',
+    /* average the cell so dot size varies smoothly, the way a real screen
+       integrates the image underneath it                                */
+    '  vec2 ex = Ri * vec2(uCell * 0.42, 0.0);',
+    '  vec2 ey = Ri * vec2(0.0, uCell * 0.42);',
+    '  float d = texture2D(tScene, clamp(cp / uRes, vec2(0.0), vec2(1.0))).r * 0.36;',
+    '  d += texture2D(tScene, clamp((cp + ex) / uRes, vec2(0.0), vec2(1.0))).r * 0.16;',
+    '  d += texture2D(tScene, clamp((cp - ex) / uRes, vec2(0.0), vec2(1.0))).r * 0.16;',
+    '  d += texture2D(tScene, clamp((cp + ey) / uRes, vec2(0.0), vec2(1.0))).r * 0.16;',
+    '  d += texture2D(tScene, clamp((cp - ey) / uRes, vec2(0.0), vec2(1.0))).r * 0.16;',
+    '  float u = pow(1.0 - exp(-d * uGain), uCurve);',
+    '  float rad = uDot.x * pow(u, uDot.y);',
+    '  float aa  = 0.85 / uCell;',
+    '  float cov = 1.0 - smoothstep(rad - aa, rad + aa, length(lp - id));',
+    '  vec3 col = ramp(u) * cov;',
+    /* smooth, un-screened bloom underneath */
+    '  float g = texture2D(tGlow, vUv).r * 0.62 + texture2D(tGlow2, vUv).r * 0.38;',
+    '  col += ramp(pow(1.0 - exp(-g * uGain * uGlowGain), uCurve)) * uGlow;',
+    '  gl_FragColor = vec4(col * uExposure, 1.0);',
+    '}'
+  ].join('\n'),
+  depthTest: false, depthWrite: false
+});
+
+/* ================================================================== */
+/*  Layout: place the bird by screen anchor                           */
+/* ================================================================== */
+var VW = 1440, VH = 914;              /* reference design frame */
+var view = { w: 1, h: 1, aspect: 1 };
+
+function resize(){
+  var w = window.innerWidth, h = window.innerHeight;
+  view.w = w; view.h = h; view.aspect = w / h;
+  renderer.setSize(w, h, false);
+  camera.aspect = view.aspect;
+  camera.updateProjectionMatrix();
+
+  var pw = Math.round(w * DPR), ph = Math.round(h * DPR);
+  rtScene.setSize(pw, ph);
+  rtA.setSize(Math.max(2, pw >> 2), Math.max(2, ph >> 2));
+  rtB.setSize(Math.max(2, pw >> 2), Math.max(2, ph >> 2));
+  rtC.setSize(Math.max(2, pw >> 3), Math.max(2, ph >> 3));
+  rtD.setSize(Math.max(2, pw >> 3), Math.max(2, ph >> 3));
+  compMat.uniforms.uRes.value.set(pw, ph);
+  compMat.uniforms.uCell.value = CFG.cellCss * DPR;
+  placeFlowers();
+}
+
+/* ---------- where the flower bed is planted ----------------------------
+   measured off the real layout rather than guessed from the aspect: on
+   the wide layout the card sits to the right of them, so they can run off
+   the bottom edge; on the stacked layout the card fills the lower band,
+   so they have to finish above it.                                      */
+var bedPlace = { x: 0, y: 0, scale: 1, fade: 1 };
+function placeFlowers(){
+  var card = document.querySelector('.card'), cta = document.querySelector('.cta');
+  var band = document.querySelector('.band');
+  var cardTop  = card ? card.getBoundingClientRect().top    : view.h;
+  var bandTop  = band ? band.getBoundingClientRect().top    : view.h;
+  var ctaLow   = cta  ? cta.getBoundingClientRect().bottom  : view.h * 0.45;
+  var unit     = view.h / (0.5735 * CFG.floraPose.dist);     /* px per world unit */
+  var natural  = 1.95 * unit;                                /* cluster height    */
+  if (window.matchMedia('(max-width: 900px)').matches){
+    /* they may run into the empty strip at the top of the band, but must
+       finish above the card copy and below the buttons                  */
+    var floor = Math.max(bandTop, cardTop - 10);
+    var room  = (floor - ctaLow - 14) / natural;
+    bedPlace.x = view.w * 0.26;
+    bedPlace.y = floor;
+    bedPlace.scale = Math.min(1, Math.max(0.34, room));
+    /* a short window leaves no room at all — drop them rather than
+       shrink them to a token bouquet                                 */
+    bedPlace.fade = THREE.MathUtils.smoothstep(room, 0.24, 0.42);
+  } else {
+    bedPlace.x = view.w * (CFG.floraPose.ax / VW);
+    bedPlace.y = view.h * (CFG.floraPose.ay / VH);
+    bedPlace.scale = 1.0;
+    bedPlace.fade = 1.0;
+  }
+}
+window.addEventListener('resize', resize);
+
+/* convert a design-frame anchor (px in the 1440x914 frame) + depth
+   into a world position in front of the camera */
+function anchorToWorld(ax, ay, dist, out){
+  var ndcX = (ax / VW) * 2 - 1;
+  var ndcY = 1 - (ay / VH) * 2;
+  /* keep the composition anchored to the design frame's aspect: the
+     bird tracks the right edge and the upper third on any viewport   */
+  var hHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)) * dist;
+  var wHalf = hHalf * view.aspect;
+  var designAspect = VW / VH;
+  var sx = view.aspect >= designAspect ? (designAspect / view.aspect) : 1.0;
+  out.set(ndcX * wHalf * sx, ndcY * hHalf, -dist);
+  return out;
+}
+
+/* ================================================================== */
+/*  Frame                                                             */
+/* ================================================================== */
+var qTmp = new THREE.Quaternion(), qA = new THREE.Quaternion();
+var AX_X = new THREE.Vector3(1, 0, 0);
+var fIdle = new THREE.Vector3(), fMix = new THREE.Vector3(), aimTgt = new THREE.Vector3();
+
+/* az sweeps screen-right -> into the screen, el lifts toward screen-up */
+function fwdFromAzEl(az, el, out){
+  return out.set(Math.cos(el) * Math.cos(az), Math.sin(el), -Math.cos(el) * Math.sin(az));
+}
+/* point the bird's +X (its beak) along a view-space direction, then roll
+   the body about that same axis                                        */
+function aimBird(f, spin){
+  qA.setFromUnitVectors(AX_X, f);
+  qTmp.setFromAxisAngle(f, spin);
+  bird.quaternion.copy(qA).premultiply(qTmp);
+}
+
+/* ---------- pointer chase -------------------------------------------
+   the canvas is pointer-events:none, so there is no dom hit test: the
+   bird's own projected centre is compared against the pointer instead.
+   while engaged it shrinks hard, flies to a fixed standoff from the
+   cursor and aims its beak at it; the spring lag keeps the approach
+   from feeling mechanical.                                            */
+var ptr = { x: 0, y: 0, live: false, moved: -99, hot: false };
+var eng = { w: 0, ax: 0, ay: 0, seeded: false,
+            ndc: new THREE.Vector3(), aim: new THREE.Vector3(1, 0, 0) };
+
+function track(e){
+  ptr.x = e.clientX; ptr.y = e.clientY;
+  ptr.live = true; ptr.moved = performance.now() / 1000;
+}
+window.addEventListener('pointermove', track, { passive: true });
+window.addEventListener('pointerdown', track, { passive: true });
+document.addEventListener('pointerover', function (e){
+  ptr.hot = !!(e.target && e.target.closest && e.target.closest('a, button'));
+}, { passive: true });
+document.addEventListener('pointerleave', function (){ ptr.live = false; ptr.hot = false; });
+window.addEventListener('blur', function (){ ptr.live = false; ptr.hot = false; });
+
+/* inverse of anchorToWorld: screen px -> design-frame anchor */
+var anchorTmp = { x: 0, y: 0 };
+function screenToAnchor(px, py, out){
+  var designAspect = VW / VH;
+  var k = view.aspect >= designAspect ? (designAspect / view.aspect) : 1.0;
+  out.x = ((2 * px / view.w - 1) / k + 1) * 0.5 * VW;
+  out.y = (py / view.h) * VH;
+  return out;
+}
+
+var pos  = new THREE.Vector3();
+var lastNow = performance.now() / 1000;
+
+function frame(now){
+  requestAnimationFrame(frame);
+  /* note: no document.hidden guard here — some embedded webviews report
+     the document as permanently hidden while still driving rAF          */
+  var t = reduced ? (T.flightEnd + 3.0) : (now / 1000 - start);
+  var dt = Math.min(0.05, Math.max(0.001, now / 1000 - lastNow));
+  lastNow = now / 1000;
+  everRendered = true;
+
+  /* ---- flight: far + small -> the final hovering pose on the right ---- */
+  var f = ease(THREE.MathUtils.clamp((t - T.flightStart) / (T.flightEnd - T.flightStart), 0, 1));
+  var fl = easeIO(THREE.MathUtils.clamp((t - T.flightStart) / (T.flightEnd - T.flightStart), 0, 1));
+
+  var P  = CFG.pose;
+  var frz = CFG.freeze;
+
+  /* on tall / narrow viewports pull the bird up and back so it never
+     buries the type                                                   */
+  var narrow = THREE.MathUtils.clamp((1.40 - view.aspect) / 0.55, 0, 1);
+  /* the frustum is sized off the viewport height, so on a phone the bird
+     would span the whole width — push it back by width as well          */
+  var tight  = THREE.MathUtils.clamp((900 - view.w) / 420, 0, 1);
+  var pDist  = P.dist * (1 + 0.24 * narrow) * (1 + 0.60 * tight);
+  var pAx    = P.ax   + 88 * narrow + 60 * tight;
+  var pAy    = P.ay   - 74 * narrow - 40 * tight;
+
+  var dist  = frz ? pDist : THREE.MathUtils.lerp(9.2, pDist, f);
+  var ax    = frz ? pAx   : THREE.MathUtils.lerp(548, pAx, fl);
+  var ay    = frz ? pAy   : THREE.MathUtils.lerp(492, pAy, fl);
+
+  /* idle drift: a slow lissajous wander plus a faster hover bob, so the
+     bird never sits still even when nobody is pointing at it          */
+  var bob = frz ? 0 : Math.sin(t * 1.42) * 0.15 + Math.sin(t * 0.58 + 1.2) * 0.36
+                    + Math.sin(t * 0.27 + 2.6) * 0.26;
+  /* the sway is biased right so the wander never crowds the headline */
+  var swy = frz ? 0 : 0.30 + Math.sin(t * 0.81 + 0.4) * 0.30 + Math.sin(t * 0.37) * 0.38
+                    + Math.sin(t * 1.13 + 2.0) * 0.09;
+  var idleX = ax + swy * 60, idleY = ay + bob * 60;
+
+  /* ---- engagement: pointer moving recently, or resting on a control ---- */
+  var nowS = now / 1000;
+  var want = (ptr.live && f > 0.45 && (ptr.hot || nowS - ptr.moved < 2.2)) ? 1 : 0;
+  eng.w += (want - eng.w) * Math.min(1, dt * (want ? 2.8 : 1.5));
+  var chase = frz ? 0 : eng.w;
+
+  /* ---- fly to the cursor but hold a standoff, so the beak always has a
+         direction to point along and the control underneath stays legible */
+  screenToAnchor(ptr.x, ptr.y, anchorTmp);
+  var hx = idleX - anchorTmp.x, hy = idleY - anchorTmp.y;
+  var hl = Math.hypot(hx, hy) || 1;
+  var stand = Math.min(hl, 215);
+  var tgtX = THREE.MathUtils.lerp(idleX, anchorTmp.x + hx / hl * stand, chase);
+  var tgtY = THREE.MathUtils.lerp(idleY, anchorTmp.y + hy / hl * stand, chase);
+  if (!eng.seeded){ eng.ax = tgtX; eng.ay = tgtY; eng.seeded = true; }
+  var follow = Math.min(1, dt * (2.8 + 9.0 * (1 - chase)));
+  eng.ax += (tgtX - eng.ax) * follow;
+  eng.ay += (tgtY - eng.ay) * follow;
+  anchorToWorld(eng.ax, eng.ay, dist, pos);
+  bird.position.copy(pos);
+
+  var breathe = frz ? 1 : 1 + 0.045 * Math.sin(t * 0.49 + 0.7);
+  var sc = (frz ? P.scale : THREE.MathUtils.lerp(0.62, P.scale, f)) * breathe
+         * THREE.MathUtils.lerp(1, 0.38, chase);
+  bird.scale.setScalar(sc);
+
+  /* ---- aim the beak at the cursor ---- */
+  eng.ndc.copy(pos).project(camera);
+  var bx = (eng.ndc.x * 0.5 + 0.5) * view.w;
+  var by = (-eng.ndc.y * 0.5 + 0.5) * view.h;
+  var dx = ptr.x - bx, dy = ptr.y - by;
+  var len = Math.hypot(dx, dy);
+  if (len > 8){
+    aimTgt.set(dx / len, -dy / len, 0.34).normalize();
+    eng.aim.lerp(aimTgt, Math.min(1, dt * 3.6)).normalize();
+  }
+
+  /* pose: idle aim blended toward the cursor, rolled about the body axis */
+  var az   = (frz ? P.az   : THREE.MathUtils.lerp(P.az - 0.30,  P.az,   fl)) + (frz?0:Math.sin(t * 0.37) * 0.16);
+  var el   = (frz ? P.el   : THREE.MathUtils.lerp(P.el + 0.26,  P.el,   fl)) + (frz?0:Math.sin(t * 0.52 + 2.0) * 0.115);
+  var spin = (frz ? P.spin : THREE.MathUtils.lerp(P.spin - 0.22, P.spin, fl)) + (frz?0:Math.sin(t * 0.44 + 0.9) * 0.135)
+           + chase * 0.55 * THREE.MathUtils.clamp(dx / (view.w * 0.5), -1, 1);
+  fwdFromAzEl(az, el, fIdle);
+  fMix.copy(fIdle).lerp(eng.aim, chase).normalize();
+  aimBird(fMix, spin);
+
+  /* ---- the flower bed: planted, swaying, never chasing anything ---- */
+  screenToAnchor(bedPlace.x, bedPlace.y, anchorTmp);
+  anchorToWorld(anchorTmp.x, anchorTmp.y, CFG.floraPose.dist, pos);
+  bed.position.copy(pos);
+  var bedScale = CFG.floraPose.scale * bedPlace.scale;
+  bed.scale.setScalar(bedScale);
+  flowerMat.uniforms.uTime.value   = t;
+  flowerMat.uniforms.uFade.value   = THREE.MathUtils.smoothstep(t, T.flightStart + 0.15,
+                                                                T.flightStart + 1.9)
+                                   * bedPlace.fade;
+  flowerMat.uniforms.uBright.value = CFG.bright * CFG.flora;
+  flowerMat.uniforms.uSize.value   = CFG.pointSize * CFG.floraSize * DPR * (view.h / VH)
+                                   * Math.pow(bedScale, 0.9);
+
+  /* ---- wingbeat ---- */
+  var omega = 2 * Math.PI * CFG.beat * (1 + 0.55 * chase);
+  pointsMat.uniforms.uOmega.value    = omega;
+  pointsMat.uniforms.uBlurSpan.value = (2 * Math.PI / omega) * CFG.blurSpan;
+  pointsMat.uniforms.uAmp.value      = CFG.pose.flap * (0.92 + 0.11 * Math.sin(t * 0.72) + 0.05 * Math.sin(t * 1.9 + 1.0));
+  pointsMat.uniforms.uTime.value     = t;
+  pointsMat.uniforms.uSize.value     = CFG.pointSize * DPR * (view.h / VH) * Math.pow(sc, 0.9);
+  pointsMat.uniforms.uBright.value   = CFG.bright;
+  pointsMat.uniforms.uWing.value     = CFG.wing;
+  pointsMat.uniforms.uFade.value     = THREE.MathUtils.smoothstep(t, T.flightStart, T.flightStart + 1.1);
+
+  /* ---- render ---- */
+  renderer.setRenderTarget(rtScene);
+  renderer.clear(true, true, true);
+  renderer.render(scene, camera);
+
+  copyMat.uniforms.tSrc.value = rtScene.texture;                     blit(copyMat, rtA);
+  blurMat.uniforms.tSrc.value = rtA.texture;
+  blurMat.uniforms.uStep.value.set(1 / rtA.width, 0);                blit(blurMat, rtB);
+  blurMat.uniforms.tSrc.value = rtB.texture;
+  blurMat.uniforms.uStep.value.set(0, 1 / rtA.height);               blit(blurMat, rtA);
+
+  copyMat.uniforms.tSrc.value = rtA.texture;                         blit(copyMat, rtC);
+  blurMat.uniforms.tSrc.value = rtC.texture;
+  blurMat.uniforms.uStep.value.set(1 / rtC.width, 0);                blit(blurMat, rtD);
+  blurMat.uniforms.tSrc.value = rtD.texture;
+  blurMat.uniforms.uStep.value.set(0, 1 / rtC.height);               blit(blurMat, rtC);
+
+  compMat.uniforms.tScene.value = rtScene.texture;
+  compMat.uniforms.tGlow.value  = rtA.texture;
+  compMat.uniforms.tGlow2.value = rtC.texture;
+  compMat.uniforms.uGain.value  = CFG.gain;
+  compMat.uniforms.uCurve.value = CFG.curve;
+  compMat.uniforms.uDot.value.set(CFG.dotMax, CFG.dotGamma);
+  compMat.uniforms.uGlow.value  = CFG.glow;
+  compMat.uniforms.uGlowGain.value = CFG.glowGain;
+  compMat.uniforms.uExposure.value = CFG.exposure;
+  compMat.uniforms.uCell.value  = CFG.cellCss * DPR;
+  blit(compMat, null);
+}
+
+/* a page opened in a background tab gets no animation frames, so the
+   intro would be over before it was ever seen — replay it on reveal  */
+var everRendered = false;
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden || everRendered) return;
+  start = performance.now() / 1000;
+  document.body.classList.remove('go');
+  runChoreography(reduced);
+});
+
+resize();
+runChoreography(reduced);
+requestAnimationFrame(frame);
+
+window.__dbg = { bird: bird, cloud: cloud, mat: pointsMat, cam: camera, THREE: THREE,
+                 ptr: ptr, eng: eng };
+
+/* read back the composited frame and report warm-pixel percentiles,
+   so the render can be matched numerically against the reference     */
+window.__stats = function (x0, y0, x1, y1){
+  var cv = document.createElement('canvas');
+  cv.width = canvas.width; cv.height = canvas.height;
+  cv.getContext('2d').drawImage(canvas, 0, 0);
+  var sx0 = Math.round(x0 / VW * cv.width),  sx1 = Math.round(x1 / VW * cv.width);
+  var sy0 = Math.round(y0 / VH * cv.height), sy1 = Math.round(y1 / VH * cv.height);
+  var d = cv.getContext('2d').getImageData(sx0, sy0, sx1 - sx0, sy1 - sy0).data;
+  var px = [];
+  for (var i = 0; i < d.length; i += 4) px.push([d[i], d[i+1], d[i+2]]);
+  px.sort(function(a, b){ return (a[0]+a[1]+a[2]) - (b[0]+b[1]+b[2]); });
+  var out = {};
+  [50,70,80,90,95,98,99,99.5,99.9].forEach(function(q){
+    var lo = Math.max(0, Math.floor(px.length * q / 100) - 300);
+    var hi = Math.min(px.length, Math.floor(px.length * q / 100) + 300);
+    var r=0,g=0,b=0,n=hi-lo;
+    for (var k=lo;k<hi;k++){ r+=px[k][0]; g+=px[k][1]; b+=px[k][2]; }
+    out['p'+q] = [Math.round(r/n), Math.round(g/n), Math.round(b/n)];
+  });
+  out.max = px[px.length-1];
+  return out;
+};
+
+/* ---- URL driven inspection: ?dbg=yaw,pitch,roll,dist,flap ---- */
+(function(){
+  var q = new URLSearchParams(location.search);
+  if (!q.has('dbg')) return;
+  var a = (q.get('dbg') || '').split(',').map(parseFloat);
+  CFG.freeze = true;
+  CFG.pose = { ax: +(q.get('ax') || 720), ay: +(q.get('ay') || 430),
+               dist: isFinite(a[3]) ? a[3] : 3.4, scale: 1.0,
+               az:   isFinite(a[0]) ? a[0] : 0,
+               el:   isFinite(a[1]) ? a[1] : 0,
+               spin: isFinite(a[2]) ? a[2] : 0,
+               flap: isFinite(a[4]) ? a[4] : 0 };
+  ['gain','glow','bright','pointSize','cellCss','dotMax','dotGamma','glowGain','exposure','wing','blurSpan','curve','beat','flora','floraSize']
+    .forEach(function(k){ if (q.has(k)) CFG[k] = +q.get(k); });
+  document.querySelector('.page').style.opacity = q.get('ui') || 0.08;
+  document.querySelector('.rules').style.opacity = q.get('ui') || 0.12;
+  document.body.classList.add('go');
+  start -= 30;
+})();
+
+/* live-tuning helper */
+window.__seek = function (sec){
+  start = performance.now() / 1000 - sec;
+  document.body.classList.remove('go');
+  runChoreography(sec >= T.reveal);
+};
+})();
+</script>
+
+<script>
+/* ==================================================================
+   Trochil controls — liquid metal
+   ------------------------------------------------------------------
+   A dispersion shader, run once per button.
+
+   A scalar field V is painted through a soft plateau: dark below it,
+   blown white inside, dark above.  The plateau is evaluated once per
+   spectral wavelength at a slightly different height in V, so its lower
+   edge fringes warm and its upper edge fringes cool.  Fringe width falls
+   out as dispersion / |grad V| — razor rainbow lines where the field is
+   pinched, broad navy-to-cyan washes where it is not.
+
+   V is a family of parallel curves — one swooping valley repeated up the
+   control, at a density that varies along its length — so the ribbons
+   stay laminar rather than turbulent.
+
+   Trochil's controls are rectangles, not pills, so the pill SDF and the
+   arc-length walk around it are both generalised to a rounded box; at
+   radius 0 the travelling highlight turns the corner square, which is
+   what the rest of the page's hairline grid asks for.
+   ================================================================== */
+(function(){
+'use strict';
+
+var VERT = '#version 300 es\n' +
+'in vec2 position; void main(){ gl_Position = vec4(position,0.,1.); }';
+
+var HEAD = ['#version 300 es',
+'precision highp float;',
+'out vec4 o;',
+'',
+'uniform vec2  uC;        // control centre, device px',
+'uniform vec2  uHalf;     // control half-extent, device px',
+'uniform float uRad;      // corner radius, device px',
+'uniform float uT;        // seconds',
+'uniform float uHover;    // 0..1',
+'uniform float uPress;    // 0..1, eased',
+'uniform vec4  uRip[3];   // xy centre (control heights, +y down), z start, w live',
+'uniform vec4  uRipK;     // speed, ring width, decay, amplitude',
+'uniform vec4  uRipK2;    // facet depth, facet count, crest sharpness, emission',
+'uniform vec4  uPtr;      // xy trailing cursor, z strength, w normalised speed',
+'uniform vec4  uPtrK;     // radius, base amplitude, speed amplitude, rim lift',
+'',
+'#define PI 3.14159265',
+'',
+'float sdBox(vec2 p, vec2 b, float r){',
+'  vec2 q = abs(p) - b + r;',
+'  return min(max(q.x,q.y),0.) + length(max(q,0.)) - r;',
+'}',
+'',
+'/* Expanding ring from each press, in control-height units.  Three slots so a',
+'   quick double-tap overlaps instead of cutting the first one off.',
+'',
+'   Two things keep it from reading as a water ripple: the wavefront is',
+'   faceted rather than circular — its radius is modulated by angle, and the',
+'   facets rotate as it travels — and the crest profile is a cusp rather than',
+'   a gaussian, so it lands as a crease in sheet metal instead of a soft swell. */',
+'float ripple(vec2 p, float t){',
+'  float sum = 0.;',
+'  for(int i = 0; i < 3; i++){',
+'    if(uRip[i].w < 0.5) continue;',
+'    float age = t - uRip[i].z;',
+'    if(age < 0. || age > 4.) continue;',
+'    vec2  rp = p - uRip[i].xy;',
+'    float facet = 1. + uRipK2.x * cos(uRipK2.y * atan(rp.y, rp.x) + age * 2.1 + float(i) * 2.4);',
+'    float x = (length(rp) - age * uRipK.x * facet) / uRipK.y;',
+'    sum += exp(-pow(abs(x) + 1e-4, uRipK2.z)) * exp(-age * uRipK.z);',
+'  }',
+'  return sum;',
+'}',
+'',
+'/* A soft well under the cursor.  It lags behind the real pointer and swells',
+'   with speed, so moving across the control drags the metal rather than sliding',
+'   a static blob over it. */',
+'float pointerW(vec2 p){',
+'  if(uPtr.z < 0.001) return 0.;',
+'  float d = length(p - uPtr.xy) / uPtrK.x;',
+'  return exp(-d*d) * uPtr.z;',
+'}',
+'/* Displacing the sample point, not the field value, is what makes this read as',
+'   liquid: the bands bulge and stretch around the cursor like a lens instead of',
+'   just getting brighter under it. */',
+'vec2 pointerWarp(vec2 p){',
+'  float w = pointerW(p);',
+'  if(w <= 0.) return vec2(0.);',
+'  return normalize(p - uPtr.xy + vec2(1e-5)) * w * (uPtrK.y + uPtrK.z * uPtr.w);',
+'}',
+''].join('\n');
+
+/* ---- the travelling rim, in its own pass so the blur below never touches it */
+var FRAG_RIM = HEAD + ['',
+'uniform float uBw;       // stroke half-width, device px',
+'uniform float uE[8];     // base, hot, chroma-across, chroma-along, speed,',
+'                         // topBias, press lift, ripple lift',
+'',
+'/* Arc-length position around the rounded box, 0..1, starting at the middle of',
+'   the right edge and running counter-clockwise.  Straight runs and corner arcs',
+'   are measured in real length so a highlight travels at a constant speed the',
+'   whole way round instead of stalling at the corners.  At radius 0 the arcs',
+'   collapse and the wedge outside each corner all maps to that corner. */',
+'float perim(vec2 d, vec2 hf, float r){',
+'  float a = max(hf.x - r, 0.), b = max(hf.y - r, 0.);',
+'  float q = PI * 0.5 * r;                       // one corner arc',
+'  float P = 4.*a + 4.*b + 4.*q;',
+'  float s;',
+'  if(abs(d.x) <= a){                            // top or bottom run',
+'    s = (d.y >= 0.) ? (b + q + (a - d.x))',
+'                    : (3.*b + 3.*q + 2.*a + (d.x + a));',
+'  } else if(abs(d.y) <= b){                     // left or right edge',
+'    s = (d.x >= 0.)',
+'        ? ((d.y >= 0.) ? d.y : (3.*b + 4.*q + 4.*a + (d.y + b)))',
+'        : (b + 2.*q + 2.*a + (b - d.y));',
+'  } else {                                      // one of the four corners',
+'    vec2  rp = d - vec2(sign(d.x) * a, sign(d.y) * b);',
+'    float th = atan(abs(rp.y) + 1e-6, abs(rp.x) + 1e-6);   // 0..PI/2 off horizontal',
+'    if(d.x > 0.) s = (d.y > 0.) ? (b + r * th)',
+'                                : (3.*b + 3.*q + 4.*a + r * (PI*0.5 - th));',
+'    else         s = (d.y > 0.) ? (b + q + 2.*a + r * (PI*0.5 - th))',
+'                                : (3.*b + 2.*q + 2.*a + r * th);',
+'  }',
+'  return s / P;',
+'}',
+'// periodic bump, so a highlight wraps cleanly at s = 0',
+'float pb(float u, float w){ u = fract(u); float x = min(u, 1.-u); return exp(-(x*x)/(w*w)); }',
+'',
+'// travelling brightness around the rim — three lobes at different speeds and',
+'// widths, which never quite re-align, so the light keeps re-pooling',
+'float rimHot(float s, float t){',
+'  float v = uE[0];',
+'  v += 0.62 * pb(s - t*uE[4],             0.075);',
+'  v += 0.44 * pb(s + t*uE[4]*0.63 + 0.41, 0.135);',
+'  v += 0.30 * pb(s - t*uE[4]*0.34 + 0.73, 0.200);',
+'  return v;',
+'}',
+'// soft band riding the edge, offset per channel to fringe across the stroke',
+'float rimBand(float sd, float off){ return 1. - smoothstep(0., uBw*1.05, abs(sd + uBw*0.55 + off)); }',
+'',
+'void main(){',
+'  vec2  d  = gl_FragCoord.xy - uC;',
+'  float sd = sdBox(d, uHalf, uRad);',
+'  if(sd > uBw*2.5 || sd < -uBw*3.5){ o = vec4(0.); return; }',
+'',
+'  /* Each channel is offset both *across* the stroke and *along* it, so the rim',
+'     fringes red-outside / cyan-inside and its hue also drifts as a highlight',
+'     slides past — the two together are what read as metal rather than as a',
+'     moving white dot. */',
+'  float s   = perim(d, uHalf, uRad);',
+'  float top = mix(1., 0.5 + 0.5 * (d.y / uHalf.y), uE[5]);',
+'',
+'  // pressing lifts the whole outline, and each ripple flares it again as the',
+'  // ring sweeps past — so the rim reports the press twice, once as a step and',
+'  // once as a wave running round the edge',
+'  // ...and the stretch of outline nearest the cursor picks up a little too',
+'  vec2  p    = vec2(d.x, -d.y) / (uHalf.y * 2.);',
+'  float lift = 1. + uPress * uE[6] + ripple(p, uT) * uE[7]',
+'             + pointerW(p) * uPtrK.w;',
+'',
+'  o = vec4(vec3(',
+'    rimBand(sd,  uE[2]) * rimHot(s + uE[3], uT),',
+'    rimBand(sd,  0.   ) * rimHot(s,         uT),',
+'    rimBand(sd, -uE[2]) * rimHot(s - uE[3], uT)',
+'  ) * uE[1] * top * lift, 1.);',
+'}'].join('\n');
+
+var FRAG_SCENE = HEAD + ['',
+'uniform float uP[21];    // tunables',
+'',
+'float h21(vec2 p){',
+'  vec3 p3 = fract(vec3(p.xyx) * 0.1031);',
+'  p3 += dot(p3, p3.yzx + 33.33);',
+'  return fract((p3.x + p3.y) * p3.z);',
+'}',
+'float vn(vec2 p){',
+'  vec2 i = floor(p), f = fract(p);',
+'  f = f*f*(3.-2.*f);',
+'  float a = h21(i), b = h21(i+vec2(1,0)), c = h21(i+vec2(0,1)), d = h21(i+vec2(1,1));',
+'  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y) * 2. - 1.;',
+'}',
+'// normalised to roughly -1..1; low gain keeps the first octave dominant, which',
+'// is what keeps the ribbons big and smooth instead of turbulent',
+'float fbm(vec2 p, float g){',
+'  float s = 0., a = 1., n = 0.;',
+'  for(int i=0;i<4;i++){ s += a*vn(p); n += a; p = p*2.03 + 11.7; a *= g; }',
+'  return s / n;',
+'}',
+'',
+'/* p is in control-height units, +y down, origin at the centre.',
+'',
+'   The bands are a *family of parallel curves*: one swooping valley repeated',
+'   up the control, dense where the light is pinched and pulled wide open where',
+'   it is not.  So the field is built that way explicitly —',
+'',
+'       V = (y - valley(x)) * density(x)',
+'',
+'   — rather than hoping 2-D noise happens to produce it.  Level sets of V are',
+'   all vertical translates of the same valley curve, which is what makes the',
+'   ribbons laminar; a density that varies along x is what makes them crowd into',
+'   razor fringes at one end and open into a broad wash at the other. */',
+'',
+'// smooth 1-D wiggle that drifts slowly with time',
+'float wig(float x, float t, float seed){',
+'  return vn(vec2(x,           t*0.150 + seed)) * 0.60',
+'       + vn(vec2(x*2.07 + 4., t*0.105 + seed)) * 0.27',
+'       + vn(vec2(x*4.30 - 7., t*0.080 + seed)) * 0.13;',
+'}',
+'',
+'float valleyAt(vec2 p, float t){ return wig(p.x*uP[0], t, 0.0) * uP[1]; }',
+'float densAt  (vec2 p, float t){ return uP[2] * exp(uP[3] * wig(p.x*uP[4] + 9.0, t, 2.7)); }',
+'',
+'float surface(vec2 p, float t){',
+'  float V = (p.y - valleyAt(p,t)) * densAt(p,t);',
+'  V += uP[5] * fbm(p*vec2(0.8, 1.7)*uP[6] + vec2(t*0.05, -t*0.03), uP[17]);',
+'  return V - uP[7];',
+'}',
+'// One plateau per unit of V — so the density is literally bands per control',
+'// height.  A plateau rather than a step is what puts warm on the low edge and',
+'// cool on the high edge of every ribbon.',
+'float tone(float v){',
+'  float u = fract(v);',
+'  float e = uP[9], W = uP[10] * 0.5;',
+'  return smoothstep(0.5-W-e, 0.5-W, u) * (1. - smoothstep(0.5+W, 0.5+W+e, u));',
+'}',
+'vec3 spec(float t){ return clamp(vec3(1.5) - abs(4.*t - vec3(3.,2.,1.)), 0., 1.); }',
+'',
+'void main(){',
+'  vec2  d  = gl_FragCoord.xy - uC;',
+'  float sd = sdBox(d, uHalf, uRad);',
+'  float face = 1. - smoothstep(-1., 1., sd);',
+'  float S = uHalf.y * 2.;                 // control height, device px',
+'  float t = uT;',
+'',
+'  // rgb is premultiplied by the mask and alpha carries it, so the blur that',
+'  // follows can normalise and keep a clean edge instead of a dark vignette',
+'  if(uHover <= 0.0015 || face <= 0.0015){ o = vec4(0., 0., 0., face); return; }',
+'',
+'  vec2  p = vec2(d.x, -d.y) / S;          // gl_FragCoord is y-up',
+'  vec2  q = p + pointerWarp(p);           // the cursor drags the sheet',
+'',
+'  // self-refraction: bend the lookup along the field own slope, which piles',
+'  // iso-lines up into folds instead of leaving them evenly spaced',
+'  float h0 = surface(q, t);',
+'  vec2  gp = vec2(dFdx(h0), -dFdy(h0)) * S;          // grad in p-units',
+'  float V  = surface(q - gp * uP[8] / max(uP[2], .001), t);',
+'',
+'  // gradient-aligned filaments: fast variation across the iso-lines, slow',
+'  // along them, so the fine detail reads as drawn-out fibres of light',
+'  vec2  gd = normalize(gp + vec2(1e-5));',
+'  V += uP[13] * fbm(vec2(dot(q,gd)*uP[14], dot(q, vec2(-gd.y,gd.x))*uP[14]*0.04) + vec2(0., t*0.06), 0.5);',
+'',
+'  // press ripple: displacing the field rather than adding light means the',
+'  // bands themselves bow outwards as the ring passes, which is what sells it',
+'  // as a disturbance *in* the metal instead of a decal over it',
+'  float rip  = ripple(p, t);',
+'  float well = pointerW(p);',
+'  V += rip * uRipK.w;',
+'',
+'  // Real dispersion is not linear in wavelength — the blue end bends far more',
+'  // than the red (Cauchy).  Skewing the sample offsets the same way is what',
+'  // gives the broad cool wash against a tight warm edge.',
+'  const int N = 21;',
+'  float mid = 1. - pow(0.5, uP[12]);',
+'  vec3 col = vec3(0.), wsum = vec3(0.);',
+'  for(int i=0;i<N;i++){',
+'    float k = float(i)/float(N-1);',
+'    vec3  w = spec(k);',
+'    col  += w * tone(V + ((1. - pow(1. - k, uP[12])) - mid) * uP[11]);',
+'    wsum += w;',
+'  }',
+'  col /= wsum;',
+'  col = pow(col, vec3(uP[15]));',
+'',
+'  // light envelope — the ribbons only exist where the sheet is lit, and the',
+'  // dark upper region is bounded by the same valley curve the bands follow',
+'  float lit = smoothstep(uP[18], uP[19], q.y - valleyAt(q, t));',
+'  lit *= mix(1., lit, 0.55);                     // deepen the unlit crescent',
+'  col *= uP[16] * lit;',
+'',
+'  // the crest runs hotter, and carries a little light of its own so it stays',
+'  // legible through the softening blur and across the unlit part of the face',
+'  col = col * (1. + rip * 1.15 + well * 0.60);',
+'',
+'  o = vec4(col * face * uHover, face);',
+'}'].join('\n');
+
+/* Downsample; optionally adding a second source (used to fold the rim into
+   the bloom input).  Alpha rides along so the metal's coverage mask survives
+   the blur chain. */
+var FRAG_DOWN = ['#version 300 es',
+'precision highp float;',
+'out vec4 o;',
+'uniform sampler2D uTex, uTex2;',
+'uniform vec2 uDstTexel;   // 1 / destination size  (maps dest fragCoord -> uv)',
+'uniform float uAdd;       // 1 to include uTex2',
+'void main(){',
+'  vec2 uv = gl_FragCoord.xy * uDstTexel;',
+'  // Taps sit a quarter of a *destination* texel out, so for a 2x reduction',
+'  // they land exactly on the four source texel centres.  Spacing them by a',
+'  // whole source texel instead skips every other pixel, and any fine detail',
+'  // in the field folds down into low-frequency moire.',
+'  vec2 e = uDstTexel * 0.25;',
+'  vec4 s = texture(uTex, uv + vec2(-e.x,-e.y)) + texture(uTex, uv + vec2( e.x,-e.y))',
+'         + texture(uTex, uv + vec2(-e.x, e.y)) + texture(uTex, uv + vec2( e.x, e.y));',
+'  s *= 0.25;',
+'  if(uAdd > 0.5){',
+'    vec4 r = texture(uTex2, uv + vec2(-e.x,-e.y)) + texture(uTex2, uv + vec2( e.x,-e.y))',
+'           + texture(uTex2, uv + vec2(-e.x, e.y)) + texture(uTex2, uv + vec2( e.x, e.y));',
+'    s.rgb += r.rgb * 0.25;',
+'  }',
+'  o = s;',
+'}'].join('\n');
+
+var FRAG_BLUR = ['#version 300 es',
+'precision highp float;',
+'out vec4 o;',
+'uniform sampler2D uTex; uniform vec2 uTexel; uniform vec2 uDir; uniform float uR;',
+'void main(){',
+'  vec2 uv = gl_FragCoord.xy * uTexel;',
+'  vec2 st = uTexel * uDir * uR;',
+'  vec4 s = texture(uTex, uv) * 0.1964;',
+'  s += (texture(uTex, uv + st*1.4118) + texture(uTex, uv - st*1.4118)) * 0.2969;',
+'  s += (texture(uTex, uv + st*3.2941) + texture(uTex, uv - st*3.2941)) * 0.0944;',
+'  s += (texture(uTex, uv + st*5.1765) + texture(uTex, uv - st*5.1765)) * 0.0104;',
+'  o = s;',
+'}'].join('\n');
+
+var FRAG_COMP = HEAD + ['',
+'uniform sampler2D uSoft, uRim, uGlow;',
+'uniform vec2  uRes;',
+'uniform float uGlowGain, uGlowIn, uOccl, uDim, uPunch;',
+'',
+'void main(){',
+'  vec2 uv = gl_FragCoord.xy / uRes;',
+'  vec3 glow = texture(uGlow, uv).rgb;',
+'',
+'  vec2  d    = gl_FragCoord.xy - uC;',
+'  float sd   = sdBox(d, uHalf, uRad);',
+'  float face = 1. - smoothstep(-1., 1., sd);',
+'',
+'  // normalised blur: dividing by the blurred coverage keeps the softened metal',
+'  // full strength right up to the edge instead of fading into the mask',
+'  vec4 m = texture(uSoft, uv);',
+'',
+'  // Scrim, applied *after* the blur: knock the metal back through the middle',
+'  // where the label sits, leaving the top and bottom at full brightness.  Doing',
+'  // this before the blur would smear the protection away at high blur values.',
+'  float veil = 1. - smoothstep(0.46, 0.88, abs(d.y) / uHalf.y);',
+'',
+'  // Blurring flattens the tonal range into a wash; putting the contrast back',
+'  // with a power curve — after the blur, so it costs no smoothness — is what',
+'  // makes it read as poured metal rather than a soft glow.',
+'  vec3 metal = pow(max(m.rgb / max(m.a, 1e-3), 0.), vec3(uPunch));',
+'',
+'  vec3 core = metal * face * mix(1., uDim, veil) + texture(uRim, uv).rgb;',
+'',
+'  // The ripple own light is added here, after the blur, so the crease stays a',
+'  // hard line.  Its displacement of the field still rides inside the softened',
+'  // metal — the sheet bows, and the crest glints along the fold.',
+'  float rip = ripple(vec2(d.x, -d.y) / (uHalf.y * 2.), uT);',
+'  core += vec3(rip * rip) * uRipK2.w * face * mix(1., 0.42, veil);',
+'',
+'  // The control occludes its own bloom over the patch where its shadow falls,',
+'  // so the drop shadow keeps its contrast even when the face is blown out.',
+'  float sdSh = sdBox(d + vec2(0., uHalf.y * 0.62), uHalf * 0.94, uRad * 0.94);',
+'  float occl = uOccl * exp(-max(sdSh, 0.) / (uHalf.y * 0.75));',
+'',
+'  // Bloom spills mostly outward; a little of it is allowed back inside so the',
+'  // hot rim bleeds onto the face.',
+'  vec3 rgb = core + glow * uGlowGain * mix(1., uGlowIn, face) * (1. - occl * (1. - face));',
+'',
+'  // premultiplied — the page and the drop shadow are underneath, and this',
+'  // layer adds light on top of them',
+'  float a = clamp(max(rgb.r, max(rgb.g, rgb.b)), 0., 1.);',
+'  o = vec4(min(rgb, vec3(1.)), a);',
+'}'].join('\n');
+
+/* ---------------- the metal field — uP[0..20] ---------------- */
+var P = {
+  valFreq:   0.50,   // 0  x-frequency of the valley curve
+  valAmp:    0.55,   // 1  valley depth, in control heights
+  dens:      2.40,   // 2  band density — bands per control height
+  densVar:   2.20,   // 3  how much the density swings along x (exponential)
+  densFreq:  0.32,   // 4  x-frequency of the density variation
+  wobAmp:    0.12,   // 5  organic 2-D wobble, in field units
+  wobFreq:   1.60,   // 6  its frequency
+  lift:      0.05,   // 7  phase offset of the band family
+  refract:   0.18,   // 8  self-refraction — folds the iso-lines
+  edge:      0.04,   // 9  softness of the plateau edges
+  width:     0.46,   // 10 plateau width, as a fraction of one band period
+  disp:      0.30,   // 11 spectral dispersion, in band periods
+  skew:      1.50,   // 12 dispersion skew — >1 spreads the blue end
+  fineAmp:   0.0,    // 13 filament amplitude (off: finer than the blur carries)
+  fineFreq:  9.0,    // 14 filament frequency across the iso-lines
+  gamma:     1.00,   // 15 tone gamma
+  gain:      1.90,   // 16 overall gain
+  octGain:   0.32,   // 17 fbm octave gain — low keeps the wobble big
+  litLo:    -0.26,   // 18 distance below the valley where light begins
+  litHi:     0.10,   // 19 ...and where it is full
+  dim:       0.44    // 20 how far the metal is knocked back under the label
+};
+var PKEYS = Object.keys(P);
+
+/* the animated rim — uE[0..7] */
+var E = {
+  base:   0.20,      // 0 floor brightness, so the whole outline stays drawn
+  hot:    0.82,      // 1 gain on the travelling highlights
+  chromA: 0.42,      // 2 chromatic offset across the stroke, device px
+  chromS: 0.030,     // 3 chromatic offset along the perimeter, in laps
+  speed:  0.070,     // 4 laps per second of the leading highlight
+  top:    0.35,      // 5 how much the rim stays biased to the top edge
+  press:  0.85,      // 6 how far the outline brightens while held
+  ripple: 1.60       // 7 extra flare as a ripple crest crosses the outline
+};
+var EKEYS = Object.keys(E);
+
+/* composite / JS-side only */
+var C = {
+  glow:   1.95,      // outer-glow gain
+  glowR:  1.30,      // outer-glow radius
+  glowIn: 0.30,      // how much bloom is allowed back inside the face
+  occl:   0.62,      // how much the drop shadow eats the bloom beneath it
+  soften: 0.24,      // blur on the metal, in control heights — the "molten" knob
+  punch:  1.50       // contrast curve on the softened metal; 1 = off
+};
+
+/* disturbances — distances in control heights, times in seconds */
+var R = {
+  speed:  1.85,      // how fast the press ring expands
+  width:  0.20,      // ring thickness
+  decay:  1.35,      // e-fold fade
+  amp:    1.35,      // how far it displaces the metal field
+  facet:  0.18,      // depth of the faceting on the wavefront
+  lobes:  6.0,       // how many facets
+  sharp:  1.15,      // crest profile: 2 = gaussian swell, ~1 = hard crease
+  emit:   0.45,      // light the crest carries of its own
+  ptrRad:  0.55,     // radius of the cursor well
+  ptrAmp:  0.32,     // how far the sheet is dragged when the cursor is still
+  ptrFast: 0.40,     // extra drag at full speed
+  ptrRim:  0.80,     // how much the nearest rim brightens
+  ptrLag:  0.0016,   // trail: fraction of the gap left after 1s
+  ptrVref: 4.5       // cursor speed, in control heights/sec, that counts as fast
+};
+
+/* Two roles, so the hierarchy the page already had survives the change.
+   The primary keeps a low resting light in the sheet — enough that the CTA
+   is the one lit thing on the page — and the secondary is rim only, a
+   hairline that happens to be alive, which is what the rest of the grid is. */
+var ROLES = {
+  // the CTA keeps a standing light in the sheet, so it is the lit thing on the
+  // page even before anyone reaches for it, and its outline pulses harder
+  primary: { floor: 0.26, rim: { base: 0.26 },                         glow: 1.95 },
+  // the secondary is rim only: a hairline that happens to be alive, which is
+  // what the rest of the grid already is
+  quiet:   { floor: 0.00, rim: { base: 0.34, hot: 0.50, speed: 0.052 }, glow: 1.15 }
+};
+
+var calm = matchMedia('(prefers-reduced-motion: reduce)');
+// Canvas overhang, in control heights.  The canvas is the whole stage, so this
+// has to clear the bloom's full reach (~4 sigma) or the halo gets clamped flat
+// against the buffer edge and the glow reads as a lit rectangle.
+var PAD_K = 1.75;
+var GLOW_TEX = 129;       // bloom buffer target height, in texels
+
+function Metal(host, role){
+  var btn = host.querySelector('.btn');
+  var cv  = host.querySelector('.lm-fx');
+  if(!btn || !cv) return null;
+
+  var gl = cv.getContext('webgl2', {alpha:true, antialias:false,
+                                    premultipliedAlpha:true, powerPreference:'high-performance'});
+  if(!gl) return null;
+
+  function sh(type, src){
+    var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  function prog(fs){
+    var p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+    gl.bindAttribLocation(p, 0, 'position');
+    gl.linkProgram(p);
+    if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    var u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for(var i=0;i<n;i++){ var info = gl.getActiveUniform(p,i);
+      u[info.name.replace('[0]','')] = gl.getUniformLocation(p, info.name); }
+    return {p:p, u:u};
+  }
+
+  var pScene, pRim, pDown, pBlur, pComp;
+  try {
+    pScene = prog(FRAG_SCENE); pRim = prog(FRAG_RIM);
+    pDown  = prog(FRAG_DOWN);  pBlur = prog(FRAG_BLUR); pComp = prog(FRAG_COMP);
+  } catch(err){ return null; }
+
+  var vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  var vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  var hasFloat = !!gl.getExtension('EXT_color_buffer_half_float');
+  function makeTarget(){
+    var tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    var fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    return {tex:tex, fbo:fbo, w:0, h:0};
+  }
+  function sizeTarget(t, w, h){
+    if(t.w === w && t.h === h) return;
+    t.w = w; t.h = h;
+    gl.bindTexture(gl.TEXTURE_2D, t.tex);
+    if(hasFloat) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+    else         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8,   w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  }
+  var T_core = makeTarget(), T_rim = makeTarget(),   // full res
+      T_s1   = makeTarget(), T_s2  = makeTarget(),   // half res: metal softening
+      T_a    = makeTarget(), T_b   = makeTarget();   // 1/DOWN: bloom
+
+  var W = 0, H = 0, DPR = 1, BW = 0, BH = 0, RAD = 0, DOWN = 2, live = false;
+  var needResize = true;
+
+  function resize(){
+    var b = btn.getBoundingClientRect();
+    if(b.width < 2 || b.height < 2){ live = false; return; }
+    live = true;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    var pad = b.height * PAD_K;
+    var cw = b.width + 2*pad, ch = b.height + 2*pad;
+    cv.style.width  = cw + 'px';
+    cv.style.height = ch + 'px';
+    var w = Math.max(2, Math.round(cw * DPR)), h = Math.max(2, Math.round(ch * DPR));
+    if(w !== W || h !== H){ W = w; H = h; cv.width = W; cv.height = H; }
+    BW = b.width * DPR; BH = b.height * DPR;
+    // the control is centred in its own canvas, so the geometry is exact
+    RAD = Math.min(parseFloat(getComputedStyle(btn).borderTopLeftRadius) || 0,
+                   b.height / 2) * DPR;
+    sizeTarget(T_core, W, H); sizeTarget(T_rim, W, H);
+    var hw = Math.max(2, Math.ceil(W/2)), hh = Math.max(2, Math.ceil(H/2));
+    sizeTarget(T_s1, hw, hh); sizeTarget(T_s2, hw, hh);
+    // The bloom buffer is downsampled to keep the control ~129 texels tall at
+    // any size, so one set of blur radii gives a glow of the same *relative*
+    // extent whatever the control measures.  Floored at 2: these controls are
+    // small, and the bloom is a wide blur that loses nothing at half res.
+    DOWN = Math.max(2, Math.min(4, Math.round(BH / GLOW_TEX)));
+    var dw = Math.max(2, Math.ceil(W/DOWN)), dh = Math.max(2, Math.ceil(H/DOWN));
+    sizeTarget(T_a, dw, dh); sizeTarget(T_b, dw, dh);
+    needResize = false;
+  }
+  new ResizeObserver(function(){ needResize = true; }).observe(btn);
+
+  function drawTo(t){
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t ? t.fbo : null);
+    gl.viewport(0, 0, t ? t.w : W, t ? t.h : H);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  var cfg  = ROLES[role] || ROLES.primary;
+  var eLoc = {}; for(var k in E) eLoc[k] = (k in cfg.rim) ? cfg.rim[k] : E[k];
+  var uArr = new Float32Array(PKEYS.length), eArr = new Float32Array(EKEYS.length);
+
+  /* three ripple slots, reused round-robin so rapid taps overlap */
+  var RIP = [{x:0,y:0,t:-99,on:0},{x:0,y:0,t:-99,on:0},{x:0,y:0,t:-99,on:0}];
+  var ripArr = new Float32Array(12), ripNext = 0;
+  var hover = 0, hoverTarget = 0, press = 0, pressTarget = 0;
+  var ptr = {x:0, y:0}, ptrS = {x:0, y:0}, ptrAmt = 0, ptrSpeed = 0;
+  var on = {over:false, press:false, focus:false};
+  var drawn = null;
+
+  function addRipple(x, y){
+    var r = RIP[ripNext]; ripNext = (ripNext + 1) % 3;
+    r.x = x; r.y = y; r.t = clock; r.on = 1;
+  }
+  // pointer position -> control-height units from the centre, +y down
+  function localPt(e){
+    var b = btn.getBoundingClientRect(), s = b.height || 1;
+    return [(e.clientX - (b.left + b.width/2)) / s,
+            (e.clientY - (b.top  + b.height/2)) / s];
+  }
+  function sync(){
+    hoverTarget = (on.over || on.press || on.focus) ? 1 : 0;
+    pressTarget = on.press ? 1 : 0;
+    host.classList.toggle('lm-hot', hoverTarget > 0.5);
+    host.classList.toggle('lm-press', on.press);
+  }
+
+  /* Hover, press and focus all light the metal; press additionally throws a
+     ripple from wherever it landed.  Mouse, touch and keyboard alike. */
+  btn.addEventListener('pointerenter', function(e){
+    if(e.pointerType !== 'mouse') return;
+    // land the well where the cursor actually entered, not where it last was
+    var l = localPt(e); ptr.x = l[0]; ptr.y = l[1];
+    ptrS.x = ptr.x; ptrS.y = ptr.y; ptrSpeed = 0;
+    on.over = true; sync();
+  });
+  btn.addEventListener('pointerleave', function(e){
+    if(e.pointerType === 'mouse'){ on.over = false; sync(); }
+  });
+  // the cursor drags the metal; tracked on the window so a press can slide off
+  // the control, but only measured while it is actually engaged
+  window.addEventListener('pointermove', function(e){
+    if(!on.over && !on.press) return;
+    var l = localPt(e); ptr.x = l[0]; ptr.y = l[1];
+  }, {passive:true});
+  btn.addEventListener('pointerdown', function(e){
+    var l = localPt(e); ptr.x = l[0]; ptr.y = l[1];
+    on.press = true; sync(); addRipple(ptr.x, ptr.y);
+  });
+  window.addEventListener('pointerup',     function(){ on.press = false; sync(); });
+  window.addEventListener('pointercancel', function(){ on.press = false; sync(); });
+  // only keyboard focus keeps it lit — a click should not leave the control
+  // glowing after the pointer has moved away
+  btn.addEventListener('focus', function(){ on.focus = btn.matches(':focus-visible'); sync(); });
+  btn.addEventListener('blur',  function(){ on.focus = false; sync(); });
+  btn.addEventListener('keydown', function(e){
+    if((e.key !== 'Enter' && e.key !== ' ') || e.repeat) return;
+    on.press = true; sync(); addRipple(0, 0);
+  });
+  btn.addEventListener('keyup', function(e){
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    on.press = false; sync();
+  });
+
+  function step(dt){
+    // asymmetric ease: quick to bloom, a touch quicker to die
+    var k = hoverTarget > hover ? 1 - Math.pow(0.0012, dt) : 1 - Math.pow(0.00012, dt);
+    hover += (hoverTarget - hover) * k;
+    if(Math.abs(hoverTarget - hover) < 0.0008) hover = hoverTarget;
+
+    // press snaps on and lets go slowly
+    var pk = pressTarget > press ? 1 - Math.pow(1e-9, dt) : 1 - Math.pow(0.004, dt);
+    press += (pressTarget - press) * pk;
+    if(Math.abs(pressTarget - press) < 0.002) press = pressTarget;
+
+    var ripLive = false;
+    for(var i = 0; i < 3; i++){
+      var r = RIP[i];
+      if(r.on && clock - r.t > 4) r.on = 0;
+      if(r.on) ripLive = true;
+      ripArr[i*4] = r.x; ripArr[i*4+1] = r.y; ripArr[i*4+2] = r.t; ripArr[i*4+3] = r.on;
+    }
+
+    // the well trails the cursor and swells with how fast it is being dragged
+    var lag = 1 - Math.pow(R.ptrLag, dt);
+    var dx = (ptr.x - ptrS.x) * lag, dy = (ptr.y - ptrS.y) * lag;
+    ptrS.x += dx; ptrS.y += dy;
+    var inst = Math.min(Math.hypot(dx, dy) / Math.max(dt, 1e-3) / R.ptrVref, 1);
+    ptrSpeed += (inst - ptrSpeed) * (1 - Math.pow(inst > ptrSpeed ? 0.001 : 0.02, dt));
+    var wantWell = (on.over || on.press) ? 1 : 0;
+    ptrAmt += (wantWell - ptrAmt) * (1 - Math.pow(0.004, dt));
+    if(Math.abs(wantWell - ptrAmt) < 0.002) ptrAmt = wantWell;
+
+    if(needResize) resize();
+    if(!live) return;
+
+    // The rim keeps travelling even at rest, so the only truly static case is
+    // reduced motion with nothing in flight.
+    var sig = (calm.matches && !ripLive && ptrAmt < 0.002)
+      ? (hover + '|' + press + '|' + W + '|' + H) : null;
+    if(sig !== null && sig === drawn) return;
+    drawn = sig;
+
+    // read the tunables every frame, so the console hooks below are live
+    for(var pi = 0; pi < PKEYS.length; pi++) uArr[pi] = P[PKEYS[pi]];
+    for(var ei = 0; ei < EKEYS.length; ei++) eArr[ei] = eLoc[EKEYS[ei]];
+
+    // the resting light in the sheet is what separates the roles
+    var hv = cfg.floor + (1 - cfg.floor) * hover;
+    // stroke half-width, device px — a hairline, like the rules behind it
+    var bw = Math.max(1.5, 3.2 * (BH / 516));
+
+    // the compiler drops whichever of these a given pass does not read, so
+    // every write is guarded rather than relying on a null location
+    function common(pr){
+      var u = pr.u;
+      if(u.uC)     gl.uniform2f(u.uC, W/2, H/2);
+      if(u.uHalf)  gl.uniform2f(u.uHalf, BW/2, BH/2);
+      if(u.uRad)   gl.uniform1f(u.uRad, RAD);
+      if(u.uT)     gl.uniform1f(u.uT, clock);
+      if(u.uRip)   gl.uniform4fv(u.uRip, ripArr);
+      if(u.uRipK)  gl.uniform4f(u.uRipK, R.speed, R.width, R.decay, R.amp);
+      if(u.uRipK2) gl.uniform4f(u.uRipK2, R.facet, R.lobes, R.sharp, R.emit);
+      if(u.uPtr)   gl.uniform4f(u.uPtr, ptrS.x, ptrS.y, ptrAmt, ptrSpeed);
+      if(u.uPtrK)  gl.uniform4f(u.uPtrK, R.ptrRad, R.ptrAmp, R.ptrFast, R.ptrRim);
+    }
+
+    gl.bindVertexArray(vao);
+
+    // 1. the metal itself, masked to the control
+    gl.useProgram(pScene.p); common(pScene);
+    gl.uniform1f(pScene.u.uHover, hv);
+    gl.uniform1f(pScene.u.uPress, press);
+    gl.uniform1fv(pScene.u.uP, uArr);
+    drawTo(T_core);
+
+    // 2. rim, kept out of the softening blur so the outline stays razor thin
+    gl.useProgram(pRim.p); common(pRim);
+    gl.uniform1f(pRim.u.uBw, bw);
+    gl.uniform1f(pRim.u.uPress, press);
+    gl.uniform1fv(pRim.u.uE, eArr);
+    drawTo(T_rim);
+
+    // 3. soften the metal — half-res box down, then a separable gaussian.
+    //    This is what turns the prismatic ribbons molten rather than etched.
+    gl.useProgram(pDown.p);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T_core.tex);
+    gl.uniform1i(pDown.u.uTex, 0);
+    gl.uniform1f(pDown.u.uAdd, 0);
+    gl.uniform2f(pDown.u.uDstTexel, 1/T_s1.w, 1/T_s1.h);
+    drawTo(T_s1);
+
+    gl.useProgram(pBlur.p);
+    gl.uniform1i(pBlur.u.uTex, 0);
+    gl.uniform2f(pBlur.u.uTexel, 1/T_s1.w, 1/T_s1.h);
+    // Target sigma in half-res texels, tied to the control so it scales with
+    // any size.  One very wide 9-tap pass leaves comb ghosts — the taps end up
+    // further apart than the sigma they describe — so the blur is split into
+    // passes whose radii add in quadrature.
+    var sigTex = C.soften * (BH * 0.5) * 0.95;
+    if(sigTex > 0.1){
+      var iters = Math.min(4, Math.max(1, Math.ceil(sigTex / 3.0)));
+      gl.uniform1f(pBlur.u.uR, sigTex / Math.sqrt(iters) / 1.95);
+      for(var n = 0; n < iters; n++){
+        gl.bindTexture(gl.TEXTURE_2D, T_s1.tex); gl.uniform2f(pBlur.u.uDir, 1, 0); drawTo(T_s2);
+        gl.bindTexture(gl.TEXTURE_2D, T_s2.tex); gl.uniform2f(pBlur.u.uDir, 0, 1); drawTo(T_s1);
+      }
+    }
+
+    // 4. bloom, fed by the softened metal plus the crisp rim
+    gl.useProgram(pDown.p);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T_s1.tex);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, T_rim.tex);
+    gl.uniform1i(pDown.u.uTex, 0);
+    gl.uniform1i(pDown.u.uTex2, 1);
+    gl.uniform1f(pDown.u.uAdd, 1);
+    gl.uniform2f(pDown.u.uDstTexel, 1/T_a.w, 1/T_a.h);
+    drawTo(T_a);
+
+    gl.useProgram(pBlur.p);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1i(pBlur.u.uTex, 0);
+    gl.uniform2f(pBlur.u.uTexel, 1/T_a.w, 1/T_a.h);
+    var rs = C.glowR * (BH / DOWN) / GLOW_TEX, RAD_SET = [1.0, 2.3, 5.2, 9.0];
+    for(var m = 0; m < RAD_SET.length; m++){
+      gl.uniform1f(pBlur.u.uR, RAD_SET[m] * rs);
+      gl.bindTexture(gl.TEXTURE_2D, T_a.tex); gl.uniform2f(pBlur.u.uDir, 1, 0); drawTo(T_b);
+      gl.bindTexture(gl.TEXTURE_2D, T_b.tex); gl.uniform2f(pBlur.u.uDir, 0, 1); drawTo(T_a);
+    }
+
+    // 5. composite
+    gl.useProgram(pComp.p); common(pComp);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T_s1.tex); gl.uniform1i(pComp.u.uSoft, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, T_rim.tex); gl.uniform1i(pComp.u.uRim, 1);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, T_a.tex);   gl.uniform1i(pComp.u.uGlow, 2);
+    gl.uniform2f(pComp.u.uRes, W, H);
+    gl.uniform1f(pComp.u.uGlowGain, cfg.glow);
+    gl.uniform1f(pComp.u.uGlowIn, C.glowIn);
+    gl.uniform1f(pComp.u.uOccl, C.occl);
+    gl.uniform1f(pComp.u.uDim, P.dim);
+    gl.uniform1f(pComp.u.uPunch, C.punch);
+    drawTo(null);
+  }
+
+  resize();
+  host.classList.add('lm-on');
+  return {
+    step: step, host: host, btn: btn, rim: eLoc,
+    // tuning hooks, mirroring the component this came from
+    hover:  function(v){ on.over = !!v; sync(); },
+    press:  function(v){ on.press = !!v; sync(); if(v) addRipple(0, 0); },
+    ripple: function(x, y){ addRipple(x || 0, y || 0); }
+  };
+}
+
+/* ---------------- one clock, one loop, every control ---------------- */
+var clock = 0, last = performance.now(), units = [];
+
+document.querySelectorAll('.lm').forEach(function(host){
+  var unit = Metal(host, host.dataset.lm || 'primary');
+  if(unit) units.push(unit);
+});
+
+if(units.length){
+  requestAnimationFrame(function frame(now){
+    var dt = Math.min(Math.max((now - last) / 1000, 0), 1/20);
+    last = now;
+    if(!calm.matches) clock += dt;
+    // no visibility gate: rAF already stops while the page is hidden, and an
+    // explicit one would also silence the controls inside an occluded frame
+    for(var i = 0; i < units.length; i++){
+      // a control that cannot draw falls back to the CSS button it was
+      // enhancing, rather than taking the page's frame loop down with it
+      try { units[i].step(dt); }
+      catch(err){
+        window.__lmError = String((err && err.stack) || err);
+        units[i].host.classList.remove('lm-on');
+        units.splice(i--, 1);
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+/* console hooks for tuning, same shape as the component this came from */
+window.__lm = {
+  P: P, E: E, C: C, R: R, units: units,
+  // P, C and R are shared; the rim is per role, so tune it through
+  // __lm.units[i].rim instead
+  set:  function(p, c, r){ Object.assign(P, p||{}); Object.assign(C, c||{});
+                           Object.assign(R, r||{}); },
+  seek: function(v){ clock = v; }
+};
+})();
+</script>
+</body>
+</html>

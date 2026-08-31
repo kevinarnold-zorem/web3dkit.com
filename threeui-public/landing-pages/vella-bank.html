@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vella Bank — Professional bank card</title>
+<meta name="description" content="Vella Bank introduces a bank card crafted for professionals who demand excellence.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-14 -14 128 128'%3E%3Crect x='-14' y='-14' width='128' height='128' rx='28' fill='%23f4f4f2'/%3E%3Cg fill='%230a0a0b'%3E%3Cpath d='M50 7 98 39 2 39Z'/%3E%3Crect x='14.5' y='44' width='15' height='40' rx='1.5'/%3E%3Crect x='42.5' y='44' width='15' height='40' rx='1.5'/%3E%3Crect x='70.5' y='44' width='15' height='40' rx='1.5'/%3E%3Crect x='2' y='87' width='96' height='11' rx='3.5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+/* ───────────────────────────────────────────────────────────── tokens */
+:root{
+  --paper:#09090a;          /* page */
+  --ink:#f4f4f2;            /* primary type */
+  --ink-2:#dedeD9;
+  --mute:#8b8b87;
+  --faint:#3f3f42;
+  --hair:rgba(255,255,255,.10);
+  --surface:rgba(255,255,255,.06);
+  --amber:#dd8940;
+  --moss:#93a476;
+  --r-pill:999px;
+  --pad: clamp(20px, 6.6vw, 95px);
+  --pad-nav: clamp(16px, 4vw, 57px);
+  --maxw: 1680px;
+  --nav-h: clamp(70px, 14vh, 144px);
+  --ease: cubic-bezier(.22,1,.36,1);
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Figtree",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-weight:400; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;
+}
+img,canvas{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.wrap{width:100%;max-width:var(--maxw);margin-inline:auto;padding-inline:var(--pad)}
+.mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:300}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:4px}
+
+/* decode-reveal cells: each is locked to the advance width of the letter it
+   stands in for, so swapping in a cipher glyph never moves or resizes anything */
+.wd{white-space:nowrap}
+.dc{display:inline-block;text-align:left}
+.dc.enc{text-align:center;opacity:.5;transform:scale(.82)}
+
+/* gradient hairline border — a 1px ring masked out of a gradient fill */
+.gb{position:relative}
+.gb::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
+  background:var(--gb,linear-gradient(145deg,rgba(255,255,255,.46),rgba(255,255,255,.05) 46%,rgba(255,255,255,.22)));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+          mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  transition:background .3s var(--ease);
+}
+
+/* ───────────────────────────────────────────────────────────── nav */
+.nav{
+  position:fixed; inset:0 0 auto 0; z-index:60; height:var(--nav-h);
+  display:flex; align-items:center; pointer-events:none;
+}
+.nav::before{content:"";position:absolute;inset:-1px 0 -34px 0;pointer-events:none;
+  background:linear-gradient(180deg,var(--paper) 0%,rgba(9,9,10,.94) 52%,rgba(9,9,10,0) 100%);
+  opacity:0;transition:opacity .45s var(--ease)}
+.nav.stuck::before{opacity:1}
+.nav .wrap{position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;
+  pointer-events:none;padding-inline:var(--pad-nav)}
+.nav a,.nav button{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:11px;font-size:18px;font-weight:500;letter-spacing:-.014em;line-height:1}
+.brand .mk{width:20px;height:20px;flex:none}
+.brand b{font-weight:600}
+.navbtns{display:flex;align-items:center;gap:9px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:var(--r-pill); white-space:nowrap;
+  transition:background .3s var(--ease),color .3s var(--ease),border-color .3s var(--ease),transform .3s var(--ease);
+}
+.btn:active{transform:scale(.97)}
+.btn-ghost{padding:11px 23px;font-size:13.5px;font-weight:500;color:var(--ink-2)}
+.btn-ghost:hover{background:rgba(255,255,255,.07)}
+.btn-ghost:hover::after{--gb:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.12) 46%,rgba(255,255,255,.40))}
+.btn-solid{padding:11px 24px;font-size:13.5px;font-weight:500;background:var(--ink);color:#0a0a0b}
+.btn-solid:hover{background:#fff}
+
+/* ───────────────────────────────────────────────────────────── hero */
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;isolation:isolate;overflow:hidden}
+#cardsCanvas{position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none}
+
+.hero-inner{
+  position:relative; z-index:2; flex:1;
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,.92fr);
+  align-content:end; padding-top:calc(var(--nav-h) + 8px); padding-bottom:clamp(26px,6.2vh,72px);
+}
+.hero-copy{grid-column:1;align-self:end;max-width:760px;padding-bottom:clamp(8px,2vh,20px)}
+.scroller{display:flex;flex-direction:column;gap:2px;margin-bottom:clamp(24px,5vh,58px);width:16px}
+.scroller svg{width:12px;height:22px;overflow:visible}
+.scroller .up{color:rgba(255,255,255,.20)}
+.scroller .dn{color:var(--ink);animation:bob 2.6s var(--ease) infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:normal;text-transform:uppercase;
+  color:var(--mute);margin:0 0 clamp(12px,1.9vh,18px)}
+h1{margin:0 0 clamp(16px,2.6vh,26px); width:max-content;
+  font-size:clamp(31px,5.3vw,76px); line-height:1.10; letter-spacing:-.038em;
+  font-weight:300; color:var(--ink);
+  -webkit-mask-image:linear-gradient(80deg,#000 0%,#000 60%,rgba(0,0,0,.62) 84%,rgba(0,0,0,.34) 100%);
+          mask-image:linear-gradient(80deg,#000 0%,#000 60%,rgba(0,0,0,.62) 84%,rgba(0,0,0,.34) 100%)}
+h1 .w5{font-weight:500}
+h1 .w6{font-weight:600}
+h1 > span{display:inline-block;white-space:nowrap}
+.lede{
+  margin:0 0 clamp(18px,2.8vh,28px); max-width:612px;
+  font-size:clamp(13.5px,1.19vw,17.1px); line-height:1.42; letter-spacing:-.005em;
+  color:rgba(244,244,242,.88); font-weight:400; text-transform:capitalize;
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 42%,rgba(0,0,0,.42) 78%,rgba(0,0,0,.2) 100%);
+          mask-image:linear-gradient(180deg,#000 0%,#000 42%,rgba(0,0,0,.42) 78%,rgba(0,0,0,.2) 100%);
+}
+.cta{display:flex;align-items:center;gap:10px;margin-bottom:clamp(28px,4.4vh,50px)}
+.cta .btn{padding:12px 26px;font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase}
+.cta .primary{background:var(--ink);color:#0a0a0b}
+.cta .primary:hover{background:#fff}
+.cta .second{background:rgba(255,255,255,.055);color:var(--ink-2)}
+.cta .second:hover{background:rgba(255,255,255,.11)}
+.cta .second::after{--gb:linear-gradient(145deg,rgba(255,255,255,.34),rgba(255,255,255,.04) 48%,rgba(255,255,255,.16))}
+.trust{position:relative;padding-top:clamp(18px,2.8vh,28px)}
+.trust::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;
+  background:linear-gradient(90deg,rgba(255,255,255,.28),rgba(255,255,255,.07) 58%,rgba(255,255,255,0))}
+.trust ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:clamp(18px,3.4vw,48px)}
+.trust li{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.24);font-size:15px;font-weight:500;
+  letter-spacing:-.01em;transition:color .35s var(--ease)}
+.trust li:hover{color:rgba(255,255,255,.46)}
+.trust svg{width:17px;height:17px;flex:none}
+
+/* customer pills */
+.pills{
+  grid-column:2; align-self:end; justify-self:end;
+  position:relative; z-index:3; width:min(100%,560px);
+  margin-right:calc(var(--pad-nav) - var(--pad));
+  display:flex; flex-direction:column; align-items:flex-end; gap:11px;
+  padding-bottom:clamp(4px,1.4vh,18px);
+}
+.pill-row{display:flex;gap:11px;justify-content:flex-end;width:100%}
+.pill{
+  display:flex;flex-direction:row-reverse;align-items:center;gap:11px;
+  padding:7px 7px 7px 22px;border-radius:var(--r-pill);
+  background:rgba(255,255,255,.055);
+  backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px);
+  will-change:transform;
+}
+.pill .av{width:35px;height:35px;border-radius:50%;flex:none;object-fit:cover;
+  background:rgba(255,255,255,.09)}
+.pill .tx{line-height:1.18;text-align:right}
+.pill .nm{font-size:15px;font-weight:500;letter-spacing:-.012em;color:var(--ink);white-space:nowrap}
+.pill .am{font-size:11.5px;color:var(--mute);letter-spacing:.02em;white-space:nowrap}
+.pill.tint-o{background:var(--amber)}
+.pill.tint-o::after{--gb:linear-gradient(145deg,rgba(255,255,255,.66),rgba(0,0,0,.10) 54%,rgba(255,255,255,.30))}
+.pill.tint-o .nm{color:#1b1004}
+.pill.tint-o .am{color:rgba(27,16,4,.66)}
+.pill.tint-g{background:var(--moss)}
+.pill.tint-g::after{--gb:linear-gradient(145deg,rgba(255,255,255,.62),rgba(0,0,0,.10) 54%,rgba(255,255,255,.28))}
+.pill.tint-g .nm{color:#12170c}
+.pill.tint-g .am{color:rgba(18,23,12,.66)}
+
+/* ───────────────────────────────────────────────────────────── responsive */
+@media (max-width:1080px){
+  .hero-inner{grid-template-columns:minmax(0,1fr);padding-top:calc(var(--nav-h) + 34svh)}
+  .hero-copy{grid-column:1;grid-row:2}
+  .pills{grid-column:1;grid-row:3;justify-self:stretch;align-items:stretch;width:100%;margin:22px 0 0}
+  .pill-row{justify-content:flex-start;flex-wrap:wrap}
+  .hero{min-height:auto;padding-bottom:clamp(30px,6vh,64px)}
+}
+@media (max-width:620px){
+  :root{--nav-h:70px}
+  .hero-inner{padding-top:calc(var(--nav-h) + 30svh)}
+  .cta{flex-wrap:wrap}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark" viewBox="0 0 100 100">
+    <g fill="currentColor">
+      <path d="M50 7 98 39 2 39Z"/>
+      <rect x="14.5" y="44" width="15" height="40" rx="1.5"/>
+      <rect x="42.5" y="44" width="15" height="40" rx="1.5"/>
+      <rect x="70.5" y="44" width="15" height="40" rx="1.5"/>
+      <rect x="2" y="87" width="96" height="11" rx="3.5"/>
+    </g>
+  </symbol>
+</svg>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Vella Bank home">
+      <svg class="mk" aria-hidden="true"><use href="#mark"/></svg>
+      <span><b>Vella</b> Bank</span>
+    </a>
+    <div class="navbtns">
+      <button class="btn btn-ghost gb" type="button">Wallet</button>
+      <button class="btn btn-solid" type="button">Register</button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" id="hero">
+    <canvas id="cardsCanvas" aria-hidden="true"></canvas>
+
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <div class="scroller" aria-hidden="true">
+          <svg class="up" viewBox="0 0 12 22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V3M1.6 7.4 6 3l4.4 4.4"/></svg>
+          <svg class="dn" viewBox="0 0 12 22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v17M1.6 14.6 6 19l4.4-4.4"/></svg>
+        </div>
+
+        <p class="eyebrow">Create your own</p>
+
+        <h1>
+          <span><span class="w5">Vella</span> Bank</span><br>
+          <span>Professional <span class="w6">bank</span> card</span>
+        </h1>
+
+        <p class="lede">Vella Bank introduces a bank card crafted for professionals who demand
+          excellence. Built with innovative features, from real-time controls to secure
+          digital payments, this card is the perfect companion for your fast-paced
+          lifestyle with modern tools, contactless payments.</p>
+
+        <div class="cta">
+          <button class="btn primary" type="button">Buy card</button>
+          <button class="btn second gb" type="button">Discover</button>
+        </div>
+
+        <div class="trust">
+          <ul>
+            <li><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1 15 8l-7 7-7-7z"/></svg>Meridian</li>
+            <li><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7"/><circle cx="8" cy="8" r="2.6" fill="#09090a"/></svg>Quanta</li>
+            <li><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.2 14.8 13H1.2z"/></svg>Orbital</li>
+            <li><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .8 15.2 5v6L8 15.2.8 11V5z"/></svg>Tempo</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pills" id="pills">
+        <div class="pill-row" style="justify-content:center">
+          <div class="pill gb tint-o" data-f=".9">
+            <img class="av" alt="" width="35" height="35" decoding="async"
+                 src="./vella-bank-assets/amara-okonkwo.jpg">
+            <span class="tx"><span class="nm">Amara Okonkwo</span><br><span class="am mono">$52,400.00</span></span>
+          </div>
+        </div>
+        <div class="pill-row">
+          <div class="pill gb" data-f="1.35">
+            <img class="av" alt="" width="35" height="35" decoding="async"
+                 src="./vella-bank-assets/nadia-rahal.jpg">
+            <span class="tx"><span class="nm">Nadia Rahal</span><br><span class="am mono">$8,275.00</span></span>
+          </div>
+          <div class="pill gb" data-f="1.1">
+            <img class="av" alt="" width="35" height="35" decoding="async"
+                 src="./vella-bank-assets/jonas-kohler.jpg">
+            <span class="tx"><span class="nm">Jonas Køhler</span><br><span class="am mono">$61,930.00</span></span>
+          </div>
+        </div>
+        <div class="pill-row">
+          <div class="pill gb" data-f="1.6">
+            <img class="av" alt="" width="35" height="35" decoding="async"
+                 src="./vella-bank-assets/elias-werner.jpg">
+            <span class="tx"><span class="nm">Elias Werner</span><br><span class="am mono">$34,150.00</span></span>
+          </div>
+          <div class="pill gb tint-g" data-f="1.2">
+            <img class="av" alt="" width="35" height="35" decoding="async"
+                 src="./vella-bank-assets/marisol-ferrer.jpg">
+            <span class="tx"><span class="nm">Marisol Ferrer</span><br><span class="am mono">$19,860.00</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="./vella-bank-assets/three.min.js"></script>
+<script>
+/* ═════════════════════════════════════════════════════════════════════════
+   Vella Bank — single-file hero.
+   The four card faces are drawn by a fragment shader: flat signed-distance
+   shapes, hard edges, no gradients. They are baked once into textures and
+   lit as real cards in a three.js scene.
+   ═════════════════════════════════════════════════════════════════════════ */
+(() => {
+'use strict';
+
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp  = (a, b, t) => a + (b - a) * t;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+/* ───────────────────────────────────────────── card faces: SDF shapes */
+const VS = `
+varying vec2 vUv;
+void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
+`;
+
+const FS = `
+precision highp float;
+varying vec2 vUv;
+uniform int   uCard;
+uniform float uAspect;
+uniform float uPx;
+
+const vec3 IVORY = vec3(233.0, 228.0, 217.0) / 255.0;
+const vec3 INK   = vec3( 18.0,  18.0,  20.0) / 255.0;
+const vec3 AMBER = vec3(210.0, 113.0,  44.0) / 255.0;
+const vec3 MOSS  = vec3( 78.0,  92.0,  62.0) / 255.0;
+
+float sdCircle(vec2 p, float r){ return length(p) - r; }
+float sdBox(vec2 p, vec2 b){ vec2 d = abs(p) - b; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
+float sdRound(vec2 p, vec2 b, float r){ return sdBox(p, b - vec2(r)) - r; }
+float sdTri(vec2 p, float r){                       /* equilateral, pointing up */
+  const float k = 1.7320508;
+  p.x = abs(p.x) - r; p.y = p.y + r / k;
+  if (p.x + k * p.y > 0.0) p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+  p.x -= clamp(p.x, -2.0 * r, 0.0);
+  return -length(p) * sign(p.y);
+}
+vec2  rot(vec2 p, float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c) * p; }
+float line(float d, float w){ return abs(d) - w; }   /* an outline of any shape */
+
+vec3 lay(vec3 dst, float d, vec3 col){ return mix(dst, col, smoothstep(uPx, -uPx, d)); }
+
+const float HAIR = 0.0042;      /* hairline half-width */
+const float FINE = 0.0026;
+
+void main(){
+  vec2 p = (vUv - 0.5) * vec2(uAspect, 1.0);
+  vec3 c;
+
+  /* the bottom-right band (x > 0.28, y < -0.26) is left clear for the wordmark */
+  if (uCard == 0) {                       /* ivory — ruled column */
+    c = IVORY;
+    c = lay(c, line(sdCircle(p - vec2(-0.793, -0.5), 0.300), FINE), INK);
+    c = lay(c, line(sdCircle(p - vec2(-0.793, -0.5), 0.215), FINE), INK);
+    c = lay(c, sdRound(p - vec2(0.275, -0.152), vec2(0.325, HAIR), HAIR), INK);
+    for (int i = 0; i < 5; i++) {
+      float fi = float(i);
+      float x  = -0.020 + fi * 0.148;
+      float hh = 0.070 + fract(sin(fi * 12.9898) * 43758.5453) * 0.175;
+      c = lay(c, line(sdRound(p - vec2(x, -0.142 + hh), vec2(0.048, hh), 0.014), HAIR), INK);
+    }
+    c = lay(c, line(sdCircle(p - vec2(0.605, 0.300), 0.080), HAIR), INK);
+    c = lay(c, sdCircle(p - vec2(0.605, 0.300), 0.021), AMBER);
+
+  } else if (uCard == 1) {                /* ink — concentric */
+    c = INK;
+    for (int i = 0; i < 7; i++) {
+      float r = 0.062 + float(i) * 0.051;
+      c = lay(c, line(sdCircle(p - vec2(0.235, 0.100), r), i == 3 ? HAIR : FINE),
+                 i == 3 ? AMBER : IVORY);
+    }
+    c = lay(c, sdCircle(p - vec2(0.235, 0.100), 0.026), IVORY);
+    for (int i = 0; i < 3; i++) {
+      float fi = float(i);
+      float wI = 0.105 - fi * 0.020;
+      c = lay(c, sdRound(p - vec2(-0.610 + wI, 0.115 - fi * 0.052), vec2(wI, HAIR), HAIR), IVORY);
+    }
+    c = lay(c, line(sdBox(rot(p - vec2(-0.505, -0.160), 0.7854), vec2(0.050)), HAIR), AMBER);
+
+  } else if (uCard == 2) {                /* amber — arcs and rings */
+    c = AMBER;
+    for (int i = 0; i < 4; i++) {
+      float r = 0.135 + float(i) * 0.062;
+      float arc = max(line(sdCircle(p - vec2(0.470, 0.085), r), i == 0 ? HAIR : FINE), p.x - 0.470);
+      c = lay(c, arc, INK);
+    }
+    c = lay(c, sdCircle(p - vec2(0.470, 0.085), 0.026), INK);
+    for (int j = 0; j < 3; j++) {
+      for (int i = 0; i < 4; i++) {
+        vec2 q = vec2(-0.640 + float(i) * 0.076, 0.055 - float(j) * 0.076);
+        c = lay(c, line(sdCircle(p - q, 0.0215), FINE), INK);
+      }
+    }
+    c = lay(c, sdRound(p - vec2(0.040, 0.330), vec2(0.215, HAIR), HAIR), IVORY);
+
+  } else {                                /* moss — nested sail */
+    c = MOSS;
+    c = lay(c, line(sdTri(p - vec2(0.355, 0.030), 0.300), HAIR), IVORY);
+    c = lay(c, line(sdTri(p - vec2(0.355, 0.010), 0.190), FINE), IVORY);
+    c = lay(c, line(sdCircle(p - vec2(0.090, -0.130), 0.108), HAIR), IVORY);
+    for (int i = 0; i < 7; i++) {         /* hatch field, lower left */
+      float x = -0.640 + float(i) * 0.052;
+      c = lay(c, sdRound(rot(p - vec2(x, -0.190), 0.42), vec2(HAIR, 0.115), HAIR), INK);
+    }
+    for (int i = 0; i < 4; i++) {
+      c = lay(c, line(sdCircle(p - vec2(-0.560, 0.255 - float(i) * 0.086), 0.026), FINE), IVORY);
+    }
+  }
+
+  gl_FragColor = vec4(c, 1.0);
+}
+`;
+
+const SHADOW_VS = `
+varying vec2 vUv;
+void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+`;
+const SHADOW_FS = `
+precision highp float;
+varying vec2 vUv;
+uniform vec2  uPlane;
+uniform vec2  uHalf;
+uniform float uRadius;
+uniform float uBlur;
+uniform float uStrength;
+float sdRoundBox(vec2 p, vec2 b, float r){
+  vec2 q = abs(p) - b + r;
+  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+void main(){
+  vec2 p = (vUv - 0.5) * uPlane;
+  float a = 1.0 - smoothstep(-uBlur * 0.28, uBlur, sdRoundBox(p, uHalf, uRadius));
+  a = a * a * (3.0 - 2.0 * a);          /* smoother penumbra than a raw smoothstep */
+  gl_FragColor = vec4(0.0, 0.0, 0.0, a * uStrength);
+}
+`;
+
+const CARD_INK  = ['#121214', '#e9e4d9', '#121214', '#e9e4d9'];
+const CARD_EDGE = [0xdcd6c8, 0x2c2c31, 0xb85f22, 0x415030];
+
+function roundRect(x, a, b, w, h, r) {
+  if (x.roundRect) { x.beginPath(); x.roundRect(a, b, w, h, r); return; }
+  x.beginPath();
+  x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r);
+  x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r);
+  x.arcTo(a, b, a + w, b, r); x.closePath();
+}
+
+/* the Vella mark — pediment, columns, plinth; same path as the SVG symbol */
+function drawMark(x, px, py, s, col) {
+  x.save(); x.translate(px, py); x.scale(s / 100, s / 100); x.fillStyle = col;
+  x.beginPath(); x.moveTo(50, 7); x.lineTo(98, 39); x.lineTo(2, 39); x.closePath(); x.fill();
+  for (const cx of [14.5, 42.5, 70.5]) { roundRect(x, cx, 44, 15, 40, 1.5); x.fill(); }
+  roundRect(x, 2, 87, 96, 11, 3.5); x.fill();
+  x.restore();
+}
+
+function drawFurniture(x, W, H, ink) {
+  const dark = ink === '#121214';
+  // flat contactless chip, top left
+  x.save();
+  x.globalAlpha = dark ? .34 : .42;
+  x.strokeStyle = ink;
+  x.lineWidth = Math.max(1.6, W * .0021);
+  const cx = W * .072, cy = H * .120, cw = W * .062, ch = cw * .74;
+  roundRect(x, cx, cy, cw, ch, cw * .16); x.stroke();
+  x.beginPath();
+  x.moveTo(cx, cy + ch * .5); x.lineTo(cx + cw, cy + ch * .5);
+  x.moveTo(cx + cw * .34, cy); x.lineTo(cx + cw * .34, cy + ch);
+  x.moveTo(cx + cw * .66, cy); x.lineTo(cx + cw * .66, cy + ch);
+  x.stroke();
+  x.restore();
+  // wordmark, bottom right — the art leaves this band clear
+  const bx = W * .935, base = H * .884, ms = H * .062;
+  x.save();
+  x.textAlign = 'right'; x.textBaseline = 'alphabetic';
+  x.font = '500 ' + Math.round(H * .058) + 'px Figtree, sans-serif';
+  x.fillStyle = ink; x.globalAlpha = .97;
+  x.fillText('Vella Bank', bx, base);
+  const tw = x.measureText('Vella Bank').width;
+  drawMark(x, bx - tw - ms * 1.30, base - ms * .98, ms, ink);
+  x.restore();
+}
+
+/* render each face once through the shader, then composite the furniture */
+function bakeCards(renderer, THREE) {
+  const W = 1400, H = Math.round(W / 1.5858);
+  const rt = new THREE.WebGLRenderTarget(W, H, {
+    minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+    depthBuffer: false, stencilBuffer: false
+  });
+  const sc = new THREE.Scene(), cam = new THREE.Camera();
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uCard: { value: 0 }, uAspect: { value: W / H }, uPx: { value: 1 / H } },
+    vertexShader: VS, fragmentShader: FS, depthTest: false, depthWrite: false
+  });
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+  sc.add(quad);
+
+  const buf = new Uint8Array(W * H * 4), out = [];
+  for (let i = 0; i < 4; i++) {
+    mat.uniforms.uCard.value = i;
+    renderer.setRenderTarget(rt);
+    renderer.render(sc, cam);
+    renderer.readRenderTargetPixels(rt, 0, 0, W, H, buf);
+    const c = cv(W, H), x = c.getContext('2d');
+    const img = x.createImageData(W, H);
+    for (let y = 0; y < H; y++) {                     // GL reads bottom-up
+      const src = (H - 1 - y) * W * 4;
+      img.data.set(buf.subarray(src, src + W * 4), y * W * 4);
+    }
+    x.putImageData(img, 0, 0);
+    drawFurniture(x, W, H, CARD_INK[i]);
+    out.push(c);
+  }
+  renderer.setRenderTarget(null);
+  rt.dispose(); quad.geometry.dispose(); mat.dispose();
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════ three.js card stack */
+// measured off the reference: each card's top-right corner in card-width units,
+// in the stack's own (rotated) frame — the third step is deliberately wider
+const LAY = [[-0.4785, 0.38325], [-0.2075, 0.09925], [0.2145, -0.10175], [0.4715, -0.38075]];
+const TILT = -0.1405;   // 8.05 deg clockwise
+const OZ = 0.105;
+const CARD_R = 1 / 1.5858;
+
+/* a quiet, mostly dark studio — one clean band so the sheen is a single sweep */
+function envCanvas() {
+  const c = cv(1024, 512), x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, '#9a9a9e'); g.addColorStop(.40, '#6e6e73');
+  g.addColorStop(.52, '#2e2e32'); g.addColorStop(1, '#101012');
+  x.fillStyle = g; x.fillRect(0, 0, 1024, 512);
+  const band = x.createLinearGradient(0, 60, 0, 250);
+  band.addColorStop(0, 'rgba(255,255,255,0)');
+  band.addColorStop(.5, 'rgba(255,255,255,.85)');
+  band.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = band; x.fillRect(90, 60, 430, 190);
+  x.fillStyle = 'rgba(255,255,255,.22)'; x.fillRect(650, 110, 210, 90);
+  return c;
+}
+
+function initCards() {
+  const canvas = document.getElementById('cardsCanvas');
+  if (!window.THREE) { canvas.style.display = 'none'; return null; }
+  const THREE = window.THREE;
+
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  } catch (e) { canvas.style.display = 'none'; return null; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  const faces = bakeCards(renderer, THREE);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(17, 1, 1, 100);
+  camera.position.set(0, 0, 18);
+
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const eTex = new THREE.CanvasTexture(envCanvas());
+  eTex.mapping = THREE.EquirectangularReflectionMapping;
+  eTex.encoding = THREE.sRGBEncoding;
+  scene.environment = pmrem.fromEquirectangular(eTex).texture;
+  eTex.dispose(); pmrem.dispose();
+
+  const key = new THREE.DirectionalLight(0xfff6ec, 0.84);
+  key.position.set(-3.4, 5.2, 5.4);
+  scene.add(key);
+  scene.add(new THREE.DirectionalLight(0xdfe6ff, 0.12).translateX(4).translateY(-2).translateZ(3));
+
+  // rounded-rect card with a small bevel on both faces
+  const t = 0.026, rad = 0.058;
+  const s = new THREE.Shape();
+  const w = 1, h = CARD_R, hw = w / 2, hh = h / 2;
+  s.moveTo(-hw + rad, -hh);
+  s.lineTo(hw - rad, -hh); s.quadraticCurveTo(hw, -hh, hw, -hh + rad);
+  s.lineTo(hw, hh - rad);  s.quadraticCurveTo(hw, hh, hw - rad, hh);
+  s.lineTo(-hw + rad, hh); s.quadraticCurveTo(-hw, hh, -hw, hh - rad);
+  s.lineTo(-hw, -hh + rad); s.quadraticCurveTo(-hw, -hh, -hw + rad, -hh);
+  const geo = new THREE.ExtrudeGeometry(s, {
+    depth: t, bevelEnabled: true, bevelThickness: t * .3, bevelSize: t * .3, bevelSegments: 2, curveSegments: 18
+  });
+  geo.translate(0, 0, -t / 2);
+  { // the default UV generator uses world coords — remap the caps to 0..1
+    const p = geo.attributes.position, uv = geo.attributes.uv;
+    for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + hw) / w, (p.getY(i) + hh) / h);
+    uv.needsUpdate = true;
+  }
+
+  const SH_W = 2.30, SH_H = 1.94;                 // shadow plane, room for the penumbra
+  const shadowGeo = new THREE.PlaneGeometry(SH_W, SH_H);
+  const SH_BLUR_MAX = Math.min(SH_W / 2 - .5, SH_H / 2 - CARD_R / 2) * .92;
+
+  const rig = new THREE.Group();          // placement + pointer tilt
+  const intro = new THREE.Group();        // entrance push-in
+  const stack = new THREE.Group();        // the cascade
+  stack.rotation.z = TILT;
+  intro.add(stack); rig.add(intro); scene.add(rig);
+
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  const cards = faces.map((face, i) => {
+    const tex = new THREE.CanvasTexture(face);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.anisotropy = maxAniso;
+    const front = new THREE.MeshPhysicalMaterial({
+      map: tex, roughness: .42, metalness: .0,
+      clearcoat: .34, clearcoatRoughness: .22, envMapIntensity: .70,
+      transparent: true, opacity: 1
+    });
+    const edge = new THREE.MeshPhysicalMaterial({
+      color: CARD_EDGE[i], roughness: .40, metalness: .06,
+      clearcoat: .3, envMapIntensity: .72, transparent: true, opacity: 1
+    });
+    const m = new THREE.Mesh(geo, [front, edge]);
+    m.userData.home = new THREE.Vector3(LAY[i][0], LAY[i][1], (1.5 - i) * OZ);
+    m.userData.rz = (i % 2 ? .010 : -.011);
+    m.userData.mats = [front, edge];
+    m.userData.i = i;
+
+    // its own soft shadow, riding just behind the card
+    const shMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uPlane:    { value: new THREE.Vector2(SH_W, SH_H) },
+        uHalf:     { value: new THREE.Vector2(0.5, CARD_R / 2) },
+        uRadius:   { value: 0.058 },
+        uBlur:     { value: 0.17 },
+        uStrength: { value: 0 }
+      },
+      vertexShader: SHADOW_VS, fragmentShader: SHADOW_FS,
+      transparent: true, depthWrite: false, depthTest: false
+    });
+    const sh = new THREE.Mesh(shadowGeo, shMat);
+    sh.renderOrder = (3 - i) * 2;
+    m.renderOrder  = (3 - i) * 2 + 1;
+    m.add(sh);
+    m.userData.sh = sh; m.userData.shMat = shMat;
+
+    stack.add(m);
+    return m;
+  });
+
+  const state = { px: 0, py: 0, tx: 0, ty: 0, t0: performance.now(), scroll: 0, w: 0, h: 0 };
+
+  function resize() {
+    const r = canvas.getBoundingClientRect();
+    const W = Math.max(2, r.width | 0), H = Math.max(2, r.height | 0);
+    if (W === state.w && H === state.h) return;
+    state.w = W; state.h = H;
+    camera.aspect = W / H; camera.updateProjectionMatrix();
+    renderer.setSize(W, H, false);
+
+    const frustumH = 2 * camera.position.z * Math.tan(camera.fov * Math.PI / 360);
+    const pxPerWorld = H / frustumH;
+    const narrow = W < 1080;
+    const cardPx = narrow ? Math.min(.46 * W, .255 * H) : Math.min(.3067 * W, .430 * H);
+    rig.scale.setScalar(cardPx / pxPerWorld);
+
+    const cx = narrow ? 0.52 : 0.6086, cy = narrow ? 0.268 : 0.3206;
+    rig.position.x = (cx - .5) * W / pxPerWorld;
+    rig.position.y = (.5 - cy) * H / pxPerWorld;
+
+    state.rect = canvas.getBoundingClientRect();
+  }
+
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  let hoverIdx = -1, hoverWant = 0;
+  const hv = [0, 0, 0, 0];
+  const sel = [0, 0, 0, 0];      // per-card 'this one is under the cursor'
+
+  addEventListener('pointermove', e => {
+    state.tx = (e.clientX / innerWidth) * 2 - 1;
+    state.ty = (e.clientY / innerHeight) * 2 - 1;
+    const r = state.rect;
+    if (!r) return;
+    if (e.pointerType === 'touch') return;
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(cards, false)[0];
+    hoverIdx = hit ? hit.object.userData.i : -1;
+    hoverWant = hit ? 1 : 0;
+  }, { passive: true });
+  const dropHover = () => { hoverWant = 0; hoverIdx = -1; };
+  addEventListener('pointerleave', dropHover, { passive: true });
+  addEventListener('blur', dropHover);
+  document.addEventListener('mouseleave', dropHover);
+  addEventListener('scroll', () => { state.rect = canvas.getBoundingClientRect(); }, { passive: true });
+
+  const easeOutCubic = x => 1 - Math.pow(1 - x, 3);
+  const easeOutQuint = x => 1 - Math.pow(1 - x, 5);
+  const IN_DELAY = 90, IN_DUR = 1750;
+  const CARD_DELAY = 150, CARD_STAG = 155, CARD_DUR = 900;
+  let lastBlur = -1, visible = true;
+
+  const hero = document.getElementById('hero');
+  new IntersectionObserver(es => { visible = es[0].isIntersecting; }, { threshold: 0 }).observe(hero);
+
+  function frame(now) {
+    if (!visible) return;
+    const el = now - state.t0, T = el * 0.001;
+
+    state.px = lerp(state.px, state.tx, .045);
+    state.py = lerp(state.py, state.ty, .045);
+
+    // orchestration: each card eases toward the hover state at its own rate,
+    // so the fan opens as a wave rather than a block
+    let hAvg = 0;
+    for (let i = 0; i < 4; i++) {
+      hv[i] = lerp(hv[i], reduce ? 0 : hoverWant, .080 - i * .0135);
+      sel[i] = lerp(sel[i], (!reduce && i === hoverIdx) ? 1 : 0, .085);
+      hAvg += hv[i] * .25;
+    }
+
+    const sp = state.scroll;
+    rig.rotation.y = state.px * (reduce ? 0 : .14) + hAvg * .050;
+    rig.rotation.x = -state.py * (reduce ? 0 : .085) + sp * .10 - hAvg * .030;
+    rig.rotation.z = sp * -.05 + hAvg * .018;
+
+    const gp = reduce ? 1 : easeOutQuint(clamp((el - IN_DELAY) / IN_DUR, 0, 1));
+    intro.scale.setScalar(lerp(1.62, 1, gp));
+    intro.position.set(lerp(.46, 0, gp) + hAvg * .050, lerp(-.30, 0, gp) - hAvg * .075, lerp(.34, 0, gp));
+    intro.rotation.z = lerp(-.045, 0, gp);
+
+    const bp = reduce ? 1 : clamp((el - IN_DELAY) / 950, 0, 1);
+    const blur = Math.round((1 - easeOutCubic(bp)) * 11 * 10) / 10;
+    if (blur !== lastBlur) {
+      lastBlur = blur;
+      canvas.style.filter = blur > .15 ? 'blur(' + blur + 'px)' : '';
+    }
+
+    for (const m of cards) {
+      const i = m.userData.i, home = m.userData.home, h = hv[i];
+      let p = clamp((el - CARD_DELAY - i * CARD_STAG) / CARD_DUR, 0, 1);
+      if (reduce) p = 1;
+      const ec = easeOutCubic(p), fl = reduce ? 0 : 1;
+      const fan = (i - 1.5) / 1.5;                 // -1 .. +1 across the stack
+      const lift = sel[i];
+
+      const spread = 1 + h * .30;                  // the cascade opens out
+      m.position.x = lerp(home.x + .16, home.x * spread, ec) + Math.cos(T * .47 + i * .91) * .018 * fl;
+      m.position.y = lerp(home.y - .13, home.y * spread, ec) + Math.sin(T * .62 + i * 1.32) * .022 * fl;
+      const gap = OZ * (1 + h * 1.7);
+      m.position.z = (1.5 - i) * gap + lift * .085;
+
+      m.rotation.z = m.userData.rz + h * fan * .052 - lift * .012;
+      m.rotation.x = Math.sin(T * .53 + i) * .017 * fl + (1 - ec) * .10 - h * .028;
+      m.rotation.y = Math.cos(T * .41 + i * 1.7) * .021 * fl - (1 - ec) * .14 + h * fan * .075;
+      m.scale.setScalar(lerp(.94, 1, ec) * (1 + lift * .022));
+
+      if (m.userData.mats[0].opacity !== ec) { m.userData.mats[0].opacity = ec; m.userData.mats[1].opacity = ec; }
+
+      // the shadow rides behind the card and softens as the gap opens
+      const u = m.userData.shMat.uniforms;
+      u.uBlur.value = Math.min(.085 + gap * 1.05, SH_BLUR_MAX);
+      u.uStrength.value = ec * (.62 - gap * .55);
+      m.userData.sh.position.set(gap * .46, -gap * .54, -gap * .93);
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  renderer.setAnimationLoop(frame);
+  addEventListener('resize', resize, { passive: true });
+  addEventListener('orientationchange', () => setTimeout(resize, 120), { passive: true });
+  resize();
+  window.__vella = { frame, state, rig, resize };   // small handle for scripted checks   // small handle for scripted checks   // small handle for scripted checks   // small handle for scripted checks
+  return state;
+}
+
+/* ═══════════════════════════════════════════════════ page wiring */
+
+/* Typewriter/decode reveal: every letter starts as a placeholder glyph and
+   resolves left to right, the way the reference hero types itself in. */
+/* Cipher glyphs for the reveal — braille cells where the platform has them,
+   geometric blocks where it does not. Detected by width against a tofu box. */
+let CIPHER = null;
+function cipherSet() {
+  if (CIPHER) return CIPHER;
+  const m = document.createElement('canvas').getContext('2d');
+  m.font = '40px sans-serif';
+  const tofu = m.measureText('\uFFFF').width;
+  const test = m.measureText('\u2809').width;
+  CIPHER = [];
+  if (test > 0 && Math.abs(test - tofu) > 0.5) {
+    for (let k = 0x2801; k <= 0x283f; k++) CIPHER.push(String.fromCharCode(k));
+  } else {
+    CIPHER = [...'\u259A\u259E\u2599\u259F\u259B\u259C\u25E7\u25E8\u25E9\u25EA\u25A4\u25A5\u25A6\u25A7\u25A8\u25A9'];
+  }
+  return CIPHER;
+}
+
+/* what CSS text-transform:capitalize would have produced, baked in — once every
+   character is its own span the browser would capitalise all of them */
+const titleCase = t => t.replace(/(^|[^\p{L}\p{N}])(\p{L})/gu, (a, sep, ch) => sep + ch.toUpperCase());
+
+function decodeReveal(root, delay, dur) {
+  if (!root || reduce) return;
+  if (getComputedStyle(root).textTransform === 'capitalize') {
+    root.dataset.cap = '1'; root.style.textTransform = 'none';
+  }
+  const cap = root.dataset.cap === '1';
+
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walk.nextNode()) if (/\S/.test(walk.currentNode.nodeValue)) nodes.push(walk.currentNode);
+
+  const cells = [], restore = [], range = document.createRange();
+
+  for (const n of nodes) {
+    let t = n.nodeValue.replace(/\s+/g, ' ');
+    if (cap) t = titleCase(t);
+    n.nodeValue = t;                                   // identical once white space collapses
+
+    const w = [];
+    for (let i = 0; i < t.length; i++) {
+      range.setStart(n, i); range.setEnd(n, i + 1);
+      w.push(range.getBoundingClientRect().width);
+    }
+    // a space sitting at a wrap point measures zero — give them all the widest one
+    let sp = 0;
+    for (let i = 0; i < t.length; i++) if (t[i] === ' ' && w[i] > sp) sp = w[i];
+    for (let i = 0; i < t.length; i++) if (t[i] === ' ') w[i] = sp;
+
+    const frag = document.createDocumentFragment(), made = [];
+    let word = null;
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      const c = document.createElement('span');
+      c.className = 'dc';
+      c.style.width = w[i].toFixed(3) + 'px';
+      c.textContent = ch;
+      c.dataset.ch = ch;
+      if (ch === ' ') {
+        c.style.whiteSpace = 'pre';
+        word = null; frag.appendChild(c); made.push(c);
+      } else {
+        if (!word) { word = document.createElement('span'); word.className = 'wd'; frag.appendChild(word); made.push(word); }
+        word.appendChild(c);
+        cells.push(c);
+      }
+    }
+    const parent = n.parentNode, next = n.nextSibling;
+    parent.replaceChild(frag, n);
+    restore.push({ parent, next, text: t, made });
+  }
+
+  const set = cipherSet(), total = cells.length;
+  if (!total) return;
+  const pick = () => set[(Math.random() * set.length) | 0];
+  for (const c of cells) { c.classList.add('enc'); c.textContent = pick(); }
+
+  const t0 = performance.now() + delay;
+  let lastRoll = 0;
+  (function tick(now) {
+    const k = Math.round(clamp((now - t0) / dur, 0, 1) * total);
+    const roll = now - lastRoll > 70;
+    if (roll) lastRoll = now;
+    for (let i = 0; i < total; i++) {
+      const c = cells[i];
+      if (i < k) {
+        if (c.classList.contains('enc')) { c.classList.remove('enc'); c.textContent = c.dataset.ch; }
+      } else if (roll) c.textContent = pick();
+    }
+    if (k < total) requestAnimationFrame(tick);
+    else for (const r of restore) {                    // hand the real text nodes back
+      for (const el of r.made) el.remove();
+      r.parent.insertBefore(document.createTextNode(r.text), r.next);
+    }
+  })(performance.now());
+}
+
+function heroIntro() {
+  const q = sel => document.querySelector(sel);
+  decodeReveal(q('.eyebrow'), 140, 1450);
+  decodeReveal(q('h1'), 170, 1150);
+  decodeReveal(q('.lede'), 470, 1500);
+  const risers = [['.cta', 980], ['.trust', 1150], ['#pills', 1080], ['.scroller', 300]];
+  for (const [sel, d] of risers) {
+    const el = q(sel); if (!el || reduce) continue;
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(14px)';
+    el.style.transition = 'opacity .9s var(--ease), transform 1.05s var(--ease)';
+    setTimeout(() => { el.style.opacity = ''; el.style.transform = ''; }, d);
+  }
+}
+
+function navScrim() {
+  const nav = document.getElementById('nav');
+  const h = () => nav.classList.toggle('stuck', scrollY > 36);
+  addEventListener('scroll', h, { passive: true });
+  h();
+}
+
+function pillDrift() {
+  const pills = [...document.querySelectorAll('.pill')];
+  if (!pills.length) return;
+  const t0 = performance.now();
+  let mx = 0, my = 0, cx = 0, cy = 0, live = true;
+  const hero = document.getElementById('hero');
+  if (hero) new IntersectionObserver(es => {
+    const was = live; live = es[0].isIntersecting;
+    if (!was && live) requestAnimationFrame(tick);
+  }, { threshold: 0 }).observe(hero);
+  addEventListener('pointermove', e => {
+    mx = (e.clientX / innerWidth) * 2 - 1; my = (e.clientY / innerHeight) * 2 - 1;
+  }, { passive: true });
+  function tick(now) {
+    if (!live) return;
+    const T = (now - t0) * .001;
+    cx = lerp(cx, mx, .04); cy = lerp(cy, my, .04);
+    pills.forEach((p, i) => {
+      const f = parseFloat(p.dataset.f) || 1;
+      const dy = reduce ? 0 : Math.sin(T * .55 * f + i * 1.4) * 3.4;
+      const dx = reduce ? 0 : Math.cos(T * .43 * f + i * .8) * 2.6;
+      p.style.transform = `translate3d(${dx + cx * (2 + i * 1.6)}px,${dy + cy * (1.4 + i)}px,0)`;
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function scrollLink(state) {
+  if (!state) return;
+  const hero = document.getElementById('hero');
+  const h = () => {
+    const r = hero.getBoundingClientRect();
+    state.scroll = clamp(-r.top / Math.max(1, r.height), 0, 1);
+  };
+  addEventListener('scroll', h, { passive: true });
+  h();
+}
+
+function boot() {
+  heroIntro();
+  navScrim();
+  scrollLink(initCards());
+  pillDrift();
+}
+
+// the card faces draw type — wait for the webfont first
+if (document.fonts && document.fonts.ready) {
+  Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 2500))]).then(boot);
+} else { addEventListener('load', boot); }
+
+})();
+</script>
+</body>
+</html>

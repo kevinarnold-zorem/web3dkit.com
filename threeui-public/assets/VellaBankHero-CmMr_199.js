@@ -1,0 +1,1 @@
+import{s as e,u as t,j as n,V as p}from"./index-fOQwe-l-.js";import{L as i}from"./LandingPages-plHUvg-e.js";import"./SylvaLivingWorldScene-OThUX2Jj.js";function u(a){const[o,r]=e(a),s=t(p,o);return n.jsx(i,{...r,customization:s,title:"Vella Bank — Professional bank card",sourceUrl:"/landing-pages/vella-bank.html"})}export{u as VellaBankHero};

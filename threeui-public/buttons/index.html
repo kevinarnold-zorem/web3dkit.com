@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WP9FS3ECK"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-5WP9FS3ECK');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const palettes = new Set(["mono", "sepia", "azure", "moss", "mauve"]);
+        try {
+          const savedTheme = localStorage.getItem("threeui-theme");
+          const lightPalette = localStorage.getItem("threeui-palette-light");
+          const darkPalette = localStorage.getItem("threeui-palette-dark");
+          const mode = savedTheme === "light" || savedTheme === "system" ? savedTheme : "dark";
+          if (mode === "system") root.removeAttribute("data-theme");
+          else root.dataset.theme = mode;
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const scheme = mode === "system" ? (prefersDark ? "dark" : "light") : mode;
+          root.dataset.scheme = scheme;
+          const palette = scheme === "dark" ? darkPalette : lightPalette;
+          root.dataset.palette = palettes.has(palette) ? palette : "mono";
+        } catch {
+          root.dataset.theme = "dark";
+          root.dataset.scheme = "dark";
+          root.dataset.palette = "mono";
+        }
+      })();
+    </script>
+    <meta name="description" content="Browse interactive button components with WebGL, Canvas, CSS, hover, loading, glow, liquid-metal, and tactile animation effects." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ThreeUI" />
+    <meta property="og:title" content="Animated Button Components | ThreeUI" />
+    <meta property="og:description" content="Browse interactive button components with WebGL, Canvas, CSS, hover, loading, glow, liquid-metal, and tactile animation effects." />
+    <meta property="og:url" content="https://threeui.com/buttons" />
+    <meta property="og:image" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/threeui-media/thumbnails/threeui-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta property="og:image:secure_url" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/threeui-media/thumbnails/threeui-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:image:alt" content="Animated Button Components preview" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Animated Button Components | ThreeUI" />
+    <meta name="twitter:description" content="Browse interactive button components with WebGL, Canvas, CSS, hover, loading, glow, liquid-metal, and tactile animation effects." />
+    <meta name="twitter:image" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/threeui-media/thumbnails/threeui-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta name="twitter:image:alt" content="Animated Button Components preview" />
+    <link rel="canonical" href="https://threeui.com/buttons" />
+    <link rel="icon" href="/threeui-mark.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Animated Button Components | ThreeUI</title>
+    <script type="module" crossorigin src="/assets/index-fOQwe-l-.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-x9bNS8sK.css">
+      <script id="threeui-structured-data" type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"Animated button components","description":"Browse interactive button components with WebGL, Canvas, CSS, hover, loading, glow, liquid-metal, and tactile animation effects.","url":"https://threeui.com/buttons","hasPart":[{"@type":"TechArticle","name":"Installation","url":"https://threeui.com/installation"},{"@type":"TechArticle","name":"MCP","url":"https://threeui.com/mcp"},{"@type":"WebPage","name":"Pricing","url":"https://threeui.com/pricing"},{"@type":"WebPage","name":"Sponsorship","url":"https://threeui.com/sponsorship"}],"mainEntity":{"@type":"ItemList","numberOfItems":50,"itemListElement":[{"@type":"ListItem","position":1,"name":"Shader Buttons — Star Portal","url":"https://threeui.com/buttons/star-portal/star-portal"},{"@type":"ListItem","position":2,"name":"Shader Buttons — Ignition","url":"https://threeui.com/buttons/star-portal/ignition-button"},{"@type":"ListItem","position":3,"name":"Shader Buttons — Induction","url":"https://threeui.com/buttons/star-portal/induction-button"},{"@type":"ListItem","position":4,"name":"Shader Buttons — Plasma","url":"https://threeui.com/buttons/star-portal/plasma-button"},{"@type":"ListItem","position":5,"name":"Shader Buttons — Tactile","url":"https://threeui.com/buttons/star-portal/tactile-button"},{"@type":"ListItem","position":6,"name":"Shader Buttons — Thinking","url":"https://threeui.com/buttons/star-portal/thinking-button"},{"@type":"ListItem","position":7,"name":"Ignition Button","url":"https://threeui.com/buttons/ignition-button"},{"@type":"ListItem","position":8,"name":"Induction Button","url":"https://threeui.com/buttons/induction-button"},{"@type":"ListItem","position":9,"name":"Plasma Button","url":"https://threeui.com/buttons/plasma-button"},{"@type":"ListItem","position":10,"name":"Tactile Button","url":"https://threeui.com/buttons/tactile-button"},{"@type":"ListItem","position":11,"name":"Thinking Button","url":"https://threeui.com/buttons/thinking-button"},{"@type":"ListItem","position":12,"name":"Sliding Text CTA","url":"https://threeui.com/buttons/sliding-text-cta"},{"@type":"ListItem","position":13,"name":"Floating Dots CTA","url":"https://threeui.com/buttons/floating-dots-cta"},{"@type":"ListItem","position":14,"name":"Launch Button","url":"https://threeui.com/buttons/launch-button"},{"@type":"ListItem","position":15,"name":"Dot Border Button","url":"https://threeui.com/buttons/dot-border-button"},{"@type":"ListItem","position":16,"name":"Gradient CTA","url":"https://threeui.com/buttons/gradient-cta"},{"@type":"ListItem","position":17,"name":"Spinning Border Button","url":"https://threeui.com/buttons/spinning-border-button"},{"@type":"ListItem","position":18,"name":"Glassmorphism CTA","url":"https://threeui.com/buttons/glassmorphism-cta"},{"@type":"ListItem","position":19,"name":"Generate Button","url":"https://threeui.com/buttons/generate-button"},{"@type":"ListItem","position":20,"name":"Gradient Pill Button","url":"https://threeui.com/buttons/gradient-pill-button"},{"@type":"ListItem","position":21,"name":"Gradient Beam CTA","url":"https://threeui.com/buttons/gradient-beam-cta"},{"@type":"ListItem","position":22,"name":"Rectangle Buttons — Dark Glass","url":"https://threeui.com/buttons/rectangle-buttons/dark-pill"},{"@type":"ListItem","position":23,"name":"Rectangle Buttons — Launch Button","url":"https://threeui.com/buttons/rectangle-buttons/launch-button"},{"@type":"ListItem","position":24,"name":"Rectangle Buttons — Dot Border Button","url":"https://threeui.com/buttons/rectangle-buttons/dot-border-button"},{"@type":"ListItem","position":25,"name":"Rectangle Buttons — Floating Dots CTA","url":"https://threeui.com/buttons/rectangle-buttons/floating-dots-cta"},{"@type":"ListItem","position":26,"name":"Rectangle Buttons — Sliding Text CTA","url":"https://threeui.com/buttons/rectangle-buttons/sliding-text-cta"},{"@type":"ListItem","position":27,"name":"Rectangle Buttons — Gradient Beam CTA","url":"https://threeui.com/buttons/rectangle-buttons/gradient-beam-cta"},{"@type":"ListItem","position":28,"name":"Rectangle Buttons — Gradient Pill Button","url":"https://threeui.com/buttons/rectangle-buttons/gradient-pill-button"},{"@type":"ListItem","position":29,"name":"Rectangle Buttons — Generate Button","url":"https://threeui.com/buttons/rectangle-buttons/generate-button"},{"@type":"ListItem","position":30,"name":"Rectangle Buttons — Glassmorphism CTA","url":"https://threeui.com/buttons/rectangle-buttons/glassmorphism-cta"},{"@type":"ListItem","position":31,"name":"Rectangle Buttons — Spinning Border Button","url":"https://threeui.com/buttons/rectangle-buttons/spinning-border-button"},{"@type":"ListItem","position":32,"name":"Rectangle Buttons — Gradient CTA","url":"https://threeui.com/buttons/rectangle-buttons/gradient-cta"},{"@type":"ListItem","position":33,"name":"Rectangle Buttons — Lumen CTA","url":"https://threeui.com/buttons/rectangle-buttons/lumen-cta"},{"@type":"ListItem","position":34,"name":"Rectangle Buttons — Lumen CTA Ghost","url":"https://threeui.com/buttons/rectangle-buttons/lumen-cta-ghost"},{"@type":"ListItem","position":35,"name":"Rectangle Buttons — Trochil Signal","url":"https://threeui.com/buttons/rectangle-buttons/trochil-signal"},{"@type":"ListItem","position":36,"name":"Rectangle Buttons — Attune Thermal","url":"https://threeui.com/buttons/rectangle-buttons/attune-thermal"},{"@type":"ListItem","position":37,"name":"Rectangle Buttons — Tideform Outline","url":"https://threeui.com/buttons/rectangle-buttons/tideform-outline"},{"@type":"ListItem","position":38,"name":"Rectangle Buttons — Understory Arrow Pill","url":"https://threeui.com/buttons/rectangle-buttons/understory-arrow-pill"},{"@type":"ListItem","position":39,"name":"Rectangle Buttons — Meridian Keycap Primary","url":"https://threeui.com/buttons/rectangle-buttons/meridian-keycap-primary"},{"@type":"ListItem","position":40,"name":"Rectangle Buttons — Meridian Keycap Secondary","url":"https://threeui.com/buttons/rectangle-buttons/meridian-keycap-secondary"},{"@type":"ListItem","position":41,"name":"Rectangle Buttons — Halvorsen Arrow Pill","url":"https://threeui.com/buttons/rectangle-buttons/halvorsen-arrow-pill"},{"@type":"ListItem","position":42,"name":"Rectangle Buttons — Aster Glass Access","url":"https://threeui.com/buttons/rectangle-buttons/aster-glass-access"},{"@type":"ListItem","position":43,"name":"Rectangle Buttons — Aster Glass Arrow","url":"https://threeui.com/buttons/rectangle-buttons/aster-glass-arrow"},{"@type":"ListItem","position":44,"name":"Circle Buttons — Play","url":"https://threeui.com/buttons/circle-buttons/play"},{"@type":"ListItem","position":45,"name":"Circle Buttons — Plus","url":"https://threeui.com/buttons/circle-buttons/plus"},{"@type":"ListItem","position":46,"name":"Circle Buttons — Mail","url":"https://threeui.com/buttons/circle-buttons/mail"},{"@type":"ListItem","position":47,"name":"Liquid Metal Button — Play Circle","url":"https://threeui.com/buttons/liquid-metal-button/play-circle"},{"@type":"ListItem","position":48,"name":"Liquid Metal Button — Sign up Pill","url":"https://threeui.com/buttons/liquid-metal-button/pill"},{"@type":"ListItem","position":49,"name":"Liquid Metal Button — Liquid Orb","url":"https://threeui.com/buttons/liquid-metal-button/circle"},{"@type":"ListItem","position":50,"name":"Lumen CTA","url":"https://threeui.com/buttons/lumen-cta"}]}}</script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

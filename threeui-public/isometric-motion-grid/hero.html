@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Isometric Motion Grid — Hero</title>
+<style>
+  :root{
+    --bg:#08090A;
+    --rule:rgba(226,232,240,.085);
+    --fig:rgba(226,232,240,.26);
+    --title:rgba(240,243,248,.94);
+    --body:rgba(226,232,240,.44);
+    --line:rgba(226,232,240,.11);
+    --chip:rgba(226,232,240,.055);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);
+    color:var(--body);
+    font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    font-feature-settings:"cv05" 1,"ss03" 1;
+  }
+  .mono{
+    font-family:ui-monospace,SFMono-Regular,Menlo,"Roboto Mono",monospace;
+    font-size:12.5px;letter-spacing:.2em;color:var(--fig);
+    text-transform:uppercase;
+  }
+  .art{display:block}
+  .art svg{display:block;width:100%;height:100%;overflow:visible}
+  .rule{
+    position:absolute;top:0;bottom:0;width:1px;
+    background:linear-gradient(to bottom,transparent 0,var(--rule) 26px,var(--rule) 93%,transparent 100%);
+    pointer-events:none;
+  }
+  .hr{height:1px;background:var(--line);border:0}
+  body{display:flex;align-items:center;min-height:100vh}
+  .wrap{width:100%;max-width:1360px;margin:0 auto;padding:76px 56px 84px}
+  .hero{
+    position:relative;display:grid;grid-template-columns:minmax(0,46fr) minmax(0,54fr);
+    align-items:center;gap:0;min-height:520px;
+  }
+  .copy{padding:8px 56px 8px 0}
+  .eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:34px}
+  .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:rgba(226,232,240,.34)}
+  h1{
+    font-size:clamp(38px,4.6vw,58px);font-weight:600;line-height:1.04;
+    letter-spacing:-.033em;color:var(--title);margin-bottom:22px;text-wrap:balance;
+  }
+  h1 em{font-style:normal;color:rgba(226,232,240,.42)}
+  .lede{font-size:16.5px;line-height:1.63;max-width:42ch;text-wrap:pretty;margin-bottom:38px}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:44px}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;height:42px;padding:0 20px;border-radius:8px;
+    font-size:14px;font-weight:500;letter-spacing:-.005em;text-decoration:none;
+    color:var(--title);border:1px solid rgba(226,232,240,.16);background:rgba(226,232,240,.055);
+    transition:border-color .18s ease,background .18s ease;
+  }
+  .btn.ghost{background:transparent;color:rgba(226,232,240,.6);border-color:rgba(226,232,240,.1)}
+  .btn:hover{border-color:rgba(226,232,240,.3);background:rgba(226,232,240,.09)}
+  .btn .arrow{font-size:15px;line-height:1;opacity:.55}
+  .specs{display:flex;gap:44px;padding-top:26px;border-top:1px solid var(--line)}
+  .specs div{display:flex;flex-direction:column;gap:7px}
+  .specs b{font-size:19px;font-weight:600;color:var(--title);letter-spacing:-.02em}
+  .stage{position:relative;padding:0 0 0 56px;align-self:stretch;display:flex;align-items:center}
+  .art{width:100%;aspect-ratio:1050/975}
+  .tag{
+    position:absolute;left:56px;top:6px;display:flex;align-items:center;gap:10px;
+  }
+  .tag .bar{width:22px;height:1px;background:rgba(226,232,240,.22)}
+  @media (max-width:900px){
+    .hero{grid-template-columns:1fr;gap:44px;min-height:0}
+    .copy{padding:0}
+    .stage{padding:0;flex-direction:column;align-items:stretch}
+    .rule{display:none}
+    .tag{position:static;margin-bottom:14px}
+    .wrap{padding:52px 26px 64px}
+    .specs{gap:28px;flex-wrap:wrap}
+  }
+  .tag .mono,.eyebrow .mono,.btn{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero" data-orbit>
+    <i class="rule" style="left:46%"></i>
+    <div class="copy">
+      <div class="eyebrow"><span class="dot"></span><span class="mono">Fig H.0 &nbsp;/&nbsp; Field console</span></div>
+      <h1>Every surface you ship, <em>drawn before it is built.</em></h1>
+      <p class="lede">One authored isometric system covers the deck, the dock and the panel — so hardware, firmware and the interface all reference the same drawing.</p>
+      <div class="cta">
+        <a class="btn" href="#">Start a build <span class="arrow">&#8594;</span></a>
+        <a class="btn ghost" href="#">Read the spec</a>
+      </div>
+      <div class="specs">
+        <div><b>2:1</b><span class="mono">Projection</span></div>
+        <div><b>35.26°</b><span class="mono">Elevation</span></div>
+        <div><b>0</b><span class="mono">Raster assets</span></div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="tag"><span class="bar"></span><span class="mono">Deck 01</span></div>
+      <div class="art" data-art data-view="-530 -510 1050 975"></div>
+    </div>
+  </section>
+</div>
+<script>
+/* ---------------------------------------------------------------
+   isometric toolkit
+   world: x -> screen down-right, z -> screen down-left, y -> up
+--------------------------------------------------------------- */
+const SV = 'http://www.w3.org/2000/svg';
+
+/* --- orthographic camera: azimuth + elevation, live -----------
+   at az=45deg / el=35.264deg this is exactly the classic 2:1 isometric
+   the artwork is authored in, so the resting view is the true isometric. */
+const S = 1.224745;                       // overall scale
+const AZ0 = Math.PI/4, EL0 = Math.asin(1/Math.sqrt(3));
+let ca = Math.cos(AZ0), sa = Math.sin(AZ0), T = S*Math.sin(EL0), V = S*Math.cos(EL0);
+function setCam(az, el){
+  ca = Math.cos(az); sa = Math.sin(az);
+  T = S*Math.sin(el); V = S*Math.cos(el);
+}
+
+const px = (x,z)=> S*(x*ca - z*sa);
+const py = (x,y,z)=> T*(x*sa + z*ca) - V*y;
+const P  = (x,y,z)=> [px(x,z), py(x,y,z)];
+/* screen basis vectors of the world axes */
+const exv = ()=> [S*ca,  T*sa];
+const ezv = ()=> [-S*sa, T*ca];
+
+/* --- monotone remap: every colour collapses to a dark tonal band,
+       every shape keeps a hairline edge (wireframe idiom) --------- */
+const VARS={'var(--white)':'#F4F5F2','var(--ink)':'#17332F','var(--red)':'#E1512E',
+            'var(--dark)':'#163337','var(--green)':'#96B99D','var(--beige)':'#D7D4C9'};
+const EDGE='rgba(226,232,240,0.34)', EDGE2='rgba(226,232,240,0.23)';
+function lumOf(c){
+  c = VARS[c] || c;
+  if (typeof c !== 'string' || c[0] !== '#') return 128;
+  let h = c.slice(1);
+  if (h.length === 3) h = h.split('').map(x=>x+x).join('');
+  return 0.299*parseInt(h.slice(0,2),16) + 0.587*parseInt(h.slice(2,4),16) + 0.114*parseInt(h.slice(4,6),16);
+}
+function mono(tag, a){
+  if (!a) return a;
+  if (a.filter){ a.opacity = 0; a.filter = null; return a; }   // soft shadows are dropped
+  if (tag === 'text'){ a.fill = 'rgba(226,232,240,0.40)'; return a; }
+  const tiny = ['r','rx','width','height'].some(k => a[k] !== undefined && Math.abs(parseFloat(a[k])) < 3);
+  const hadStroke = a.stroke && a.stroke !== 'none';
+  if (a.fill && a.fill !== 'none'){
+    if (String(a.fill).indexOf('url(') === 0){ a.opacity = 0; }
+    else {
+      const v = Math.round(10 + (lumOf(a.fill)/255) * (hadStroke ? 9 : 17));
+      a.fill = `rgb(${v},${v+1},${v+2})`;
+      if (!hadStroke){ a.stroke = EDGE2; a['stroke-width'] = tiny ? 0.022 : 2.2; }
+    }
+  }
+  if (hadStroke){
+    a.stroke = EDGE;
+    const w = parseFloat(a['stroke-width']);
+    if (!isNaN(w)) a['stroke-width'] = w < 1 ? w*0.75 : Math.max(2.0, Math.min(4.0, w*0.6));
+  }
+  return a;
+}
+
+function el(tag, attrs, kids){
+  const n = document.createElementNS(SV, tag);
+  attrs = mono(tag, attrs);
+  if (attrs) for (const k in attrs){
+    if (attrs[k] === null || attrs[k] === undefined) continue;
+    n.setAttribute(k, attrs[k]);
+  }
+  if (kids) (Array.isArray(kids)?kids:[kids]).forEach(c=>c && n.appendChild(c));
+  return n;
+}
+const g = (attrs, kids)=> el('g', attrs, kids);
+
+/* face transform matrices ------------------------------------- */
+// top face at height y : (u,v) -> world(u, y, v)
+const mTop = (y=0)=> {const a=exv(),b=ezv(); return `matrix(${a[0]},${a[1]},${b[0]},${b[1]},0,${-V*y})`;};
+const mFlat = ()=> {const a=exv(),b=ezv(); return `matrix(${a[0]},${a[1]},${b[0]},${b[1]},0,0)`;};
+// left face at z=const : (u,v) -> world(u, -v, z)
+const mLeft = (z)=> {const o=P(0,0,z),a=exv(); return `matrix(${a[0]},${a[1]},0,${V},${o[0]},${o[1]})`;};
+// right face at x=const : (u,v) -> world(x, -v, u)
+const mRight = (x)=> {const o=P(x,0,0),b=ezv(); return `matrix(${b[0]},${b[1]},0,${V},${o[0]},${o[1]})`;};
+
+/* shapes in the XZ plane, returned as arrays of [x,z] ---------- */
+function sRect(x0,z0,x1,z1){ return [[x0,z0],[x1,z0],[x1,z1],[x0,z1]]; }
+function sRRect(x0,z0,x1,z1,r,seg=16){
+  const pts=[], c=[[x1-r,z0+r,-Math.PI/2,0],[x1-r,z1-r,0,Math.PI/2],[x0+r,z1-r,Math.PI/2,Math.PI],[x0+r,z0+r,Math.PI,Math.PI*1.5]];
+  for(const [cx,cz,a0,a1] of c)
+    for(let i=0;i<=seg;i++){const a=a0+(a1-a0)*i/seg; pts.push([cx+Math.cos(a)*r, cz+Math.sin(a)*r]);}
+  return pts;
+}
+function sEllipse(cx,cz,rx,rz,seg=64){
+  const pts=[]; for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2; pts.push([cx+Math.cos(a)*rx, cz+Math.sin(a)*rz]);}
+  return pts;
+}
+const dPath = pts => 'M'+pts.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L')+'Z';
+
+/* project a XZ shape onto screen at height y */
+const proj = (pts,y)=> pts.map(p=>P(p[0],y,p[1]));
+
+/* extruded solid: top polygon + near silhouette split L/R ------ */
+function prism(pts, y, h, o={}){
+  o = Object.assign({top:'var(--white)', left:'var(--green)', right:'var(--green)', stroke:'var(--ink)', sw:3.6, speckle:0}, o);
+  const Sp = proj(pts, y);
+  const n = Sp.length;
+  let imin=0, imax=0, iy=0;
+  Sp.forEach((s,i)=>{ if(s[0]<Sp[imin][0]||(s[0]===Sp[imin][0]&&s[1]>Sp[imin][1])) imin=i;
+                      if(s[0]>Sp[imax][0]||(s[0]===Sp[imax][0]&&s[1]>Sp[imax][1])) imax=i;
+                      if(s[1]>Sp[iy][1]) iy=i; });
+  const chain=(a,b)=>{const out=[];let i=a;for(let k=0;k<=n;k++){out.push(i); if(i===b)break; i=(i+1)%n;} return out;};
+  let near = chain(imin,imax);
+  if (!near.includes(iy)) near = chain(imax,imin);
+  const cutAt = near.indexOf(iy);
+  const A = near.slice(0, cutAt+1).map(i=>Sp[i]);
+  const B = near.slice(cutAt).map(i=>Sp[i]);
+  const band = c => 'M'+c.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L')
+                 + 'L'+c.slice().reverse().map(p=>p[0].toFixed(2)+' '+(p[1]+h).toFixed(2)).join('L')+'Z';
+  const leftFirst = (A[0][0] <= B[B.length-1][0]);
+  const pL = band(leftFirst?A:B.slice().reverse());
+  const pR = band(leftFirst?B:A.slice().reverse());
+  return g(null, [
+    el('path',{d:pL, fill:o.left,  stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'}),
+    el('path',{d:pR, fill:o.right, stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'}),
+    el('path',{d:dPath(Sp), fill:o.top, stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'})
+  ]);
+}
+
+/* flat plate lying in the XZ plane (no extrusion) */
+function plate(pts, y, o={}){
+  return el('path',{d:dPath(proj(pts,y)), fill:o.fill||'var(--white)',
+                    stroke:o.stroke===null?null:(o.stroke||'var(--ink)'),
+                    'stroke-width':o.sw||3.6,'stroke-linejoin':'round'});
+}
+/* extruded rounded plate lying on the top plane */
+function pad(x0,z0,x1,z1,r,y,h,o){ return prism(sRRect(x0,z0,x1,z1,r), y, h, o); }
+/* arbitrary 3-D polygon */
+function poly3(pts, o={}){
+  const d = 'M'+pts.map(p=>{const q=P(p[0],p[1],p[2]); return q[0].toFixed(2)+' '+q[1].toFixed(2);}).join('L')+'Z';
+  return el('path',{d, fill:o.fill||'#FFF', stroke:o.stroke===null?null:(o.stroke||'var(--ink)'),
+                    'stroke-width':o.sw||3.6,'stroke-linejoin':'round'});
+}
+/* avatar mark — a ring, legible at hairline weight */
+function personGlyph(cx,cz,r,fill){
+  return el('circle',{cx, cy:cz, r:r*0.42, fill:'none', stroke:fill, 'stroke-width':r*0.30});
+}
+/* small 2x2 matrix mark */
+function logoPath(cx,cz,s){
+  const q=s*0.34, gp=s*0.10, out=[];
+  for(let i=0;i<2;i++) for(let j=0;j<2;j++){
+    const x=cx-q-gp/2+i*(q+gp), z=cz-q-gp/2+j*(q+gp);
+    out.push(dPath(sRRect(x,z,x+q,z+q,q*0.28)));
+  }
+  return out.join(' ');
+}
+/* grounding shadow under a footprint (kept for parity; mono() drops the blur) */
+function groundShadow(pts, dx, dy, o){
+  return el('path',{d:dPath(proj(pts,0).map(q=>[q[0]+dx,q[1]+dy])),
+                    fill:'#AEB2AA', opacity:(o&&o.opacity)||.4, filter:'url(#b40)'});
+}
+
+/* rail space: (a,b) where a runs along the screen horizontal and b
+   runs into the picture, so a row of parts can be spaced by eye and
+   still land on a straight, evenly-gapped line on screen.           */
+const RU = Math.SQRT1_2;
+const rail = pts => pts.map(([a,b])=>[(a+b)*RU, (b-a)*RU]);
+const mRail = (y=0)=> mTop(y) + ' rotate(-45)';
+const railP = (a,y,b)=> P((a+b)*RU, y, (b-a)*RU);
+
+/* named parts -------------------------------------------------
+   'ground' lies flat and carries everything; 'object' stands on it;
+   'float' hovers in its own clear screen region. Objects and floats
+   are laid out so no two of them ever share screen space.          */
+const part = (kind, name, attrs)=> g(Object.assign({'data-part': kind+':'+name}, attrs||null));
+/* a float is authored around the origin and placed by screen offset,
+   so its position in the frame never moves when the camera orbits.  */
+const floatAt = (name, sx, sy)=> part('float', name, {transform:`translate(${sx},${sy})`});
+
+/* ---------------- animation clock ---------------------------- */
+const TICKS = [];
+const BUILD = [];
+let BUILDING = 0;
+const onTick = f => TICKS[BUILDING].push(f);
+const easeIO = t => 0.5-0.5*Math.cos(Math.PI*Math.min(1,Math.max(0,t)));
+const wrap = (t,p)=> (t%p+p)%p;
+
+/* ============================================================== *
+ *  HERO — field console
+ *  deck at the centre, console and mast set apart on it, and two
+ *  floating parts parked in their own corners of the frame.
+ * ============================================================== */
+BUILD[0] = function(){
+  const root = cellG[0];
+
+  /* ---- ground: the deck everything else stands on ------------ */
+  const BX=272, BZ=286, R=120, BH=48;
+  const GROUND = part('ground','deck'); root.appendChild(GROUND);
+  GROUND.appendChild(prism(sRRect(-BX,-BZ,BX,BZ,R), 0, BH, {top:'#F3F3EF',left:'#FBFBFB',right:'#EFEFEF'}));
+  const deck = g({transform:mTop(0)}); GROUND.appendChild(deck);
+  deck.appendChild(el('path',{d:dPath(sRRect(-240,-238,-6,-32,54)),fill:'none',stroke:'#DADAD6','stroke-width':3.4}));
+  const rings=[];
+  [168,126,86].forEach(rr=>{
+    const e = el('path',{d:dPath(sEllipse(78,150,rr,rr)),fill:'none',stroke:'#D2D2CE','stroke-width':3.2});
+    deck.appendChild(e); rings.push(e);
+  });
+  deck.appendChild(el('path',{d:logoPath(78,150,70),fill:'#DCDCD8'}));
+
+  /* ---- object: the console, seated on the back-left lane ----- */
+  const CY = 32;
+  const CONSOLE = part('object','console'); root.appendChild(CONSOLE);
+  CONSOLE.appendChild(pad(-238,-242, -10,-40, 36, CY, CY, {top:'#0B0B0B',left:'#171717',right:'#0B0B0B'}));
+  const cf = g({transform:mTop(CY)}); CONSOLE.appendChild(cf);
+  cf.appendChild(el('path',{d:dPath(sRRect(-218,-224,-38,-116,22)),fill:'#F0F0EB',stroke:'var(--ink)','stroke-width':3.2}));
+  const bars=[];
+  for(let i=0;i<4;i++){
+    const b = el('path',{d:'M0 0Z', fill:'#D6D6D0'});
+    b.__z = -204 + i*25; cf.appendChild(b); bars.push(b);
+  }
+  const keys = [-216,-148,-80].map((x,i)=>{
+    const k = el('path',{d:dPath(sRRect(x,-98,x+58,-72,12)),
+                         fill:i===0?'#EDEDE7':'#141414',stroke:'#0B0B0B','stroke-width':2.8});
+    cf.appendChild(k); return k;
+  });
+
+  /* ---- object: the signal mast, clear of the console --------- */
+  const MY = 200;
+  const MAST = part('object','mast'); root.appendChild(MAST);
+  MAST.appendChild(pad(142,-236, 236,-142, 24, MY, MY, {top:'#FBFBFB',left:'#E6E6E6',right:'#DADADA'}));
+  const face = g({transform:mLeft(-142)}); MAST.appendChild(face);
+  const slug = el('rect',{x:164,y:-168,width:52,height:20,rx:10,fill:'#D4D4D0'});
+  face.appendChild(slug);
+  face.appendChild(el('rect',{x:164,y:-70,width:52,height:30,rx:11,fill:'none',stroke:'#141414','stroke-width':3.2}));
+  const beacon = g(); MAST.appendChild(beacon);
+  beacon.appendChild(pad(166,-214, 212,-168, 23, MY+20, 20, {top:'#FBFBFB',left:'#E2E2E2',right:'#D6D6D6'}));
+
+  /* ---- float: the panel, parked above and left of the deck --- */
+  const PANEL = floatAt('panel', -344, -382); root.appendChild(PANEL);
+  const pw = g(); PANEL.appendChild(pw);
+  pw.appendChild(pad(-116,-61, 116, 61, 28, 0, 15, {top:'#FBFBF7',left:'#E4E4DE',right:'#D8D8D2'}));
+  const pf = g({transform:mTop(0)}); pw.appendChild(pf);
+  pf.appendChild(el('circle',{cx:-86,cy:-30,r:24,fill:'#5E736A'}));
+  pf.appendChild(personGlyph(-86,-30,24,'#FBFBF7'));
+  [[-50,-42,132],[-50,-16,84]].forEach(([x0,z,len])=>
+    pf.appendChild(el('path',{d:dPath(sRRect(x0,z-7,x0+len,z+7,7)),fill:'#D9D9D3'})));
+  pf.appendChild(el('path',{d:dPath(sRRect(-104,12,96,32,10)),fill:'none',stroke:'#141414','stroke-width':3}));
+  const prog = el('path',{d:'M0 0Z', fill:'#C6C6C0'}); pf.appendChild(prog);
+
+  /* ---- float: the confirmation pill, lower-right corner ------ */
+  const PILL = floatAt('pill', 346, 344); root.appendChild(PILL);
+  const pi = g({transform:'rotate(-16)'}); PILL.appendChild(pi);
+  pi.appendChild(el('path',{d:'M-86 -43 h172 a43 43 0 0 1 0 86 h-172 a43 43 0 0 1 0 -86 z',
+                            fill:'#FBFBFB',stroke:'#141414','stroke-width':3.6}));
+  pi.appendChild(el('circle',{cx:-43,cy:0,r:21,fill:'none',stroke:'#141414','stroke-width':6}));
+  pi.appendChild(el('path',{d:'M18 2 l12 14 l23 -33',fill:'none',stroke:'#141414','stroke-width':6,
+                            'stroke-linecap':'round','stroke-linejoin':'round'}));
+
+  /* ---- motion ------------------------------------------------ */
+  onTick(t=>{
+    const p = wrap(t, 5.2), q = p/5.2;
+    const rise = 0.5-0.5*Math.cos(q*Math.PI*2);
+    pw.setAttribute('transform', `translate(0,${(-9*rise).toFixed(2)})`);
+    pi.setAttribute('transform', `rotate(-16) translate(0,${(Math.sin(q*Math.PI*2)*8).toFixed(2)})`);
+    beacon.setAttribute('opacity', 0.35 + 0.65*(0.5+0.5*Math.sin(q*Math.PI*6)));
+
+    bars.forEach((b,i)=>{
+      const v = 0.32 + 0.68*(0.5+0.5*Math.sin(q*Math.PI*4 - i*0.85));
+      b.setAttribute('d', dPath(sRRect(-202, b.__z-6, -202+146*v, b.__z+6, 6)));
+    });
+    keys.forEach((k,i)=> k.setAttribute('opacity', wrap(p - i*0.62, 5.2) < 0.3 ? 0.42 : 1));
+    prog.setAttribute('d', dPath(sRRect(-100,15, -100 + 192*(0.18+0.82*rise), 29, 7)));
+    slug.setAttribute('y', -176 + 88*rise);
+    rings.forEach((e,i)=>{
+      const s = 1 + 0.055*Math.sin(q*Math.PI*4 - i*0.9);
+      e.setAttribute('transform', `translate(${(78*(1-s)).toFixed(2)},${(150*(1-s)).toFixed(2)}) scale(${s})`);
+    });
+  });
+};
+
+/* ---------------- mount + orbit + run loop -------------------- */
+/* one svg per [data-art] host; each host keeps its own camera so a
+   pointer over one figure never disturbs the others.             */
+const HOSTS = [...document.querySelectorAll('[data-art]')];
+const cellG = HOSTS.map((host)=>{
+  const svg = el('svg',{viewBox: host.dataset.view || '-547 -484.5 1094 969',
+                        preserveAspectRatio:'xMidYMid meet'});
+  host.appendChild(svg);
+  const n = g(null);
+  svg.appendChild(n);
+  return n;
+});
+
+const VIEWS = HOSTS.map(()=>({az:AZ0, el:EL0, taz:AZ0, tel:EL0}));
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function rebuild(i){
+  setCam(VIEWS[i].az, VIEWS[i].el);
+  BUILDING = i;
+  TICKS[i] = [];
+  const n = cellG[i];
+  while (n.firstChild) n.removeChild(n.firstChild);
+  BUILD[i]();
+}
+for (let i=0;i<HOSTS.length;i++) rebuild(i);
+
+if (!REDUCED) HOSTS.forEach((host,i)=>{
+  const zone = host.closest('[data-orbit]') || host;
+  zone.addEventListener('pointermove', e=>{
+    if (e.pointerType === 'touch') return;
+    const b = host.getBoundingClientRect();
+    if (!b.width || !b.height) return;
+    const nx = Math.max(-1, Math.min(1, ((e.clientX - b.left)/b.width  - .5)*2));
+    const ny = Math.max(-1, Math.min(1, ((e.clientY - b.top )/b.height - .5)*2));
+    VIEWS[i].taz = AZ0 - nx*0.175;             // ±10°
+    VIEWS[i].tel = Math.max(EL0-0.05, Math.min(EL0+0.05, EL0 + ny*0.05));
+  });
+  zone.addEventListener('pointerleave', ()=>{ VIEWS[i].taz = AZ0; VIEWS[i].tel = EL0; });
+});
+
+let t0 = null;
+const FREEZE = new URLSearchParams(location.search).get('p');
+function step(t){
+  for (let i=0;i<VIEWS.length;i++){
+    const v = VIEWS[i];
+    const da = v.taz - v.az, de = v.tel - v.el;
+    if (Math.abs(da) > 1e-4 || Math.abs(de) > 1e-4){
+      v.az += da*0.16; v.el += de*0.16;
+      rebuild(i);
+    }
+  }
+  for (const arr of TICKS) for (const f of arr) f(t);
+}
+if (FREEZE !== null){ step(parseFloat(FREEZE)); }
+else {
+  const frame = ts => {
+    if (t0===null) t0 = ts;
+    step((ts-t0)/1000);
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

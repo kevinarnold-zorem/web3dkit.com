@@ -1,0 +1,1572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nocturne — Money that never sleeps</title>
+<meta name="description" content="Nocturne — a debit card for life after dark, rendered in three.js on a still midnight sea.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 23 29'%3E%3Cpath d='M9.09 2.3A13.91 13.91 0 0 0 23 16.21' stroke='%23fff' stroke-width='4.6' fill='none'/%3E%3Cpath d='M2.3 12.79A13.91 13.91 0 0 0 16.21 26.7' stroke='%23fff' stroke-width='4.6' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#ffffff;
+    --ink-dim:#8ea6cc;
+    --ink-dimmer:#7d94b8;
+    --pad:32px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;background:#050b1a;overflow:hidden}
+  body{
+    font-family:'Mulish',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-weight:300;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+  #gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+
+  .stage{position:fixed;inset:0;z-index:2;pointer-events:none}
+  .stage > *{pointer-events:auto}
+
+  /* ---------------- nav ---------------- */
+  nav{
+    position:absolute;left:0;right:0;top:0;height:88px;
+    display:flex;align-items:center;
+    padding:0 var(--pad);
+  }
+  .brand{display:flex;align-items:center;gap:13px;text-decoration:none;color:var(--ink)}
+  .brand svg{display:block;width:23px;height:29px;overflow:visible}
+  .brand span{font-size:16px;font-weight:400;letter-spacing:-.005em;line-height:1}
+
+  /* Every pill below is *drawn* by the liquid-metal layer once it boots, and
+     html.metal then strips this CSS chrome.  Without WebGL2 the plain glass
+     treatment stays, so the controls are never invisible. */
+  .navpill,.navcta,.btn{
+    border:1px solid rgba(150,185,235,.26);
+    background:rgba(120,160,220,.07);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:background .25s ease,border-color .25s ease;
+  }
+  .btn-primary{
+    border-color:rgba(170,205,255,.34);
+    background:linear-gradient(90deg,rgba(10,18,40,.92),rgba(26,48,96,.92));
+  }
+  .navpill:hover,.navcta:hover,.btn:hover{background:rgba(140,180,240,.13)}
+  html.metal .navpill,html.metal .navcta,html.metal .btn{
+    border:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;
+  }
+  html.metal .navpill:hover,html.metal .navcta:hover,html.metal .btn:hover{background:none}
+  .navpill{
+    position:absolute;left:50%;top:22px;transform:translateX(-50%);
+    height:45px;display:flex;align-items:center;gap:0;
+    padding:0 5px;border-radius:999px;
+  }
+  .navpill a{
+    color:#fff;text-decoration:none;font-size:15.7px;font-weight:600;
+    padding:0 16.3px;line-height:1;white-space:nowrap;transition:opacity .25s ease;opacity:.94;
+  }
+  .navpill a:hover{opacity:1}
+
+  .navcta{
+    position:absolute;right:var(--pad);top:19px;
+    height:47px;display:inline-flex;align-items:center;gap:9px;
+    padding:0 21px;border-radius:999px;
+    color:#fff;text-decoration:none;font-size:15.7px;font-weight:600;white-space:nowrap;
+  }
+  .ring{width:7px;height:7px;border-radius:50%;border:1.3px solid rgba(255,255,255,.9);flex:0 0 auto}
+
+  /* ---------------- hero copy ---------------- */
+  h1{
+    position:absolute;left:var(--pad);top:114px;margin:0;
+    font-size:58.4px;line-height:60px;font-weight:300;letter-spacing:0;
+    white-space:nowrap;
+  }
+  h1 .dim{color:var(--ink-dim);display:block}
+
+  .lede{
+    position:absolute;left:var(--pad);top:484px;margin:0;width:360px;
+    font-size:15.7px;line-height:22px;font-weight:600;color:#fff;letter-spacing:0;
+  }
+  .facts{
+    position:absolute;right:var(--pad);top:484px;margin:0;text-align:right;
+    font-size:15.7px;line-height:22px;font-weight:600;color:#fff;
+  }
+
+  .bigtag{
+    position:absolute;right:30px;bottom:41px;margin:0;text-align:right;
+    font-size:58.5px;line-height:60px;font-weight:300;letter-spacing:0;
+    color:#fff;white-space:nowrap;
+  }
+  .bigtag .dim{color:var(--ink-dimmer);display:block}
+
+  .actions{position:absolute;left:var(--pad);bottom:45px;display:flex;gap:16px;align-items:center}
+  /* the metal renders into its own fixed layer, between the 3-D scene and the UI */
+  #metal{position:fixed;inset:0;z-index:1;pointer-events:none}
+  #metal canvas{position:absolute;display:block}
+  .btn:focus-visible,.navcta:focus-visible,.navpill a:focus-visible{
+    outline:2px solid rgba(190,220,255,.78);outline-offset:3px;border-radius:999px}
+  .btn{
+    height:45px;display:inline-flex;align-items:center;gap:10px;
+    padding:0 30px;border-radius:999px;text-decoration:none;
+    font-size:15.7px;font-weight:600;color:#fff;white-space:nowrap;position:relative;
+  }
+  .btn-ghost{padding:0 33px}
+
+
+  @media (max-width:1240px){ .navpill{display:none} }
+  @media (max-width:1180px){
+    h1{font-size:46px;line-height:50px;top:100px}
+    .bigtag{font-size:40px;line-height:45px;bottom:132px}
+    .lede{top:auto;bottom:214px;width:min(330px,44vw)}
+    .facts{top:auto;bottom:214px}
+    .actions{bottom:52px}
+  }
+  @media (max-width:820px){
+    h1{font-size:38px;line-height:42px;top:92px}
+    .bigtag{font-size:32px;line-height:36px;bottom:150px}
+    .lede{bottom:236px;width:min(290px,52vw);font-size:14.5px;line-height:20px}
+    .facts{bottom:236px;font-size:14.5px;line-height:20px}
+  }
+  @media (max-width:620px){
+    :root{--pad:20px}
+    h1{font-size:31px;line-height:35px;top:80px}
+    .bigtag{font-size:25px;line-height:29px;bottom:160px;left:var(--pad);right:auto;text-align:left}
+    .lede{bottom:230px;width:min(320px,88vw);font-size:14px;line-height:20px}
+    .facts{display:none}
+    .navcta{display:none}
+    .actions{bottom:44px;gap:12px}
+    .btn{height:43px;padding:0 22px;font-size:15px}
+    .btn-ghost{padding:0 22px}
+  }
+  /* Narrow and short: the card's foot always lands at ~66% of the viewport
+     height, so a bottom-anchored lede runs into it on any phone under ~820px.
+     Move the lede up under the headline and tighten what is left below. */
+  @media (max-width:620px) and (max-height:820px){
+    .lede{top:166px;bottom:auto;font-size:13.5px;line-height:19px}
+    .bigtag{bottom:128px;font-size:23px;line-height:27px}
+    .actions{bottom:40px}
+  }
+  /* Short and wide: the landscape card spans most of the middle band, so the
+     side copy has to clear it entirely rather than sit beside it. */
+  @media (max-height:860px) and (min-width:760px){
+    h1{font-size:40px;line-height:44px;top:88px}
+    .lede{bottom:120px;width:min(300px,32vw);font-size:14.5px;line-height:20px}
+    .facts{bottom:120px;font-size:14.5px;line-height:20px}
+    .bigtag{font-size:28px;line-height:32px;bottom:40px}
+    .actions{bottom:40px}
+  }
+  @media (max-height:560px){
+    h1{font-size:32px;line-height:36px;top:74px}
+    .bigtag{font-size:26px;line-height:30px;bottom:96px}
+    .lede,.facts{bottom:150px;font-size:13.5px;line-height:19px}
+    .actions{bottom:34px}
+  }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="metal" aria-hidden="true"></div>
+
+<div class="stage">
+  <nav>
+    <a class="brand" href="#">
+      <svg viewBox="0 0 23 29" fill="none" aria-hidden="true">
+        <path d="M9.09 2.30 A13.91 13.91 0 0 0 23 16.21" stroke="#fff" stroke-width="4.6"/>
+        <path d="M2.30 12.79 A13.91 13.91 0 0 0 16.21 26.70" stroke="#fff" stroke-width="4.6"/>
+      </svg>
+      <span>Nocturne</span>
+    </a>
+    <div class="navpill">
+      <a href="#">Accounts</a>
+      <a href="#">How it works</a>
+      <a href="#">Rates</a>
+      <a href="#">Support</a>
+    </div>
+    <a class="navcta" href="#">Open an account <i class="ring"></i></a>
+  </nav>
+
+  <h1>Money that never<span class="dim">sleeps</span></h1>
+
+  <p class="lede">Send, save, and settle around the clock —<br>one account that simply never closes.</p>
+  <p class="facts">No monthly fees<br>Live in 90 seconds</p>
+
+  <p class="bigtag"><span class="dim">A debit card for</span>life after dark</p>
+
+  <div class="actions">
+    <a class="btn btn-primary" href="#">Open an account <i class="ring"></i></a>
+    <a class="btn btn-ghost" href="#">See how it works</a>
+  </div>
+</div>
+
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+// ───────────────────────────── design constants ─────────────────────────────
+// Solved from the reference: 1440x1026, horizon at y=572, world unit = card width.
+var DES_W=1440, DES_H=1026;
+var FOVY=35;                       // vertical field of view (deg)
+var CAM_PITCH= 2.0768*Math.PI/180; // pitched up -> horizon lands at 55.75% of the frame
+var CAM_H=0.5556;                  // camera height above the water plane
+var CARD_W=1.5067, CARD_H=0.95, CARD_T=0.030, CARD_R=0.058;   // landscape, ISO 1.586:1
+var CARD_X=-0.0008, CARD_Y=0.5070, CARD_Z=-4.3043;   // Y from the water plane; hovers ~12px clear of it
+var HALO_R=1.15, HALO_TUBE=0.016;                    // the glowing ring behind the card
+var HALO_X=0.0, HALO_Y=0.50, HALO_Z=-5.35;
+var OMEGA=2*Math.PI/1.5;           // master clock: 1.5 s cycle
+var CARD_RX=-1.991*Math.PI/180, CARD_RY=0.898*Math.PI/180;   // resting pose
+var CARD_TILT_X=6.0*Math.PI/180, CARD_TILT_Y=11.0*Math.PI/180; // how far the pointer turns it
+
+var Q=new URLSearchParams(location.search);
+var FIXED_T=Q.has('t')?parseFloat(Q.get('t')):null;
+var REDUCED=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(REDUCED&&FIXED_T===null) FIXED_T=0.62;   // a settled, well-composed pose
+if(Q.get('ui')==='0'){var st=document.querySelector('.stage'); if(st) st.style.visibility='hidden';}
+
+// ───────────────────────────── renderer ─────────────────────────────
+var canvas=document.getElementById('gl');
+var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setClearColor(0x000000,1);
+var scene=new THREE.Scene();
+var camera=new THREE.PerspectiveCamera(FOVY,1,0.05,4000);
+camera.position.set(0,CAM_H,0);
+camera.rotation.order='YXZ';
+camera.rotation.set(CAM_PITCH,0,0);
+
+var DPR=1;
+var reflRT=null, sceneRT=null;
+
+// ───────────────────────────── shared GLSL ─────────────────────────────
+var COMMON=[
+'precision highp float;',
+'float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }',
+'float hash13(vec3 p){ p=fract(p*0.1031); p+=dot(p,p.yzx+33.33); return fract((p.x+p.y)*p.z); }',
+'float vnoise(vec3 x){',
+'  vec3 i=floor(x), f=fract(x); f=f*f*(3.0-2.0*f);',
+'  float n000=hash13(i+vec3(0,0,0)), n100=hash13(i+vec3(1,0,0));',
+'  float n010=hash13(i+vec3(0,1,0)), n110=hash13(i+vec3(1,1,0));',
+'  float n001=hash13(i+vec3(0,0,1)), n101=hash13(i+vec3(1,0,1));',
+'  float n011=hash13(i+vec3(0,1,1)), n111=hash13(i+vec3(1,1,1));',
+'  return mix(mix(mix(n000,n100,f.x),mix(n010,n110,f.x),f.y),',
+'             mix(mix(n001,n101,f.x),mix(n011,n111,f.x),f.y),f.z);',
+'}',
+'float fbm(vec3 p){',
+'  float a=0.5,s=0.0; mat3 m=mat3(0.00,0.80,0.60,-0.80,0.36,-0.48,-0.60,-0.48,0.64);',
+'  for(int i=0;i<5;i++){ s+=a*vnoise(p); p=m*p*2.02; a*=0.5; }',
+'  return s;',
+'}',
+'vec3 s2l(vec3 c){ return pow(c,vec3(2.2)); }',
+'vec3 l2s(vec3 c){ return pow(max(c,0.0),vec3(1.0/2.2)); }',
+''].join('\n');
+
+var SKY=[
+'uniform vec3 uGlowCol, uNebCol, uGlowDir; uniform vec3 uSky[7];',
+'uniform float uGlowSig, uGlowI, uNebI, uStarI, uTime, uStarRot;',
+'vec3 skyColor(vec3 rd, float stars){',
+'  float y=rd.y;',
+'  // vertical ramp measured off the reference sky (linear light, 0.05 rad steps)',
+'  float e=clamp(y,0.0,0.32)/0.0533333;',
+'  float ei=floor(e); float ef=e-ei; int ek=int(ei);',
+'  vec3 sa=uSky[6], sb=uSky[6];',
+'  for(int q=0;q<6;q++){ if(q==ek){ sa=uSky[q]; sb=uSky[q+1]; } }',
+'  vec3 col=mix(sa,sb,ef);',
+'  // soft nebula banks',
+'  vec3 q=rd*vec3(3.1,6.4,3.1);',
+'  float n=fbm(q*1.25+vec3(11.3,4.1,7.7));',
+'  float neb=smoothstep(0.470,0.700,n)*(0.20+0.80*clamp(y*3.6,0.0,1.0));',
+'  col+=uNebCol*neb*uNebI;',
+'  // horizon glow',
+'  float ca=dot(normalize(rd),uGlowDir);',
+'  float ang=acos(clamp(ca,-1.0,1.0));',
+'  float g=exp(-pow(ang/uGlowSig,2.0))+0.0026*exp(-pow(ang/(uGlowSig*3.2),2.0));',
+'  col+=uGlowCol*g*uGlowI;',
+'  // stars',
+'  if(stars>0.0){',
+'    // the star field turns about the view axis, so it sweeps around the halo',
+'    float cs=cos(uStarRot), ss=sin(uStarRot);',
+'    vec3 sr=vec3(rd.x*cs-rd.y*ss, rd.x*ss+rd.y*cs, rd.z);',
+'    vec3 sp=sr*340.0; vec3 ci=floor(sp);',
+'    float h=hash13(ci);',
+'    if(h>0.9055){',
+'      vec3 cf=fract(sp)-0.5;',
+'      vec3 jitter=vec3(hash11(h*13.1),hash11(h*27.7),hash11(h*41.3))-0.5;',
+'      float d=length(cf-jitter*0.6);',
+'      float b=smoothstep(0.21,0.0,d)*(0.30+0.70*hash11(h*7.3));',
+'      float tw=0.75+0.25*sin(uTime*2.1+h*90.0);',
+'      col+=vec3(0.95,0.93,1.0)*b*tw*uStarI*stars*smoothstep(-0.02,0.25,y);',
+'    }',
+'  }',
+'  return col;',
+'}',
+''].join('\n');
+
+var skyUniforms={
+  uSky:{value:[]},
+  uGlowCol:{value:new THREE.Color()},
+  uNebCol:{value:new THREE.Color()},
+  uGlowDir:{value:new THREE.Vector3(0,-0.004,-1).normalize()},
+  uGlowSig:{value:0.163},
+  uGlowI:{value:1.0},
+  uNebI:{value:1.0},
+  uStarI:{value:1.0},
+  uStarRot:{value:0},
+  uTime:{value:0}
+};
+function sRGB(hex){ var c=new THREE.Color(hex); return new THREE.Color(Math.pow(c.r,2.2),Math.pow(c.g,2.2),Math.pow(c.b,2.2)); }
+// elevation ramp, linear RGB, sampled every 0.0533 of rd.y (0 -> 0.32)
+// elevation ramp, linear RGB, every 0.0533 of rd.y (0 -> 0.32): midnight blue
+var SKY_RAMP=[[0.0593,0.0798,0.3176],[0.0503,0.0745,0.2981],[0.0327,0.0497,0.2421],
+              [0.0214,0.0350,0.1893],[0.0131,0.0253,0.1481],[0.0062,0.0142,0.1074],
+              [0.0026,0.0085,0.0798]];
+var CFG={
+  glow:'#a6d2ff', neb:'#a9bcd8',
+  glowSig:0.136, glowI:1.80, nebI:0.08, starI:0.70
+};
+function applySky(){
+  skyUniforms.uSky.value=SKY_RAMP.map(function(c){return new THREE.Color(c[0],c[1],c[2]);});
+  skyUniforms.uGlowCol.value.copy(sRGB(CFG.glow));
+  skyUniforms.uNebCol.value.setRGB(0.44,0.56,1.0);
+  skyUniforms.uGlowSig.value=CFG.glowSig;
+  skyUniforms.uGlowI.value=CFG.glowI;
+  skyUniforms.uNebI.value=CFG.nebI;
+  skyUniforms.uStarI.value=CFG.starI;
+}
+applySky();
+
+// ───────────────────────────── sky backdrop ─────────────────────────────
+var camU={ uRight:{value:new THREE.Vector3()}, uUp:{value:new THREE.Vector3()},
+           uFwd:{value:new THREE.Vector3()}, uTanHalf:{value:0}, uAspect:{value:1} };
+var skyMat=new THREE.ShaderMaterial({
+  uniforms:Object.assign({},skyUniforms,camU),
+  depthTest:false, depthWrite:false,
+  vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,1.0,1.0); }',
+  fragmentShader:COMMON+SKY+[
+  'varying vec2 vUv;',
+  'uniform vec3 uRight,uUp,uFwd; uniform float uTanHalf,uAspect;',
+  'void main(){',
+  '  vec2 p=vUv*2.0-1.0;',
+  '  vec3 rd=normalize(uFwd + uRight*(p.x*uTanHalf*uAspect) + uUp*(p.y*uTanHalf));',
+  '  vec3 c=skyColor(rd,1.0);',
+  '  gl_FragColor=vec4(l2s(c),1.0);',
+  '}'].join('\n')
+});
+var skyMesh=new THREE.Mesh(new THREE.PlaneGeometry(2,2),skyMat);
+skyMesh.frustumCulled=false; skyMesh.renderOrder=-10;
+scene.add(skyMesh);
+
+// ───────────────────────────── card ─────────────────────────────
+function roundedRectShape(w,h,r){
+  var s=new THREE.Shape(), x=-w/2, y=-h/2;
+  s.moveTo(x+r,y);
+  s.lineTo(x+w-r,y); s.quadraticCurveTo(x+w,y,x+w,y+r);
+  s.lineTo(x+w,y+h-r); s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  s.lineTo(x+r,y+h); s.quadraticCurveTo(x,y+h,x,y+h-r);
+  s.lineTo(x,y+r); s.quadraticCurveTo(x,y,x+r,y);
+  return s;
+}
+var cardGeo=new THREE.ExtrudeGeometry(roundedRectShape(CARD_W,CARD_H,CARD_R),
+  {depth:CARD_T,bevelEnabled:true,bevelThickness:0.006,bevelSize:0.006,bevelSegments:3,curveSegments:22});
+cardGeo.translate(0,0,-CARD_T/2);
+cardGeo.computeVertexNormals();
+(function(){ // planar UVs from x,y so front + rim share the artwork frame
+  var pos=cardGeo.attributes.position, uvs=new Float32Array(pos.count*2);
+  for(var i=0;i<pos.count;i++){
+    uvs[i*2]  =(pos.getX(i)+CARD_W/2)/CARD_W;
+    uvs[i*2+1]=1.0-(pos.getY(i)+CARD_H/2)/CARD_H;
+  }
+  cardGeo.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
+})();
+
+// card artwork (chip / wordmark / brand arcs) drawn to a canvas
+function cardMarkTexture(){
+  // the two brand arcs: identical 90 deg quarter circles, offset diagonally.
+  // The canvas is world-proportional, so a circle here stays a circle on the card.
+  var W=512, H=Math.round(512*CARD_H/CARD_W);
+  var c=document.createElement('canvas'); c.width=W; c.height=H;
+  var g=c.getContext('2d');
+  var R=W*0.112, sw=W*0.037;
+  g.strokeStyle='#ffffff'; g.lineWidth=sw; g.lineCap='butt';
+  // parked on the right-hand third, clear of the chip and the wordmark
+  [[0.885*W, 0.255*H],[0.885*W - 0.055*W, 0.255*H + 0.114*W]].forEach(function(p){
+    g.beginPath(); g.arc(p[0], p[1], R, Math.PI*0.5, Math.PI); g.stroke();
+  });
+  var t=new THREE.CanvasTexture(c); t.flipY=false; t.anisotropy=8; t.needsUpdate=true;
+  return t;
+}
+function cardArtTexture(){
+  var W=1024, H=Math.round(1024*CARD_H/CARD_W);
+  var c=document.createElement('canvas'); c.width=W; c.height=H;
+  var g=c.getContext('2d');
+  g.clearRect(0,0,W,H);
+
+  // ---- EMV chip, landscape: 5 fingers | solid band | 5 fingers, running across ----
+  var cx0=W*0.085, cy0=H*0.300, cw=W*0.128, ch=H*0.167;
+  var rr=ch*0.135;
+  g.fillStyle='rgba(238,236,244,0.98)';
+  g.beginPath();
+  g.moveTo(cx0+rr,cy0); g.lineTo(cx0+cw-rr,cy0); g.quadraticCurveTo(cx0+cw,cy0,cx0+cw,cy0+rr);
+  g.lineTo(cx0+cw,cy0+ch-rr); g.quadraticCurveTo(cx0+cw,cy0+ch,cx0+cw-rr,cy0+ch);
+  g.lineTo(cx0+rr,cy0+ch); g.quadraticCurveTo(cx0,cy0+ch,cx0,cy0+ch-rr);
+  g.lineTo(cx0,cy0+rr); g.quadraticCurveTo(cx0,cy0,cx0+rr,cy0); g.closePath(); g.fill();
+  g.globalCompositeOperation='destination-out';
+  g.fillStyle='#000';
+  [[0.145,0.030],[0.381,0.030],[0.619,0.030],[0.855,0.030]].forEach(function(v){
+    g.fillRect(cx0, cy0+ch*(v[0]-v[1]/2), cw*0.297, ch*v[1]);
+    g.fillRect(cx0+cw*0.684, cy0+ch*(v[0]-v[1]/2), cw*0.316, ch*v[1]);
+  });
+  g.fillRect(cx0+cw*0.278, cy0, cw*0.040, ch);
+  g.fillRect(cx0+cw*0.671, cy0, cw*0.027, ch);
+  g.globalCompositeOperation='source-over';
+
+  // ---- wordmark ----
+  g.fillStyle='rgba(255,255,255,0.99)';
+  var fs=H*0.1056;                       // cap 0.075 of the card height / Mulish cap ratio 0.71
+  g.font='600 '+fs+'px Mulish, system-ui, sans-serif';
+  g.textBaseline='alphabetic';
+  if('letterSpacing' in g) g.letterSpacing=(fs*0.055).toFixed(2)+'px';
+  var m=g.measureText('Nocturne');
+  g.fillText('Nocturne', W*0.085+(m.actualBoundingBoxLeft||0), H*0.865);
+  if('letterSpacing' in g) g.letterSpacing='0px';
+
+  var t=new THREE.CanvasTexture(c); t.flipY=false; t.anisotropy=8; t.needsUpdate=true;
+  return t;
+}
+
+// the fades are doubled against the old values because the water no longer
+// squares them by mixing toward a premultiplied colour
+var PASS={uEncode:{value:1}, uReflFade:{value:30.0}, uArchFade:{value:3.0}};
+var cardUniforms=Object.assign({
+  uArt:{value:null},
+  uMark:{value:null},
+  uCurv:{value:new THREE.Vector2(1.015,0.470)},
+  uLw:{value:0.075},
+  uLl:{value:1.60},
+  uLoff:{value:0.1116},
+  uPd:{value:new THREE.Vector3(-0.4457,0.8951,0)},
+  uLaxis:{value:new THREE.Vector3(0.8951,0.4457,0)},
+  uSpecCol:{value:new THREE.Vector3(0.70,0.86,1.00)},
+  uBandI:{value:0.215},
+  uCam:{value:new THREE.Vector3()},
+  uEncode:PASS.uEncode,
+  uReflFade:PASS.uReflFade
+},skyUniforms);
+
+var cardMat=new THREE.ShaderMaterial({
+  uniforms:cardUniforms, side:THREE.DoubleSide,
+  vertexShader:[
+  'varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying vec3 vT; varying vec3 vB;',
+  'void main(){ vUv=uv; mat3 m=mat3(modelMatrix);',
+  '  vN=normalize(m*normal); vT=normalize(m*vec3(1.0,0.0,0.0)); vB=normalize(m*vec3(0.0,1.0,0.0));',
+  '  vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz;',
+  '  gl_Position=projectionMatrix*viewMatrix*w; }'].join('\n'),
+  fragmentShader:COMMON+SKY+[
+  'varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying vec3 vT; varying vec3 vB;',
+  'uniform float uReflFade;',
+  'uniform sampler2D uArt,uMark; uniform float uBandI,uEncode;',
+  'uniform vec3 uCam,uLaxis,uPd,uSpecCol; uniform vec2 uCurv; uniform float uLw,uLl,uLoff;',
+  // base gradient of the card artwork, fitted from the reference (band removed)
+  'vec3 cardBase(vec2 uv){',
+  '  float u=clamp(uv.x,0.03,0.97), v=clamp(uv.y,0.02,0.98);',
+  '  float U2=u*u,U3=U2*u,U4=U3*u,U5=U4*u;',
+  '  float V2=v*v,V3=V2*v,V4=V3*v,V5=V4*v;',
+  '  float r=+0.130046-1.902770*v+9.104567*V2-18.981270*V3+19.107280*V4-7.331406*V5-0.296894*u+3.157422*u*v-8.564896*u*V2+11.468227*u*V3-5.586505*u*V4+1.612817*U2-4.463720*U2*v+3.932750*U2*V2-0.471929*U2*V3-2.368938*U3+4.350466*U3*v-2.251935*U3*V2+1.230187*U4-1.203454*U4*v-0.160995*U5;',
+  '  float g=+0.105626-1.672649*v+9.203426*V2-21.063687*V3+21.788257*V4-8.297541*V5-0.313634*u+3.297877*u*v-11.158597*u*V2+16.146581*u*V3-8.109575*u*V4+1.229731*U2-3.564870*U2*v+3.650588*U2*V2+0.135369*U2*V3-2.066140*U3+2.916709*U3*v-2.302265*U3*V2+1.591828*U4-0.514380*U4*v-0.511339*U5;',
+  '  float b=+0.181705-2.583078*v+12.773667*V2-28.929175*V3+32.557368*V4-13.797728*V5-0.455706*u+1.348018*u*v+2.662210*u*V2-2.091564*u*V3-0.868155*u*V4+3.226593*U2-6.385232*U2*v-3.199963*U2*V2+5.280860*U2*V3-2.188520*U3+9.604219*U3*v-4.182629*U3*V2-1.492419*U4-2.254428*U4*v+1.270163*U5;',
+  '  vec3 c=s2l(clamp(vec3(r,g,b),0.0,1.0));',
+  '  // the gradient was fitted off a violet card; rotate it into midnight blue',
+  '  return vec3(c.r*0.30+c.b*0.02, c.g*0.75+c.b*0.10, c.b*1.02+c.r*0.05);',
+  '}',
+  'void main(){',
+  '  vec2 uv=vUv;',
+  '  vec3 col=cardBase(uv);',
+  '  // strip light reflected off a shallow virtual bulge -> a band that slides *and* turns',
+  '  vec3 V=normalize(uCam-vW);',
+  '  vec2 p=vec2(uv.x-0.5,(0.5-uv.y)*0.6305);',
+  '  vec3 Nb=normalize(vN - (vT*(p.x*uCurv.x) + vB*(p.y*uCurv.y)));',
+  '  vec3 Rr=reflect(-V,Nb);',
+  '  float dp=dot(Rr,uPd)-uLoff;',
+  '  float dax=dot(Rr,uLaxis);',
+  '  float band=exp(-pow(dp/uLw,2.0))*exp(-pow(dax/uLl,2.0));',
+  '  col+=uSpecCol*band*uBandI;',
+  '  float fr=pow(1.0-clamp(dot(normalize(vN),V),0.0,1.0),3.0);',
+  '  col+=vec3(0.34,0.52,0.78)*fr*0.05;',
+  '  // embossed brand arcs (measured as a ~1.75x lift of the base ramp)',
+  '  float mk=texture2D(uMark,uv).a;',
+  '  col*=mix(vec3(1.0),vec3(1.78,1.78,1.52),mk);',
+  '  // artwork',
+  '  vec4 art=texture2D(uArt,uv);',
+  '  col=mix(col,s2l(art.rgb),art.a);',
+  '  if(uEncode<0.5){ float fd=exp(-max(vW.y,0.0)*uReflFade); gl_FragColor=vec4(col*fd,fd); return; }',
+  '  gl_FragColor=vec4(l2s(col),1.0);',
+  '}'].join('\n')
+});
+
+var card=new THREE.Mesh(cardGeo,cardMat);
+card.position.set(CARD_X,CARD_Y,CARD_Z);
+card.rotation.order='XYZ';
+scene.add(card);
+
+// ───────────────────────────── arch ─────────────────────────────
+/* The halo: a thin emissive ring, a soft additive shell that stands in for a
+   bloom pass, and a drift of fine strands orbiting the ring.  All three fade
+   with height in the reflection pass so the water only catches their base. */
+var haloUniforms=Object.assign({
+  uCam:{value:new THREE.Vector3()},
+  uCol:{value:new THREE.Color(0.62,0.84,1.0)},
+  uI:{value:1.45},
+  uHaloR:{value:HALO_R},
+  uEncode:PASS.uEncode, uReflFade:PASS.uArchFade
+},skyUniforms);
+
+var haloMat=new THREE.ShaderMaterial({
+  uniforms:haloUniforms, side:THREE.DoubleSide, transparent:true,
+  blending:THREE.AdditiveBlending, depthWrite:false,
+  vertexShader:['varying vec3 vL; varying vec3 vW;',
+  'void main(){ vL=position; vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz;',
+  ' gl_Position=projectionMatrix*viewMatrix*w; }'].join('\n'),
+  fragmentShader:[
+  'precision highp float;',
+  'vec3 l2s(vec3 c){ return pow(max(c,0.0),vec3(1.0/2.2)); }',
+  'varying vec3 vL; varying vec3 vW;',
+  'uniform vec3 uCol; uniform float uI,uEncode,uReflFade,uTime;',
+  'void main(){',
+  '  float a=atan(vL.y,vL.x);',
+  // three slow beats around the ring that never quite re-align, so the light
+  // keeps re-pooling instead of sitting still
+  '  float puls=0.62+0.24*sin(a*2.0-uTime*0.42)+0.14*sin(a*5.0+uTime*0.63)',
+  '            +0.10*sin(a*9.0-uTime*0.31);',
+  '  vec3 col=uCol*uI*puls;',
+  '  float fd = uEncode<0.5 ? exp(-max(vW.y,0.0)*uReflFade) : 1.0;',
+  '  col*=fd;',
+  '  gl_FragColor=vec4(uEncode>0.5?l2s(col):col, max(col.r,max(col.g,col.b)));',
+  '}'].join('\n')
+});
+var halo=new THREE.Mesh(new THREE.TorusGeometry(HALO_R,HALO_TUBE,10,720),haloMat);
+halo.position.set(HALO_X,HALO_Y,HALO_Z);
+scene.add(halo);
+
+/* the glow shell — a fat torus whose brightness falls off with distance from
+   the ring's own curve, which is cheaper and steadier than a bloom pass */
+var glowMat=new THREE.ShaderMaterial({
+  uniforms:Object.assign({},haloUniforms,{uW:{value:0.058},uI:{value:0.60}}),
+  side:THREE.DoubleSide, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false,
+  vertexShader:['varying vec3 vL; varying vec3 vW;',
+  'void main(){ vL=position; vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz;',
+  ' gl_Position=projectionMatrix*viewMatrix*w; }'].join('\n'),
+  fragmentShader:[
+  'precision highp float;',
+  'vec3 l2s(vec3 c){ return pow(max(c,0.0),vec3(1.0/2.2)); }',
+  'varying vec3 vL; varying vec3 vW;',
+  'uniform vec3 uCol; uniform float uI,uW,uHaloR,uEncode,uReflFade,uTime;',
+  'void main(){',
+  '  float d=length(vec2(length(vL.xy)-uHaloR, vL.z));',
+  '  float g=exp(-pow(d/uW,1.7));',
+  '  float a=atan(vL.y,vL.x);',
+  '  g*=0.70+0.30*sin(a*2.0-uTime*0.42);',
+  '  vec3 col=uCol*uI*g;',
+  '  float fd = uEncode<0.5 ? exp(-max(vW.y,0.0)*uReflFade) : 1.0;',
+  '  col*=fd;',
+  '  gl_FragColor=vec4(uEncode>0.5?l2s(col):col, max(col.r,max(col.g,col.b)));',
+  '}'].join('\n')
+});
+function addGlow(tube,w,i,seg){
+  var m=glowMat.clone();
+  m.uniforms=Object.assign({},haloUniforms,{uW:{value:w},uI:{value:i}});
+  var mesh=new THREE.Mesh(new THREE.TorusGeometry(HALO_R,tube,12,seg),m);
+  mesh.position.copy(halo.position); scene.add(mesh); return mesh;
+}
+var haloGlow=addGlow(0.30,0.105,1.60,220);   // the hot core spill
+var haloBloom=addGlow(0.78,0.360,0.42,96);  // the broad bloom around it
+
+/* strands — short arcs riding just off the ring, each spinning about the halo
+   axis at its own rate so the band shears rather than turning as one piece */
+/* strands — after flower-field.html's light ribbons: camera-facing strips with a
+   white-hot core inside a saturated halo, fanned into bundles and tapered to
+   nothing at both ends.  The whole set is one merged geometry; each vertex
+   carries its own width, intensity and core strength, and the ribbon is widened
+   in the vertex shader so it holds a constant thickness on screen. */
+var strands=(function(){
+  var BUNDLES=9, SEG=72, FIBRES=3;
+  // [colour, widthScale, intensityScale, coreStrength]
+  var PASSES=[
+    [[0.26,0.58,1.00], 7.00, 0.62, 0.00],   // the wide saturated halo
+    [[0.66,0.84,1.00], 1.00, 1.00, 1.55],   // the narrow white core
+    [[0.80,0.92,1.00], 0.22, 0.34, 0.00]    // a hair-fine filament, outer fibres only
+  ];
+  // there is no bloom pass on this page, so the halo has to be carried by real
+  // width rather than by bleed off a thin hot core
+  var W0=0.0016, SPREAD=0.030;
+  var SPIN0=0.135;                 // shared drift, rad/s -- ~46s per revolution
+  var rnd=Math.random;
+  var pos=[], tan=[], side=[], wid=[], itn=[], cor=[], col=[], spn=[], sed=[], idx=[], base=0;
+
+  for(var b=0;b<BUNDLES;b++){
+    // every strand is cut from one template -- same arc length, one coil, phase
+    // locked to its stratified slot -- so the set reads as a single woven system
+    // rather than nine unrelated curves.  The jitters are small on purpose: just
+    // enough to break exact N-fold symmetry without losing the order.
+    // three regular shells rather than random radii: keeps the depth the random
+    // version had, without the disorder
+    var sh=b%3;
+    var a0=(b/BUNDLES)*6.2832+(rnd()-0.5)*0.20, span=2.30+(rnd()-0.5)*0.30;
+    var r0=HALO_R*(0.945+sh*0.055), z0=(sh-1)*0.045;
+    var spiral=0.085*(b%2?1:-1);                     // alternating drift weaves a braid
+    var ca=HALO_R*(0.046+sh*0.020), ct=1, cp=(b/BUNDLES)*6.2832;
+    // one shared rate and one shared direction: the whole halo turns as a unit
+    var spin=SPIN0*(1+(rnd()-0.5)*0.14), seed=rnd(), inten=0.85+rnd()*0.30;
+
+    for(var fi=0; fi<FIBRES; fi++){
+      var f=FIBRES>1 ? (fi/(FIBRES-1)-0.5)*2 : 0, mid=1-Math.abs(f);
+      var lat=f*SPREAD*(0.62+0.38*Math.sin(fi*3.1)), la=fi*2.1;
+      var latR=lat*Math.cos(la), latZ=lat*Math.sin(la);
+      var fw=W0*(0.34+0.66*mid), fi2=inten*(0.30+0.70*Math.pow(mid,0.7));
+      var ph=cp+fi*2.31;
+      var pt=function(u){
+        var a=a0+u*span;
+        var g=r0+spiral*u*span+latR;
+        var th=ct*u*6.2832+ph;
+        var r=g+ca*Math.cos(th), z=z0+ca*Math.sin(th)+latZ;
+        return [r*Math.cos(a), r*Math.sin(a), z];
+      };
+      for(var pi=0; pi<PASSES.length; pi++){
+        if(pi===2 && Math.abs(f)<0.4) continue;         // hairs only on the outer fibres
+        var P=PASSES[pi];
+        for(var j=0;j<SEG;j++){
+          var u=j/(SEG-1), p0=pt(u), p1=pt(Math.min(u+1/(SEG-1),1));
+          if(j===SEG-1){ p1=p0; p0=pt(u-1/(SEG-1)); }
+          var tx=p1[0]-p0[0], ty=p1[1]-p0[1], tz=p1[2]-p0[2];
+          var tl=Math.hypot(tx,ty,tz)||1; tx/=tl; ty/=tl; tz/=tl;
+          var c0=pt(u);
+          var w=fw*P[1]*(0.55+0.45*Math.sin(u*Math.PI));
+          var it=Math.pow(Math.sin(u*Math.PI),0.55)*fi2*P[2];
+          for(var sgn=-1;sgn<=1;sgn+=2){
+            pos.push(c0[0],c0[1],c0[2]); tan.push(tx,ty,tz);
+            side.push(sgn); wid.push(w); itn.push(it); cor.push(P[3]);
+            col.push(P[0][0],P[0][1],P[0][2]); spn.push(spin); sed.push(seed);
+          }
+          if(j<SEG-1){ var k=base+j*2; idx.push(k,k+1,k+2, k+1,k+3,k+2); }
+        }
+        base+=SEG*2;
+      }
+    }
+  }
+  var geo=new THREE.BufferGeometry();
+  var F=function(a,n){ return new THREE.BufferAttribute(new Float32Array(a),n); };
+  geo.setAttribute('position',F(pos,3)); geo.setAttribute('aTan',F(tan,3));
+  geo.setAttribute('aSide',F(side,1));   geo.setAttribute('aWidth',F(wid,1));
+  geo.setAttribute('aInt',F(itn,1));     geo.setAttribute('aCore',F(cor,1));
+  geo.setAttribute('aCol',F(col,3));     geo.setAttribute('aSpin',F(spn,1));
+  geo.setAttribute('aSeed',F(sed,1));
+  geo.setIndex(idx);
+
+  var mat=new THREE.ShaderMaterial({
+    uniforms:{uTime:{value:0}, uSpin:{value:0}, uI:{value:2.10},
+              uEncode:PASS.uEncode, uReflFade:PASS.uArchFade},
+    transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide,
+    vertexShader:[
+    'attribute vec3 aTan, aCol;',
+    'attribute float aSide, aWidth, aInt, aCore, aSpin, aSeed;',
+    'uniform float uTime, uSpin;',
+    'varying float vSide, vInt, vCore, vSeed, vY; varying vec3 vCol;',
+    'void main(){',
+    '  float th=aSpin*uTime + uSpin*(0.6+0.8*aSeed);',   // aSpin is rad/s directly
+    '  float c=cos(th), s=sin(th);',
+    '  vec3 p=vec3(position.x*c-position.y*s, position.x*s+position.y*c, position.z);',
+    '  vec3 t=vec3(aTan.x*c-aTan.y*s, aTan.x*s+aTan.y*c, aTan.z);',
+    '  vec3 wp=(modelMatrix*vec4(p,1.0)).xyz;',
+    '  vec3 wt=normalize(mat3(modelMatrix)*t);',
+    '  vec3 view=wp-cameraPosition; float dist=max(length(view),0.05); view/=dist;',
+    // the ribbon always turns its face to the camera, and its width is scaled by
+    // distance so it holds a constant thickness on screen
+    '  vec3 nrm=cross(wt,view); float nl=length(nrm);',
+    '  nrm = nl>1e-5 ? nrm/nl : vec3(0.0,1.0,0.0);',
+    '  wp += nrm*(aSide*aWidth*dist);',
+    '  vSide=aSide; vInt=aInt; vCore=aCore; vSeed=aSeed; vCol=aCol; vY=wp.y;',
+    '  gl_Position=projectionMatrix*viewMatrix*vec4(wp,1.0);',
+    '}'].join('\n'),
+    fragmentShader:[
+    'precision highp float;',
+    'uniform float uI,uTime,uEncode,uReflFade;',
+    'varying float vSide, vInt, vCore, vSeed, vY; varying vec3 vCol;',
+    'vec3 l2s(vec3 c){ return pow(max(c,0.0),vec3(1.0/2.2)); }',
+    'void main(){',
+    // three profiles across the strip: a razor core, a tight halo, a broad wisp
+    // clamped: |vSide| can interpolate a hair past 1 at the ribbon edge, and
+    // pow() of a negative base is NaN -- one NaN texel poisons the whole
+    // reflection blur it lands in
+    '  float e=clamp(1.0-abs(vSide),0.0,1.0);',
+    '  float core=pow(e,16.0), halo=pow(e,3.0), wisp=pow(e,0.60);',
+    '  float tw=0.74+0.26*(0.5+0.5*sin(uTime*(0.8+vSeed*0.6)+vSeed*40.0));',
+    '  vec3 c=min(vCol*halo*1.30 + vCol*wisp*0.38 + vec3(0.86,0.98,1.0)*core*vCore, vec3(12.0));',
+    '  float a=(wisp*0.15 + halo*0.46 + core*vCore*0.42)*vInt*tw*uI;',
+    '  c*=vInt*tw*uI;',
+    '  if(uEncode<0.5){ float fd=exp(-max(vY,0.0)*uReflFade); c*=fd; a*=fd; }',
+    '  gl_FragColor=vec4(uEncode>0.5?l2s(c):c, clamp(a,0.0,1.0));',
+    '}'].join('\n')
+  });
+  var m=new THREE.Mesh(geo,mat);
+  m.position.copy(halo.position);
+  m.frustumCulled=false;
+  scene.add(m);
+  return m;
+})();
+
+// ───────────────────────────── water ─────────────────────────────
+var waterUniforms=Object.assign({
+  uRefl:{value:null},
+  uRes:{value:new THREE.Vector2(1,1)},
+  uCam:{value:new THREE.Vector3()},
+  uCenter:{value:new THREE.Vector3(CARD_X,0,CARD_Z)},
+  uDeep:{value:new THREE.Color(0.0035,0.0085,0.0520)},
+  uDistort:{value:0.60},
+  uDecay:{value:0.35},
+  uSmear:{value:0.006},
+  uFpow:{value:20.0},
+  uF0:{value:0.140},
+  uK:{value:5.6},
+  uSwell:{value:0.042},
+  uSunI:{value:3.5},
+  uSunSig:{value:0.09},
+  uSunCol:{value:new THREE.Vector3(0.62,0.82,1.00)},
+  uAmp:{value:0.34},
+  uFade:{value:0.010}
+},skyUniforms);
+
+var waterMat=new THREE.ShaderMaterial({
+  uniforms:waterUniforms,
+  vertexShader:['varying vec3 vW;',
+  'void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }'].join('\n'),
+  fragmentShader:COMMON+SKY+[
+  'varying vec3 vW;',
+  'uniform sampler2D uRefl; uniform vec2 uRes; uniform vec3 uCam,uCenter,uDeep;',
+  'uniform float uDistort,uAmp,uFade,uDecay,uFpow,uF0,uSunI,uSunSig,uK,uSwell,uSmear;',
+  'uniform vec3 uSunCol;',
+  'void main(){',
+  '  vec3 P=vW;',
+  '  vec3 toCam=uCam-P; float dist=length(toCam); vec3 V=toCam/dist;',
+  '  vec2 d2=P.xz-uCenter.xz; float r=length(d2);',
+  '  vec2 dir = r>1e-4 ? d2/r : vec2(1.0,0.0);',
+  '  // break the rings out of perfect circles',
+  '  float ang=atan(d2.y,d2.x);',
+  '  float wob=0.30*sin(ang*2.0+0.7)+0.15*sin(ang*3.0-1.9);',
+  '  r=r*(1.0+wob*0.055)+wob*0.10;',
+  '  float fade=1.0/(1.0+dist*dist*uFade);',
+  '  float t=uTime;',
+  '  vec2 grad=vec2(0.0);',
+  '  // concentric ripples radiating from the card',
+  '  float A=0.050*uAmp;',
+  '  float k=uK;',
+  '  float dec=1.0/(1.0+r*r*uDecay*uDecay);',
+  '  grad+=dir*(A*dec*k*cos(k*r-OMEGA_*t));',
+  '  grad+=dir*(A*0.17*dec*(k*2.3)*cos(k*2.3*r-OMEGA_*t*2.0+1.7));',
+  '  grad+=dir*(A*0.032*dec*(k*4.6)*cos(k*4.6*r-OMEGA_*t*3.0+4.1));',
+  '  float cap=exp(-max(dist-1.8,0.0)*1.9);',   // capillary detail dies fast or it moires
+  '  grad+=dir*(A*0.028*dec*cap*(k*13.0)*cos(k*13.0*r-OMEGA_*t*5.0+1.3));',
+  '  // broad swell so the sheet is never perfectly flat',
+  '  vec3 q=vec3(P.x*0.42,t*0.30,P.z*0.42);',
+  '  float n1=fbm(q), n2=fbm(q+vec3(3.7,0.0,1.9));',
+  '  grad+=vec2(n1-0.5,n2-0.5)*uSwell*(0.35+0.65*dec);',
+  '  grad*=fade;',
+  '  vec3 N=normalize(vec3(-grad.x,1.0,-grad.y));',
+  '  vec3 R=reflect(-V,N); R.y=abs(R.y);',
+  '  vec3 skyR=skyColor(R,0.35);',
+  '  vec2 uv=gl_FragCoord.xy/uRes;',
+  '  vec2 off=vec2(N.x,N.z)*uDistort/(1.0+dist*0.22);',
+  '  // rippled water smears a near reflection vertically -- 5 taps along the distortion',
+  '  float sm=uSmear*(0.25+length(off)*6.0);',
+  '  vec4 objR=vec4(0.0);',
+  '  for(int q=-2;q<=2;q++){',
+  '    float o=float(q)*sm;',
+  '    objR+=texture2D(uRefl,clamp(uv+off+vec2(o*0.5,o),vec2(0.002),vec2(0.998)));',
+  '    objR+=texture2D(uRefl,clamp(uv+off+vec2(o*1.7,-o*0.4),vec2(0.002),vec2(0.998)));',
+  '  }',
+  '  objR*=0.1;',
+  // the reflection buffer holds premultiplied colour: opaque objects write
+  // col*fade with alpha fade, and additive layers accumulate col*a with alpha a.
+  // Mixing toward the premultiplied colour drags the water to black wherever a
+  // dim-but-covering layer lands, so un-premultiply before compositing.
+  '  float cov=clamp(objR.a,0.0,1.0);',
+  '  vec3 refl=mix(skyR,objR.rgb/max(objR.a,1e-3),cov);',
+  '  float ct=clamp(dot(V,N),0.0,1.0);',
+  '  float F=uF0+(1.0-uF0)*pow(1.0-ct,uFpow);',
+  '  vec3 col=mix(uDeep,refl,F);',
+  '  // sun glitter: the horizon light is far brighter than the displayed sky',
+  '  float sang=acos(clamp(dot(R,uGlowDir),-1.0,1.0));',
+  '  col+=uSunCol*(exp(-pow(sang/uSunSig,2.0))*uSunI*(0.25+0.75*F));',
+  '  gl_FragColor=vec4(l2s(col),1.0);',
+  '}'].join('\n').replace(/OMEGA_/g,OMEGA.toFixed(6))
+});
+var water=new THREE.Mesh(new THREE.PlaneGeometry(4000,4000,1,1),waterMat);
+water.rotation.x=-Math.PI/2;
+water.position.set(0,0,-1200);
+water.frustumCulled=false;
+scene.add(water);
+
+// ───────────────────────────── reflection camera ─────────────────────────────
+var reflCam=new THREE.PerspectiveCamera(FOVY,1,0.05,4000);
+reflCam.matrixAutoUpdate=false;
+var MIRROR=new THREE.Matrix4().makeScale(1,-1,1);
+
+// ───────────────────────────── resize ─────────────────────────────
+var QUALITY=1.0;                     // adaptive pixel-ratio governor
+function resize(){
+  var w=canvas.clientWidth||window.innerWidth, h=canvas.clientHeight||window.innerHeight;
+  var cap=(w*h>2200000)?1.6:2.0;      // keep very large canvases affordable
+  DPR=Math.min(window.devicePixelRatio||1, cap)*QUALITY;
+  renderer.setPixelRatio(DPR);
+  renderer.setSize(w,h,false);
+  var aspect=w/h, designA=DES_W/DES_H;
+  camera.aspect=aspect;
+  // narrower than the design -> widen the frustum so the scene still fits, but cap it
+  // so a portrait phone does not end up with a fish-eye view of a tiny card
+  var adapted = aspect<designA ? 2*Math.atan(Math.tan(FOVY*Math.PI/360)*designA/aspect)*180/Math.PI : FOVY;
+  camera.fov = Math.min(adapted, 52);
+  camera.updateProjectionMatrix();
+  reflCam.aspect=camera.aspect; reflCam.fov=camera.fov; reflCam.updateProjectionMatrix();
+  var rs=Math.min(0.34, 620/Math.max(w*DPR,1));   // deliberately soft: ripples destroy detail anyway
+  var rw=Math.max(2,Math.round(w*DPR*rs)), rh=Math.max(2,Math.round(h*DPR*rs));
+  if(reflRT) reflRT.dispose();
+  reflRT=new THREE.WebGLRenderTarget(rw,rh,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat,type:THREE.HalfFloatType});
+  waterUniforms.uRefl.value=reflRT.texture;
+  waterUniforms.uRes.value.set(w*DPR,h*DPR);
+  camU.uTanHalf.value=Math.tan(camera.fov*Math.PI/360);
+  camU.uAspect.value=camera.aspect;
+}
+window.addEventListener('resize',resize);
+
+// ───────────────────────────── loop ─────────────────────────────
+cardUniforms.uArt.value=cardArtTexture();
+cardUniforms.uMark.value=cardMarkTexture();
+if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){cardUniforms.uArt.value=cardArtTexture();});}
+
+var _r=new THREE.Vector3(),_u=new THREE.Vector3(),_f=new THREE.Vector3();
+function setCamBasis(cam){
+  cam.updateMatrixWorld();
+  var m=cam.matrixWorld.elements;
+  _r.set(m[0],m[1],m[2]); _u.set(m[4],m[5],m[6]); _f.set(-m[8],-m[9],-m[10]);
+  camU.uRight.value.copy(_r); camU.uUp.value.copy(_u); camU.uFwd.value.copy(_f);
+  camU.uTanHalf.value=Math.tan(cam.fov*Math.PI/360);
+  camU.uAspect.value=cam.aspect;
+}
+
+/* Hovering orbits the camera around the card.  The camera is rotated *and*
+   revolved by the same quaternion, so the card holds its place on screen and
+   turns to show a new face while everything at another depth parallaxes past
+   it — the stars most of all, since they are effectively at infinity. */
+var ORB_AZ=8.0*Math.PI/180, ORB_EL=2.0*Math.PI/180;
+var BASE_Q=new THREE.Quaternion().setFromEuler(new THREE.Euler(CAM_PITCH,0,0,'YXZ'));
+var PIVOT=new THREE.Vector3(CARD_X,CARD_Y,CARD_Z);
+var CAM_OFF=new THREE.Vector3(0,CAM_H,0).sub(PIVOT);
+var _q=new THREE.Quaternion(), _e=new THREE.Euler(0,0,0,'YXZ');
+var pointer={x:0,y:0}, pHover=0, pHoverTarget=0, orbAz=0, orbEl=0, starRoll=0, strandRoll=0;
+if(!REDUCED){
+  addEventListener('pointermove',function(e){
+    pointer.x=(e.clientX/innerWidth)*2-1;
+    pointer.y=(e.clientY/innerHeight)*2-1;
+    pHoverTarget=1;
+  },{passive:true});
+  addEventListener('pointerleave',function(){ pHoverTarget=0; });
+  addEventListener('pointerup',function(e){ if(e.pointerType!=='mouse') pHoverTarget=0; });
+  addEventListener('blur',function(){ pHoverTarget=0; });
+}
+
+var clock=new THREE.Clock();
+var T=0, slow=0, fast=0, visible=true;
+document.addEventListener('visibilitychange',function(){
+  visible=!document.hidden;
+  if(visible){ clock.getDelta(); requestAnimationFrame(frame); }
+});
+function frame(){
+  if(!visible) return;
+  var dt=clock.getDelta();
+  var t = FIXED_T!==null ? FIXED_T : (T+=Math.min(dt,0.05));
+  // governor: two seconds of >26 ms frames drops the pixel ratio one notch
+  if(FIXED_T===null&&dt>0){
+    if(dt>0.026){ slow++; fast=0; } else { fast++; if(fast>240){ slow=0; fast=0; } }
+    if(slow>90&&QUALITY>0.55){ QUALITY=Math.max(0.55,QUALITY-0.25); slow=0; resize(); }
+  }
+  skyUniforms.uTime.value=t;
+
+  // ---- orbit ----
+  pHover += (pHoverTarget - pHover) * (1 - Math.pow(pHoverTarget>pHover?0.004:0.02, dt));
+  var azT = pHover * -pointer.x * ORB_AZ;
+  var elT = pHover *  pointer.y * ORB_EL;
+  var ek  = 1 - Math.pow(0.006, dt);
+  orbAz += (azT-orbAz)*ek; orbEl += (elT-orbEl)*ek;
+  _e.set(orbEl, orbAz, 0, 'YXZ'); _q.setFromEuler(_e);
+  camera.position.copy(CAM_OFF).applyQuaternion(_q).add(PIVOT);
+  camera.quaternion.copy(_q).multiply(BASE_Q);
+  // the stars and the strands keep turning on their own, faster while hovering
+  // the star field and the strand band are carried by the pointer, not by a clock
+  var rollT = REDUCED ? 0 : -pointer.x * pHover;
+  starRoll   += (rollT*0.085 - starRoll)   * ek;
+  strandRoll += (rollT*0.55  - strandRoll) * ek;
+  skyUniforms.uStarRot.value=starRoll;
+  strands.material.uniforms.uSpin.value=strandRoll;
+
+  // The card holds its pose until the pointer turns it; only the float is its own.
+  // (the pose was solved in a +Z-forward frame, so both angles flip for three.js)
+  card.rotation.x=-(CARD_RX + orbEl/ORB_EL*CARD_TILT_X);
+  card.rotation.y=-(CARD_RY - orbAz/ORB_AZ*CARD_TILT_Y);
+  card.position.y=CARD_Y+0.0042*Math.sin(OMEGA*t*0.34+2.44);
+  card.position.x=CARD_X+0.0026*Math.sin(OMEGA*t*0.29+0.51);
+
+  // specular band sweep (measured: 1.5 s sinusoid across the card face)
+
+  camera.updateMatrixWorld();
+  cardUniforms.uCam.value.setFromMatrixPosition(camera.matrixWorld);
+  haloUniforms.uCam.value.copy(cardUniforms.uCam.value);
+  glowMat.uniforms.uCam.value.copy(cardUniforms.uCam.value);
+  strands.material.uniforms.uTime.value=t;
+  waterUniforms.uCam.value.copy(cardUniforms.uCam.value);
+
+  // ---- reflection pass ----
+  reflCam.matrixWorld.multiplyMatrices(MIRROR,camera.matrixWorld);
+  reflCam.matrixWorldInverse.copy(reflCam.matrixWorld).invert();
+  reflCam.projectionMatrix.copy(camera.projectionMatrix);
+  reflCam.projectionMatrixInverse.copy(camera.projectionMatrixInverse);
+  skyMesh.visible=false; water.visible=false; PASS.uEncode.value=0;
+  renderer.setRenderTarget(reflRT);
+  renderer.setClearColor(0x000000,0);
+  renderer.clear(true,true,false);
+  renderer.render(scene,reflCam);
+  skyMesh.visible=true; water.visible=true; PASS.uEncode.value=1;
+
+  // ---- main pass ----
+  setCamBasis(camera);
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(0x000000,1);
+  renderer.render(scene,camera);
+
+  if(visible) requestAnimationFrame(frame);
+}
+resize();
+requestAnimationFrame(frame);
+
+window.__probe=function(){
+  var w=renderer.domElement.clientWidth, h=renderer.domElement.clientHeight;
+  camera.updateMatrixWorld(); card.updateMatrixWorld();
+  function px(v){ var p=v.clone().project(camera); return [(p.x*0.5+0.5)*w, (0.5-p.y*0.5)*h]; }
+  var hw=CARD_W/2, hh=CARD_H/2, out={};
+  out.cardTL=px(card.localToWorld(new THREE.Vector3(-hw, hh,0)));
+  out.cardTR=px(card.localToWorld(new THREE.Vector3( hw, hh,0)));
+  out.cardBR=px(card.localToWorld(new THREE.Vector3( hw,-hh,0)));
+  out.cardBL=px(card.localToWorld(new THREE.Vector3(-hw,-hh,0)));
+  out.horizon=px(new THREE.Vector3(0,0,-1e6))[1];
+  out.haloTop=px(new THREE.Vector3(HALO_X,HALO_Y+HALO_R,HALO_Z));
+  out.haloL=px(new THREE.Vector3(HALO_X-HALO_R,HALO_Y,HALO_Z));
+  out.haloR=px(new THREE.Vector3(HALO_X+HALO_R,HALO_Y,HALO_Z));
+  out.rot=[card.rotation.x*180/Math.PI, card.rotation.y*180/Math.PI];
+  out.fov=camera.fov; out.size=[w,h];
+  return out;
+};
+window.__lumen={THREE:THREE,scene:scene,camera:camera,card:card,halo:halo,strands:strands,water:water,CFG:CFG,applySky:applySky,
+  uCard:cardUniforms,uWater:waterUniforms,uSky:skyUniforms,
+  setT:function(v){FIXED_T=v;}};
+})();
+</script>
+<script>
+/* =====================================================================
+   Liquid metal — prismatic dispersion on a pill, after ThreeUI's
+   <LiquidMetalButton variant="pill" />.
+
+   A scalar field V is painted through a soft plateau: dark below it, blown
+   white inside, dark above.  The plateau is sampled once per wavelength at a
+   slightly offset height in V, so its lower edge fringes warm and its upper
+   edge fringes cool; fringe width falls out as dispersion / |grad V|, which
+   is what gives razor rainbow lines where the field is pinched and broad
+   washes where it is not.  V is a family of parallel curves — one swooping
+   valley repeated up the pill — so the ribbons stay laminar.
+
+   Here it drives every pill on the page: the two hero buttons, the nav CTA
+   and the nav rail.  At rest only the travelling rim is lit, which is what
+   the borders are; hovering blooms the metal inside.
+   ===================================================================== */
+(function(){
+'use strict';
+var CALM = matchMedia('(prefers-reduced-motion: reduce)');
+
+var VERT = '#version 300 es\nin vec2 position; void main(){ gl_Position = vec4(position,0.,1.); }';
+
+var HEAD = [
+'#version 300 es','precision highp float;','out vec4 o;',
+'uniform vec2  uC;','uniform vec2  uHalf;','uniform float uT;',
+'uniform float uHover;','uniform float uPress;',
+'uniform vec4  uRip[3];','uniform vec4  uRipK;','uniform vec4  uRipK2;',
+'uniform vec4  uPtr;','uniform vec4  uPtrK;',
+'#define PI 3.14159265',
+'float sdPill(vec2 p, vec2 b, float r){',
+'  vec2 q = abs(p) - b + r;',
+'  return min(max(q.x,q.y),0.) + length(max(q,0.)) - r;',
+'}',
+/* Expanding ring per press, in pill-height units.  Three slots so a quick
+   double-tap overlaps.  The wavefront is faceted and the crest is a cusp
+   rather than a gaussian, so it lands as a crease in sheet metal. */
+'float ripple(vec2 p, float t){',
+'  float sum = 0.;',
+'  for(int i = 0; i < 3; i++){',
+'    if(uRip[i].w < 0.5) continue;',
+'    float age = t - uRip[i].z;',
+'    if(age < 0. || age > 4.) continue;',
+'    vec2  rp = p - uRip[i].xy;',
+'    float facet = 1. + uRipK2.x * cos(uRipK2.y * atan(rp.y, rp.x) + age * 2.1 + float(i) * 2.4);',
+'    float x = (length(rp) - age * uRipK.x * facet) / uRipK.y;',
+'    sum += exp(-pow(abs(x) + 1e-4, uRipK2.z)) * exp(-age * uRipK.z);',
+'  }',
+'  return sum;',
+'}',
+/* A well under the cursor that lags behind it and swells with speed. */
+'float pointerW(vec2 p){',
+'  if(uPtr.z < 0.001) return 0.;',
+'  float d = length(p - uPtr.xy) / uPtrK.x;',
+'  return exp(-d*d) * uPtr.z;',
+'}',
+/* Displacing the sample point rather than the field value is what reads as
+   liquid: the bands bulge around the cursor like a lens. */
+'vec2 pointerWarp(vec2 p){',
+'  float w = pointerW(p);',
+'  if(w <= 0.) return vec2(0.);',
+'  return normalize(p - uPtr.xy + vec2(1e-5)) * w * (uPtrK.y + uPtrK.z * uPtr.w);',
+'}',''].join('\n');
+
+var FRAG_RIM = HEAD + [
+'uniform float uBw;','uniform float uE[8];',
+/* Arc-length around the pill, 0..1 from the right-hand extreme.  Caps and
+   straights are measured in real length so a highlight travels at constant
+   speed instead of stalling on the caps. */
+'float perim(vec2 d, float a, float r){',
+'  float P = 4.*a + 2.*PI*r; float s;',
+'  if(d.x >= a){ float th = atan(d.y, d.x - a); if(th < 0.) th += 2.*PI;',
+'    s = (th <= PI*0.5) ? r*th : P - r*(2.*PI - th); }',
+'  else if(d.x <= -a){ float th = atan(d.y, d.x + a); if(th < 0.) th += 2.*PI;',
+'    s = r*PI*0.5 + 2.*a + r*(th - PI*0.5); }',
+'  else if(d.y >= 0.){ s = r*PI*0.5 + (a - d.x); }',
+'  else { s = r*PI*1.5 + 2.*a + (d.x + a); }',
+'  return s / P;',
+'}',
+'float pb(float u, float w){ u = fract(u); float x = min(u, 1.-u); return exp(-(x*x)/(w*w)); }',
+/* three lobes at different speeds and widths that never quite re-align, so
+   the light keeps re-pooling around the edge */
+'float rimHot(float s, float t){',
+'  float v = uE[0];',
+'  v += 0.62 * pb(s - t*uE[4],             0.075);',
+'  v += 0.44 * pb(s + t*uE[4]*0.63 + 0.41, 0.135);',
+'  v += 0.30 * pb(s - t*uE[4]*0.34 + 0.73, 0.200);',
+'  return v;',
+'}',
+'float rimBand(float sd, float off){ return 1. - smoothstep(0., uBw*1.05, abs(sd + uBw*0.55 + off)); }',
+'void main(){',
+'  vec2  d  = gl_FragCoord.xy - uC;',
+'  float sd = sdPill(d, uHalf, uHalf.y);',
+'  if(sd > uBw*2.5 || sd < -uBw*3.5){ o = vec4(0.); return; }',
+/* each channel is offset across the stroke *and* along it, so the rim fringes
+   red-out / cyan-in and its hue drifts as a highlight slides past */
+'  float a = max(uHalf.x - uHalf.y, 0.);',
+'  float s = perim(d, a, uHalf.y);',
+'  float top = mix(1., 0.5 + 0.5 * (d.y / uHalf.y), uE[5]);',
+'  vec2  p   = vec2(d.x, -d.y) / (uHalf.y * 2.);',
+'  float lift = 1. + uPress * uE[6] + ripple(p, uT) * uE[7] + pointerW(p) * uPtrK.w;',
+'  o = vec4(vec3(',
+'    rimBand(sd,  uE[2]) * rimHot(s + uE[3], uT),',
+'    rimBand(sd,  0.   ) * rimHot(s,         uT),',
+'    rimBand(sd, -uE[2]) * rimHot(s - uE[3], uT)',
+'  ) * uE[1] * top * lift, 1.);',
+'}'].join('\n');
+
+var FRAG_SCENE = HEAD + [
+'uniform float uP[21];',
+'float h21(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }',
+'float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);',
+'  float a = h21(i), b = h21(i+vec2(1,0)), c = h21(i+vec2(0,1)), d = h21(i+vec2(1,1));',
+'  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y) * 2. - 1.; }',
+/* low octave gain keeps the first octave dominant, which keeps the ribbons
+   big and smooth instead of turbulent */
+'float fbm(vec2 p, float g){ float s = 0., a = 1., n = 0.;',
+'  for(int i=0;i<4;i++){ s += a*vn(p); n += a; p = p*2.03 + 11.7; a *= g; } return s / n; }',
+'float fbm(vec2 p){ return fbm(p, 0.5); }',
+'float wig(float x, float t, float seed){',
+'  return vn(vec2(x,           t*0.150 + seed)) * 0.60',
+'       + vn(vec2(x*2.07 + 4., t*0.105 + seed)) * 0.27',
+'       + vn(vec2(x*4.30 - 7., t*0.080 + seed)) * 0.13; }',
+'float valleyAt(vec2 p, float t){ return wig(p.x*uP[0], t, 0.0) * uP[1]; }',
+'float densAt  (vec2 p, float t){ return uP[2] * exp(uP[3] * wig(p.x*uP[4] + 9.0, t, 2.7)); }',
+/* V = (y - valley(x)) * density(x).  Level sets are all vertical translates
+   of one valley curve, which is what makes the ribbons laminar; a density
+   that varies along x crowds them into razor fringes at one end and opens
+   them into a broad wash at the other. */
+'float surface(vec2 p, float t){',
+'  float V = (p.y - valleyAt(p,t)) * densAt(p,t);',
+'  V += uP[5] * fbm(p*vec2(0.8, 1.7)*uP[6] + vec2(t*0.05, -t*0.03), uP[17]);',
+'  return V - uP[7]; }',
+'float tone(float v){ float u = fract(v); float e = uP[9], W = uP[10] * 0.5;',
+'  return smoothstep(0.5-W-e, 0.5-W, u) * (1. - smoothstep(0.5+W, 0.5+W+e, u)); }',
+'vec3 spec(float t){ return clamp(vec3(1.5) - abs(4.*t - vec3(3.,2.,1.)), 0., 1.); }',
+'void main(){',
+'  vec2  d  = gl_FragCoord.xy - uC;',
+'  float sd = sdPill(d, uHalf, uHalf.y);',
+'  float pill = 1. - smoothstep(-1., 1., sd);',
+'  float S = uHalf.y * 2.; float t = uT;',
+/* premultiplied by the mask, with alpha carrying it, so the blur below can
+   normalise and keep a clean edge instead of a dark vignette */
+'  if(uHover <= 0.0015 || pill <= 0.0015){ o = vec4(0., 0., 0., pill); return; }',
+'  vec2  p = vec2(d.x, -d.y) / S;',
+'  vec2  q = p + pointerWarp(p);',
+/* self-refraction: bending the lookup along the field's own slope piles the
+   iso-lines into folds instead of leaving them evenly spaced */
+'  float h0 = surface(q, t);',
+'  vec2  gp = vec2(dFdx(h0), -dFdy(h0)) * S;',
+'  float V  = surface(q - gp * uP[8] / max(uP[2], .001), t);',
+'  vec2  gd = normalize(gp + vec2(1e-5));',
+'  V += uP[13] * fbm(vec2(dot(q,gd)*uP[14], dot(q, vec2(-gd.y,gd.x))*uP[14]*0.04) + vec2(0., t*0.06));',
+/* displacing the field rather than adding light is what sells the press as a
+   disturbance *in* the metal instead of a decal over it */
+'  float rip  = ripple(p, t);',
+'  float well = pointerW(p);',
+'  V += rip * uRipK.w;',
+/* dispersion is not linear in wavelength — the blue end bends far more than
+   the red, so the sample offsets are skewed the same way */
+'  const int N = 21;',
+'  float mid = 1. - pow(0.5, uP[12]);',
+'  vec3 col = vec3(0.), wsum = vec3(0.);',
+'  for(int i=0;i<N;i++){',
+'    float k = float(i)/float(N-1);',
+'    vec3  w = spec(k);',
+'    col  += w * tone(V + ((1. - pow(1. - k, uP[12])) - mid) * uP[11]);',
+'    wsum += w;',
+'  }',
+'  col /= wsum;',
+'  col = pow(col, vec3(uP[15]));',
+/* the ribbons only exist where the sheet is lit, and the dark upper region is
+   bounded by the same valley curve the bands follow */
+'  float lit = smoothstep(uP[18], uP[19], q.y - valleyAt(q, t));',
+'  lit *= mix(1., lit, 0.55);',
+'  col *= uP[16] * lit;',
+'  col = col * (1. + rip * 1.15 + well * 0.60);',
+'  o = vec4(col * pill * uHover, pill);',
+'}'].join('\n');
+
+/* Taps sit a quarter of a *destination* texel out, so at 2x reduction they
+   land on the four source texel centres; spacing them by a whole source texel
+   skips every other pixel and folds fine detail down into moire. */
+var FRAG_DOWN = ['#version 300 es','precision highp float;','out vec4 o;',
+'uniform sampler2D uTex, uTex2;','uniform vec2 uDstTexel;','uniform float uAdd;',
+'void main(){',
+'  vec2 uv = gl_FragCoord.xy * uDstTexel;',
+'  vec2 e = uDstTexel * 0.25;',
+'  vec4 s = texture(uTex, uv + vec2(-e.x,-e.y)) + texture(uTex, uv + vec2( e.x,-e.y))',
+'         + texture(uTex, uv + vec2(-e.x, e.y)) + texture(uTex, uv + vec2( e.x, e.y));',
+'  s *= 0.25;',
+'  if(uAdd > 0.5){',
+'    vec4 r = texture(uTex2, uv + vec2(-e.x,-e.y)) + texture(uTex2, uv + vec2( e.x,-e.y))',
+'           + texture(uTex2, uv + vec2(-e.x, e.y)) + texture(uTex2, uv + vec2( e.x, e.y));',
+'    s.rgb += r.rgb * 0.25;',
+'  }',
+'  o = s;','}'].join('\n');
+
+var FRAG_BLUR = ['#version 300 es','precision highp float;','out vec4 o;',
+'uniform sampler2D uTex; uniform vec2 uTexel; uniform vec2 uDir; uniform float uR;',
+'void main(){',
+'  vec2 uv = gl_FragCoord.xy * uTexel;',
+'  vec2 st = uTexel * uDir * uR;',
+'  vec4 s = texture(uTex, uv) * 0.1964;',
+'  s += (texture(uTex, uv + st*1.4118) + texture(uTex, uv - st*1.4118)) * 0.2969;',
+'  s += (texture(uTex, uv + st*3.2941) + texture(uTex, uv - st*3.2941)) * 0.0944;',
+'  s += (texture(uTex, uv + st*5.1765) + texture(uTex, uv - st*5.1765)) * 0.0104;',
+'  o = s;','}'].join('\n');
+
+/* the outer bloom, additive and masked away from the pill itself */
+var FRAG_GLOW = HEAD + [
+'uniform sampler2D uGlow; uniform vec2 uRes; uniform float uGlowGain, uGlowIn;',
+'void main(){',
+'  vec2 uv = gl_FragCoord.xy / uRes;',
+'  vec2 d  = gl_FragCoord.xy - uC;',
+'  float pill = 1. - smoothstep(-1., 1., sdPill(d, uHalf, uHalf.y));',
+'  vec3 rgb = texture(uGlow, uv).rgb * uGlowGain * mix(1., uGlowIn, pill);',
+'  o = vec4(rgb, clamp(max(rgb.r, max(rgb.g, rgb.b)), 0., 1.));',
+'}'].join('\n');
+
+var FRAG_COMP = HEAD + [
+'uniform sampler2D uSoft, uRim;',
+'uniform vec2  uRes;','uniform float uDim, uPunch;',
+'uniform vec4  uPlate;   // rgb, alpha of the pill body',
+'uniform float uShadow;  // how strongly it darkens the scene beneath',
+'void main(){',
+'  vec2 uv = gl_FragCoord.xy / uRes;',
+'  vec2  d    = gl_FragCoord.xy - uC;',
+'  float sd   = sdPill(d, uHalf, uHalf.y);',
+'  float pill = 1. - smoothstep(-1., 1., sd);',
+/* normalised blur: dividing by the blurred coverage keeps the softened metal
+   full strength right up to the edge instead of fading into the mask */
+'  vec4 m = texture(uSoft, uv);',
+/* scrim applied *after* the blur — knock the metal back through the middle
+   where the label sits; doing it before would smear the protection away */
+'  float veil = 1. - smoothstep(0.46, 0.88, abs(d.y) / uHalf.y);',
+/* blurring flattens the tonal range into a wash; putting the contrast back
+   with a power curve is what makes it read as poured metal, not a soft glow */
+'  vec3 metal = pow(max(m.rgb / max(m.a, 1e-3), 0.), vec3(uPunch));',
+'  vec3 light = metal * pill * mix(1., uDim, veil) + texture(uRim, uv).rgb;',
+/* the ripple crest is added after the blur so the crease stays a hard line,
+   while its displacement of the field still rides inside the softened metal */
+'  float rip = ripple(vec2(d.x, -d.y) / (uHalf.y * 2.), uT);',
+'  light += vec3(rip * rip) * uRipK2.w * pill * mix(1., 0.42, veil);',
+/* a soft contact shadow so the pill reads as sitting above the water */
+'  float sdSh = sdPill(d + vec2(0., uHalf.y * 0.55), uHalf * 0.97, uHalf.y * 0.97);',
+'  float sh   = uShadow * exp(-max(sdSh, 0.) / (uHalf.y * 0.80)) * (1. - pill);',
+'  float aBody = uPlate.a * pill;',
+'  float a = clamp(sh * (1. - aBody) + aBody + max(light.r, max(light.g, light.b)), 0., 1.);',
+'  o = vec4(min(uPlate.rgb * aBody + light, vec3(1.)), a);',
+'}'].join('\n');
+
+/* ---- shared tuning, straight off the reference component ---------------- */
+var P = {                 // the metal field, uP[0..20]
+  valFreq:0.50, valAmp:0.55, dens:2.40, densVar:2.20, densFreq:0.32,
+  wobAmp:0.12, wobFreq:1.60, lift:0.05, refract:0.18, edge:0.04, width:0.46,
+  disp:0.30, skew:1.50, fineAmp:0.0, fineFreq:9.0, gamma:1.00, gain:1.90,
+  octGain:0.32, litLo:-0.26, litHi:0.10, dim:0.44
+};
+var PKEYS = Object.keys(P);
+var E = {                 // the travelling rim, uE[0..7]
+  base:0.20, hot:0.82, chromA:0.42, chromS:0.030, speed:0.070,
+  top:0.35, press:0.85, ripple:1.60
+};
+var EKEYS = Object.keys(E);
+var C = { glow:1.95, glowR:1.30, glowIn:0.30, soften:0.24, punch:1.50 };
+var R = {                 // disturbances, in pill heights and seconds
+  speed:1.85, width:0.20, decay:1.35, amp:1.35,
+  facet:0.18, lobes:6.0, sharp:1.15, emit:0.45,
+  ptrRad:0.55, ptrAmp:0.32, ptrFast:0.40, ptrRim:0.80, ptrLag:0.0016, ptrVref:4.5
+};
+var PAD = 900/516;        // bloom reach, in pill heights — clears ~4 sigma
+var GLOW_TEX = 129;
+
+function LiquidPill(el, layer, opt){
+  opt = opt || {};
+  var cv = document.createElement('canvas');
+  layer.appendChild(cv);
+  var gl = cv.getContext('webgl2', {alpha:true, antialias:false, premultipliedAlpha:true});
+  if(!gl){ cv.remove(); return null; }
+
+  function sh(type, src){
+    var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  function prog(fs){
+    var p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+    gl.bindAttribLocation(p, 0, 'position'); gl.linkProgram(p);
+    if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    var u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for(var i=0;i<n;i++){ var info = gl.getActiveUniform(p,i); u[info.name.replace('[0]','')] = gl.getUniformLocation(p, info.name); }
+    return {p:p, u:u};
+  }
+  var pScene = prog(FRAG_SCENE), pRim = prog(FRAG_RIM), pDown = prog(FRAG_DOWN),
+      pBlur  = prog(FRAG_BLUR),  pGlow = prog(FRAG_GLOW), pComp = prog(FRAG_COMP);
+
+  var vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  var vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  var hasFloat = !!gl.getExtension('EXT_color_buffer_half_float');
+  function makeTarget(){
+    var tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    var fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    return {tex:tex, fbo:fbo, w:0, h:0};
+  }
+  function sizeTarget(t, w, h){
+    if(t.w === w && t.h === h) return;
+    t.w = w; t.h = h;
+    gl.bindTexture(gl.TEXTURE_2D, t.tex);
+    if(hasFloat) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+    else         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8,   w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  }
+  var T_core = makeTarget(), T_rim = makeTarget(),
+      T_s1   = makeTarget(), T_s2  = makeTarget(),
+      T_a    = makeTarget(), T_b   = makeTarget();
+
+  var W=0, H=0, DPR=1, BW=0, BH=0, CX=0, CY=0, DOWN=4, live=false;
+
+  function layout(){
+    var b = el.getBoundingClientRect();
+    if(b.width < 2 || b.height < 2){ live = false; cv.style.display='none'; return; }
+    live = true; cv.style.display='block';
+    var pad = b.height * PAD;
+    var cw = b.width + 2*pad, ch = b.height + 2*pad;
+    cv.style.left   = (b.left - pad) + 'px';
+    cv.style.top    = (b.top  - pad) + 'px';
+    cv.style.width  = cw + 'px';
+    cv.style.height = ch + 'px';
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.max(2, Math.round(cw * DPR)), h = Math.max(2, Math.round(ch * DPR));
+    if(w !== W || h !== H){ W = w; H = h; cv.width = W; cv.height = H; }
+    BW = b.width * DPR; BH = b.height * DPR;
+    CX = pad * DPR + BW/2;
+    CY = H - (pad * DPR + BH/2);            // gl_FragCoord is y-up
+    sizeTarget(T_core, W, H); sizeTarget(T_rim, W, H);
+    var hw = Math.max(2, Math.ceil(W/2)), hh = Math.max(2, Math.ceil(H/2));
+    sizeTarget(T_s1, hw, hh); sizeTarget(T_s2, hw, hh);
+    /* keep the bloom buffer ~129 texels tall at any size, so one set of blur
+       radii gives a glow of the same *relative* extent */
+    DOWN = Math.max(1, Math.min(4, Math.round(BH / GLOW_TEX)));
+    var dw = Math.max(2, Math.ceil(W/DOWN)), dh = Math.max(2, Math.ceil(H/DOWN));
+    sizeTarget(T_a, dw, dh); sizeTarget(T_b, dw, dh);
+  }
+
+  function drawTo(t){
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t ? t.fbo : null);
+    gl.viewport(0, 0, t ? t.w : W, t ? t.h : H);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  var uArr = new Float32Array(PKEYS.length), eArr = new Float32Array(EKEYS.length);
+  var RIP = [0,1,2].map(function(){ return {x:0,y:0,t:-99,on:0}; });
+  var ripArr = new Float32Array(12), ripNext = 0;
+  var hover=0, hoverTarget=0, press=0, pressTarget=0;
+  var ptr = {x:0,y:0}, ptrS = {x:0,y:0}, ptrAmt=0, ptrSpeed=0;
+  var on = {over:false, press:false, focus:false};
+  var hoverMax = opt.hoverMax === undefined ? 1 : opt.hoverMax;
+  var plate = opt.plate || [0.04,0.06,0.11,0.30];
+  var dim   = opt.dim === undefined ? P.dim : opt.dim;
+  var shadow= opt.shadow === undefined ? 0.30 : opt.shadow;
+
+  function sync(){
+    hoverTarget = (on.over || on.press || on.focus) ? hoverMax : 0;
+    pressTarget = on.press ? 1 : 0;
+  }
+  function localPt(e){
+    var b = el.getBoundingClientRect(), s = b.height;
+    return [(e.clientX - (b.left + b.width/2)) / s, (e.clientY - (b.top + b.height/2)) / s];
+  }
+  function addRipple(x, y){
+    var r = RIP[ripNext]; ripNext = (ripNext + 1) % RIP.length;
+    r.x = x; r.y = y; r.t = clock; r.on = 1;
+  }
+
+  el.addEventListener('pointerenter', function(e){
+    if(e.pointerType !== 'mouse') return;
+    var q = localPt(e); ptr.x = q[0]; ptr.y = q[1];
+    ptrS.x = ptr.x; ptrS.y = ptr.y; ptrSpeed = 0;
+    on.over = true; sync();
+  });
+  el.addEventListener('pointerleave', function(e){ if(e.pointerType === 'mouse'){ on.over = false; sync(); } });
+  window.addEventListener('pointermove', function(e){
+    if(!on.over && !on.press) return;
+    var q = localPt(e); ptr.x = q[0]; ptr.y = q[1];
+  }, {passive:true});
+  el.addEventListener('pointerdown', function(e){
+    var q = localPt(e); ptr.x = q[0]; ptr.y = q[1];
+    on.press = true; sync(); addRipple(ptr.x, ptr.y);
+  });
+  window.addEventListener('pointerup',     function(){ on.press = false; sync(); });
+  window.addEventListener('pointercancel', function(){ on.press = false; sync(); });
+  el.addEventListener('focus', function(){ on.focus = el.matches(':focus-visible'); sync(); }, true);
+  el.addEventListener('blur',  function(){ on.focus = false; sync(); }, true);
+  el.addEventListener('keydown', function(e){
+    if((e.key !== 'Enter' && e.key !== ' ') || e.repeat) return;
+    on.press = true; sync(); addRipple(0, 0);
+  });
+  el.addEventListener('keyup', function(e){
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    on.press = false; sync();
+  });
+
+  var clock = 0;
+  layout();
+
+  return {
+    el: el,
+    relayout: layout,
+    busy: function(){
+      return live && (hover > 0.002 || press > 0.002 || ptrAmt > 0.002 ||
+                      RIP.some(function(r){ return r.on; }));
+    },
+    step: function(dt, t){
+      if(!live) return;
+      clock = t;
+      // asymmetric ease: quick to bloom, a touch quicker to die
+      var k = hoverTarget > hover ? 1 - Math.pow(0.0012, dt) : 1 - Math.pow(0.00012, dt);
+      hover += (hoverTarget - hover) * k;
+      if(Math.abs(hoverTarget - hover) < 0.0008) hover = hoverTarget;
+      var pk = pressTarget > press ? 1 - Math.pow(1e-9, dt) : 1 - Math.pow(0.004, dt);
+      press += (pressTarget - press) * pk;
+      if(Math.abs(pressTarget - press) < 0.002) press = pressTarget;
+      for(var i = 0; i < RIP.length; i++){
+        var r = RIP[i];
+        if(r.on && clock - r.t > 4) r.on = 0;
+        ripArr[i*4] = r.x; ripArr[i*4+1] = r.y; ripArr[i*4+2] = r.t; ripArr[i*4+3] = r.on;
+      }
+      // the well trails the cursor and swells with how fast it is dragged
+      var lag = 1 - Math.pow(R.ptrLag, dt);
+      var dx = (ptr.x - ptrS.x) * lag, dy = (ptr.y - ptrS.y) * lag;
+      ptrS.x += dx; ptrS.y += dy;
+      var inst = Math.min(Math.hypot(dx, dy) / Math.max(dt, 1e-3) / R.ptrVref, 1);
+      ptrSpeed += (inst - ptrSpeed) * (1 - Math.pow(inst > ptrSpeed ? 0.001 : 0.02, dt));
+      var wantWell = (on.over || on.press) ? 1 : 0;
+      ptrAmt += (wantWell - ptrAmt) * (1 - Math.pow(0.004, dt));
+      if(Math.abs(wantWell - ptrAmt) < 0.002) ptrAmt = wantWell;
+    },
+    render: function(){
+      if(!live) return;
+      var i;
+      for(i = 0; i < uArr.length; i++) uArr[i] = P[PKEYS[i]];
+      for(i = 0; i < eArr.length; i++) eArr[i] = E[EKEYS[i]];
+      var bw = Math.max(1.5, 3.2 * (BH/516));
+      function common(pr){
+        gl.uniform2f(pr.u.uC, CX, CY);
+        gl.uniform2f(pr.u.uHalf, BW/2, BH/2);
+        gl.uniform1f(pr.u.uT, clock);
+        gl.uniform1f(pr.u.uHover, hover);
+        gl.uniform1f(pr.u.uPress, press);
+        gl.uniform4fv(pr.u.uRip, ripArr);
+        gl.uniform4f(pr.u.uRipK, R.speed, R.width, R.decay, R.amp);
+        gl.uniform4f(pr.u.uRipK2, R.facet, R.lobes, R.sharp, R.emit);
+        gl.uniform4f(pr.u.uPtr, ptrS.x, ptrS.y, ptrAmt, ptrSpeed);
+        gl.uniform4f(pr.u.uPtrK, R.ptrRad, R.ptrAmp, R.ptrFast, R.ptrRim);
+      }
+      gl.disable(gl.BLEND);
+
+      // 1. the metal, masked to the pill
+      gl.useProgram(pScene.p); common(pScene);
+      gl.uniform1fv(pScene.u.uP, uArr);
+      drawTo(T_core);
+
+      // 2. the rim, kept out of the softening blur so the outline stays thin
+      gl.useProgram(pRim.p); common(pRim);
+      gl.uniform1f(pRim.u.uBw, bw);
+      gl.uniform1fv(pRim.u.uE, eArr);
+      drawTo(T_rim);
+
+      // 3. soften the metal — half-res down, then a separable gaussian
+      gl.useProgram(pDown.p);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T_core.tex);
+      gl.uniform1i(pDown.u.uTex, 0); gl.uniform1f(pDown.u.uAdd, 0);
+      gl.uniform2f(pDown.u.uDstTexel, 1/T_s1.w, 1/T_s1.h);
+      drawTo(T_s1);
+      var sigTex = C.soften * (BH * 0.5) * 0.95;
+      if(sigTex > 0.1 && hover > 0.002){
+        gl.useProgram(pBlur.p);
+        gl.uniform1i(pBlur.u.uTex, 0);
+        gl.uniform2f(pBlur.u.uTexel, 1/T_s1.w, 1/T_s1.h);
+        /* one very wide 9-tap pass leaves comb ghosts, so the blur is split
+           into passes whose radii add in quadrature */
+        var iters = Math.min(4, Math.max(1, Math.ceil(sigTex / 3.0)));
+        gl.uniform1f(pBlur.u.uR, sigTex / Math.sqrt(iters) / 1.95);
+        for(i = 0; i < iters; i++){
+          gl.bindTexture(gl.TEXTURE_2D, T_s1.tex); gl.uniform2f(pBlur.u.uDir, 1, 0); drawTo(T_s2);
+          gl.bindTexture(gl.TEXTURE_2D, T_s2.tex); gl.uniform2f(pBlur.u.uDir, 0, 1); drawTo(T_s1);
+        }
+      }
+
+      // 4. bloom, fed by the softened metal plus the crisp rim
+      gl.useProgram(pDown.p);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T_s1.tex);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, T_rim.tex);
+      gl.uniform1i(pDown.u.uTex, 0); gl.uniform1i(pDown.u.uTex2, 1);
+      gl.uniform1f(pDown.u.uAdd, 1);
+      gl.uniform2f(pDown.u.uDstTexel, 1/T_a.w, 1/T_a.h);
+      drawTo(T_a);
+      gl.useProgram(pBlur.p);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.uniform1i(pBlur.u.uTex, 0);
+      gl.uniform2f(pBlur.u.uTexel, 1/T_a.w, 1/T_a.h);
+      var rs = C.glowR * (BH / DOWN) / GLOW_TEX;
+      var radii = [1.0, 2.3, 5.2, 9.0];
+      for(i = 0; i < radii.length; i++){
+        gl.uniform1f(pBlur.u.uR, radii[i] * rs);
+        gl.bindTexture(gl.TEXTURE_2D, T_a.tex); gl.uniform2f(pBlur.u.uDir, 1, 0); drawTo(T_b);
+        gl.bindTexture(gl.TEXTURE_2D, T_b.tex); gl.uniform2f(pBlur.u.uDir, 0, 1); drawTo(T_a);
+      }
+
+      // 5. composite onto the transparent canvas: bloom first, then the body
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, W, H);
+      gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.enable(gl.BLEND);
+
+      gl.blendFunc(gl.ONE, gl.ONE);                       // bloom: pure light
+      gl.useProgram(pGlow.p); common(pGlow);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T_a.tex);
+      gl.uniform1i(pGlow.u.uGlow, 0);
+      gl.uniform2f(pGlow.u.uRes, W, H);
+      gl.uniform1f(pGlow.u.uGlowGain, C.glow);
+      gl.uniform1f(pGlow.u.uGlowIn, C.glowIn);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);       // body: premultiplied
+      gl.useProgram(pComp.p); common(pComp);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T_s1.tex);  gl.uniform1i(pComp.u.uSoft, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, T_rim.tex); gl.uniform1i(pComp.u.uRim, 1);
+      gl.uniform2f(pComp.u.uRes, W, H);
+      gl.uniform1f(pComp.u.uDim, dim);
+      gl.uniform1f(pComp.u.uPunch, C.punch);
+      gl.uniform4f(pComp.u.uPlate, plate[0], plate[1], plate[2], plate[3]);
+      gl.uniform1f(pComp.u.uShadow, shadow);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+  };
+}
+
+/* ---- wire the page's pills up ------------------------------------------ */
+function boot(){
+  var layer = document.getElementById('metal');
+  if(!layer) return;
+  var specs = [
+    ['.btn-primary', {plate:[0.020,0.030,0.060,0.94], shadow:0.42}],
+    ['.btn-ghost',   {plate:[0.035,0.055,0.105,0.26], shadow:0.24}],
+    ['.navcta',      {plate:[0.035,0.055,0.105,0.32], shadow:0.24}],
+    // the rail carries four labels, so its metal stays low and its scrim deep
+    ['.navpill',     {plate:[0.035,0.055,0.105,0.30], shadow:0.20, hoverMax:0.5, dim:0.30}]
+  ];
+  var pills = [];
+  specs.forEach(function(sp){
+    var el = document.querySelector(sp[0]);
+    if(!el) return;
+    var lp = LiquidPill(el, layer, sp[1]);
+    if(lp) pills.push(lp);
+  });
+  if(!pills.length) return;
+  // only now is it safe for the CSS to hand its chrome over to the shader
+  document.documentElement.classList.add('metal');
+
+  var relayout = function(){ pills.forEach(function(p){ p.relayout(); }); };
+  window.addEventListener('resize', relayout);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
+  setTimeout(relayout, 120);
+
+  /* The rim keeps travelling at rest, so this never fully stops — but an idle
+     pill only needs to be redrawn often enough to keep that motion smooth,
+     and dropping idle ones to ~30 Hz leaves the frame budget to the 3-D scene. */
+  var clock = 0, last = performance.now(), acc = 0;
+  function frame(now){
+    var dtRaw = (now - last) / 1000; last = now;
+    var dt = Math.min(dtRaw, 1/20);
+    if(!CALM.matches) clock += dt;
+    var anyBusy = false;
+    pills.forEach(function(p){ p.step(dt, clock); if(p.busy()) anyBusy = true; });
+    acc += dtRaw;
+    var due = anyBusy || acc >= 1/30;
+    if(due && !(CALM.matches && !anyBusy && clock > 0.5)){
+      acc = 0;
+      pills.forEach(function(p){ p.render(); });
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__metal = {pills:pills, P:P, E:E, C:C, R:R, relayout:relayout};
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+})();
+</script>
+</body>
+</html>

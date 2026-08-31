@@ -1,0 +1,2587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script id="aura-preview-performance-controller">
+(function() {
+if (window.__auraPreviewPerformanceController) return;
+const nativeRequestAnimationFrame = window.requestAnimationFrame
+? window.requestAnimationFrame.bind(window)
+: function(callback) { return window.setTimeout(function() { callback(Date.now()); }, 16); };
+const nativeCancelAnimationFrame = window.cancelAnimationFrame
+? window.cancelAnimationFrame.bind(window)
+: window.clearTimeout.bind(window);
+const nativeSetInterval = window.setInterval.bind(window);
+let paused = false;
+let nextFrameId = 1;
+const frameRecords = new Map();
+const pausedFrameCallbacks = new Map();
+const style = document.createElement('style');
+style.id = 'aura-preview-performance-style';
+style.textContent = [
+'html[data-aura-preview-paused="true"] *,',
+'html[data-aura-preview-paused="true"] *::before,',
+'html[data-aura-preview-paused="true"] *::after {',
+'  animation-play-state: paused !important;',
+'  transition-duration: 0s !important;',
+'  scroll-behavior: auto !important;',
+'}'
+].join('\n');
+document.head.appendChild(style);
+window.requestAnimationFrame = function(callback) {
+const frameId = nextFrameId++;
+if (paused) {
+pausedFrameCallbacks.set(frameId, callback);
+frameRecords.set(frameId, { paused: true });
+return frameId;
+}
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+return frameId;
+};
+window.cancelAnimationFrame = function(frameId) {
+const record = frameRecords.get(frameId);
+pausedFrameCallbacks.delete(frameId);
+if (record && typeof record.nativeFrameId !== 'undefined') {
+nativeCancelAnimationFrame(record.nativeFrameId);
+}
+frameRecords.delete(frameId);
+};
+window.setInterval = function(callback, delay) {
+const args = Array.prototype.slice.call(arguments, 2);
+return nativeSetInterval(function() {
+if (paused) return;
+callback.apply(this, args);
+}, delay);
+};
+const flushPausedFrames = function() {
+const callbacks = Array.from(pausedFrameCallbacks.entries());
+pausedFrameCallbacks.clear();
+callbacks.forEach(function(entry) {
+const frameId = entry[0];
+const callback = entry[1];
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+});
+};
+const setPaused = function(nextPaused) {
+const shouldPause = Boolean(nextPaused);
+if (paused === shouldPause) return;
+paused = shouldPause;
+document.documentElement.toggleAttribute('data-aura-preview-paused', paused);
+if (!paused) {
+flushPausedFrames();
+}
+};
+window.__auraPreviewPerformanceController = {
+setPaused: setPaused,
+get paused() {
+return paused;
+}
+};
+window.addEventListener('message', function(event) {
+if (event.source !== window.parent) return;
+if (!event.data || event.data.type !== 'aura-preview-performance-mode') return;
+setPaused(event.data.paused);
+});
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MK·78 — every key. every detail.</title>
+<style>
+:root{
+--bg:#f4f4f1;
+--bg-dark:#0a0a0b;
+--ink:#18181b;
+--ink-soft:#52525b;
+--muted:#a1a1aa;
+--ink-dark:#e4e4e7;
+--ink-dark-soft:#8f8f96;
+--acc:#f4581c;
+--hairline:rgba(0,0,0,.08);
+--card:#fdfdfc;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+body{
+font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+background:var(--bg);color:var(--ink);
+overflow-x:hidden;
+transition:background .5s ease;
+-webkit-font-smoothing:antialiased;
+}
+body.went-dark{background:var(--bg-dark)}
+::selection{background:var(--acc);color:#fff}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+/* ---------- boot loader ---------- */
+#loader{
+position:fixed;inset:0;z-index:100;
+background:var(--bg);
+display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+transition:opacity .55s ease;
+}
+#loader.done{opacity:0;pointer-events:none}
+/* the slot holds a real 3D keycap — sized so its drop shadow never clips */
+#loader .bootmark{
+width:140px;height:140px;position:relative;
+display:flex;align-items:center;justify-content:center;
+}
+#loader .bootmark canvas{position:absolute;inset:0;width:100%;height:100%;
+opacity:0;transition:opacity .45s ease}
+#loader .bootmark canvas.in{opacity:1}
+#loader .lwork{font-size:12px;letter-spacing:.35em;color:var(--ink)}
+#loader .lterm{font-size:11.5px;color:var(--muted)}
+#loader .lterm b{font-weight:400;color:var(--ink-soft)}
+.cursor{display:inline-block;width:7px;height:12px;background:var(--acc);
+vertical-align:-1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+/* ---------- fixed chrome ---------- */
+#progress{
+position:fixed;top:0;left:0;right:0;height:2px;z-index:60;
+background:var(--acc);transform-origin:0 50%;transform:scaleX(0);
+}
+nav{
+position:fixed;top:0;left:0;right:0;z-index:50;
+display:flex;align-items:center;justify-content:space-between;
+padding:22px 40px;pointer-events:none;
+}
+nav .wordmark{
+display:flex;align-items:center;gap:10px;
+font-size:11px;letter-spacing:.32em;color:var(--ink-soft);
+transition:color .5s ease;pointer-events:auto;
+}
+nav .wordmark .navdot{width:10px;height:10px;border-radius:50%;background:var(--acc);flex-shrink:0}
+nav a.cta{
+pointer-events:auto;text-decoration:none;
+font-size:13.5px;font-weight:600;
+color:#fff;background:#18181b;
+padding:10px 20px;border-radius:999px;
+box-shadow:0 4px 14px -4px rgba(0,0,0,.25);
+transition:background .5s ease,color .5s ease,transform .15s ease;
+}
+nav a.cta:hover{transform:translateY(-1px)}
+body.went-dark nav a.cta{background:#fafafa;color:#111113}
+body.went-dark nav .wordmark{color:#6b6b74}
+/* ---------- shared ---------- */
+section{position:relative}
+.stage{
+height:100vh;display:flex;flex-direction:column;
+align-items:center;justify-content:center;
+overflow:hidden;position:relative;
+}
+/* shared label: –| LABEL |– */
+.eyebrow{
+display:inline-flex;align-items:center;gap:11px;
+font-size:11px;letter-spacing:.35em;color:var(--muted);
+text-transform:uppercase;
+}
+.eyebrow::before{content:"\2013|";letter-spacing:0;opacity:.5}
+.eyebrow::after{content:"|\2013";letter-spacing:0;opacity:.5}
+/* shared corner registration marks for framed containers */
+.ticks{
+position:absolute;inset:13px;pointer-events:none;z-index:6;
+--tk:rgba(0,0,0,.16);
+background:
+linear-gradient(var(--tk),var(--tk)) left top/10px 1px no-repeat,
+linear-gradient(var(--tk),var(--tk)) left top/1px 10px no-repeat,
+linear-gradient(var(--tk),var(--tk)) right top/10px 1px no-repeat,
+linear-gradient(var(--tk),var(--tk)) right top/1px 10px no-repeat,
+linear-gradient(var(--tk),var(--tk)) left bottom/10px 1px no-repeat,
+linear-gradient(var(--tk),var(--tk)) left bottom/1px 10px no-repeat,
+linear-gradient(var(--tk),var(--tk)) right bottom/10px 1px no-repeat,
+linear-gradient(var(--tk),var(--tk)) right bottom/1px 10px no-repeat;
+}
+.ticks.on-dark{--tk:rgba(255,255,255,.2)}
+/* shared chapter index label */
+#craft .copy .idx,#lineage .lcopy .idx{display:flex;align-items:center;gap:11px}
+#craft .copy .idx::before,#lineage .lcopy .idx::before{
+content:"";width:16px;height:1px;background:var(--acc);flex-shrink:0;
+}
+/* ---------- hero / typing ---------- */
+#hero .title-group{
+position:absolute;inset:0;
+display:flex;flex-direction:column;align-items:center;justify-content:center;
+text-align:center;gap:26px;z-index:3;pointer-events:none;
+}
+#hero h1{
+font-size:clamp(58px,11.5vw,178px);
+font-weight:650;letter-spacing:-.05em;line-height:.94;
+text-align:center;
+}
+#hero h1 em{font-style:normal;color:var(--acc)}
+#hero .sub{
+font-size:clamp(15px,1.6vw,19px);color:var(--ink-soft);
+max-width:520px;line-height:1.55;
+}
+#hero .typeline{
+display:flex;align-items:center;gap:4px;
+font-size:12px;letter-spacing:.22em;color:var(--muted);
+min-height:15px;
+}
+#hero .corner-note{
+position:absolute;bottom:36px;z-index:4;
+font-size:10px;letter-spacing:.28em;color:var(--muted);
+}
+#hero .corner-note i{font-style:normal;color:var(--acc)}
+#hero .corner-note.l{left:40px}
+#hero .corner-note.r{right:40px}
+@media(max-width:760px){#hero .corner-note{display:none}}
+/* floating keycaps */
+#hero .caps{position:absolute;inset:0;z-index:1;pointer-events:none}
+.cap{position:absolute}
+.cap .par{display:block;will-change:transform}
+.cap .bob{display:block;animation:bob var(--d,5s) ease-in-out var(--dl,0s) infinite}
+@keyframes bob{50%{transform:translateY(-16px)}}
+.kb.bare{background:none;box-shadow:none;padding:0;width:auto;border-radius:0}
+.kb.bare::after,.kb.bare::before{content:none}
+.kb.bare .key{
+transform:scale(var(--s,1)) rotate(var(--r,0deg));
+box-shadow:0 14px 30px -10px rgba(0,0,0,.4), inset 0 0 0 1px rgba(0,0,0,.18);
+}
+.kb.bare .key.grow{flex:none;width:88px}
+@media(max-width:900px){.cap.hide-sm{display:none}}
+/* three.js keycaps take over from the CSS ones once WebGL is up */
+#capsGL{position:absolute;inset:0;display:block;width:100%;height:100%}
+#hero .caps.gl-on .cap{display:none}
+#hero.gl-hot{cursor:pointer}
+#hero .hint{
+position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:4;
+display:flex;flex-direction:column;align-items:center;gap:10px;
+font-size:11px;letter-spacing:.3em;color:var(--muted);
+}
+#hero .hint .line{
+width:1px;height:34px;background:linear-gradient(var(--muted),transparent);
+animation:drip 1.6s ease-in-out infinite;
+}
+@keyframes drip{0%{transform:scaleY(.2);transform-origin:top}55%{transform:scaleY(1)}100%{opacity:0;transform:scaleY(1)}}
+#hero .kb-scene{
+position:relative;z-index:2;
+display:flex;flex-direction:column;align-items:center;gap:44px;
+}
+#hero .display{
+position:relative;height:70px;width:100%;
+display:flex;align-items:flex-end;justify-content:center;
+opacity:0;
+}
+#hero .display span{
+position:absolute;bottom:0;
+font-size:52px;font-weight:550;color:var(--ink-soft);
+line-height:1;opacity:0;
+}
+#hero .type-eyebrow{
+position:absolute;top:60px;left:50%;transform:translateX(-50%);
+opacity:0;white-space:nowrap;
+}
+/* ---------- marquee tickers ---------- */
+.ticker{
+overflow:hidden;border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
+padding:17px 0;white-space:nowrap;
+}
+.ticker .track{display:inline-flex;will-change:transform;animation:marq 26s linear infinite}
+.ticker:hover .track{animation-play-state:paused}
+.ticker .half{display:inline-flex;align-items:center;gap:44px;padding-right:44px}
+.ticker .half span{
+font-size:11.5px;letter-spacing:.32em;color:var(--ink-soft);text-transform:uppercase;
+}
+.ticker .half i{font-style:normal;color:var(--acc);font-size:13px}
+@keyframes marq{to{transform:translateX(-50%)}}
+/* ---------- statement (word reveal) ---------- */
+#statement{padding:26vh 24px}
+#statement .inner{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:34px}
+#statement p{
+font-size:clamp(26px,3.6vw,48px);
+font-weight:600;letter-spacing:-.025em;line-height:1.28;
+}
+#statement .w{opacity:.1}
+#statement .w.acc{color:var(--acc)}
+/* ---------- craft / zoom ---------- */
+#craft .stage{flex-direction:row;justify-content:center;gap:6vw;padding:0 6vw}
+#craft .copy{position:relative;width:min(380px,34vw);height:240px;flex-shrink:0}
+#craft .copy .item{
+position:absolute;inset:0;opacity:0;
+display:flex;flex-direction:column;justify-content:center;gap:16px;
+}
+#craft .copy h2{font-size:clamp(26px,3vw,38px);font-weight:640;letter-spacing:-.025em;line-height:1.1}
+#craft .copy p{font-size:16px;line-height:1.6;color:var(--ink-soft)}
+#craft .copy .idx{font-size:11px;letter-spacing:.35em;color:var(--acc)}
+#craft .zoom-window{
+width:min(620px,48vw);height:380px;flex-shrink:0;
+border-radius:28px;overflow:hidden;position:relative;
+background:#eceae5;
+box-shadow:0 30px 70px -25px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.05);
+}
+#craft .zoom-kb{position:absolute;top:0;left:0;transform-origin:0 0}
+/* ---------- lineage : horizontal version carousel ---------- */
+#lineage .stage{flex-direction:column;justify-content:center;gap:38px;padding:0 4vw}
+#lineage .lcopy{position:relative;width:min(680px,86vw);height:clamp(132px,19vh,168px);flex-shrink:0}
+#lineage .lcopy .item{
+position:absolute;inset:0;opacity:0;
+display:flex;flex-direction:column;justify-content:center;align-items:center;
+gap:14px;text-align:center;
+}
+#lineage .lcopy h2{font-size:clamp(26px,3vw,38px);font-weight:640;letter-spacing:-.025em;line-height:1.1}
+#lineage .lcopy p{font-size:15.5px;line-height:1.55;color:var(--ink-soft);max-width:560px}
+#lineage .lcopy .idx{font-size:11px;letter-spacing:.35em;color:var(--acc)}
+#lineage .lcopy .idx b{
+font-weight:600;color:#fff;background:var(--ink);
+padding:3px 8px;border-radius:99px;margin-left:8px;letter-spacing:.18em;font-size:9px;
+}
+.lviewport{
+position:relative;width:min(1060px,92vw);
+height:clamp(230px,calc(100vh - 250px),470px);flex-shrink:0;
+border-radius:32px;background:#eceae5;overflow:hidden;
+box-shadow:0 30px 70px -25px rgba(0,0,0,.3), inset 0 0 0 1px rgba(0,0,0,.05);
+}
+.lcol{
+position:absolute;left:0;top:0;height:100%;width:300%;
+display:flex;will-change:transform;
+}
+.lslot{width:33.3333%;height:100%;display:flex;align-items:center;justify-content:center}
+.lslot > div{transform:scale(.95);transform-origin:center}
+.ldots{
+position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+display:flex;gap:9px;z-index:2;
+}
+.ldots i{width:5px;height:5px;border-radius:50%;background:rgba(0,0,0,.16);transition:background .25s,box-shadow .25s}
+.ldots i.on{background:var(--acc);box-shadow:0 0 6px var(--acc)}
+/* V01 — the flat one */
+.kb.flat{
+--case1:#e6e4df;--case2:#d8d6d0;--tile:#fcfcfa;--kbink:#52525b;--etch:rgba(0,0,0,.32);
+border-radius:18px;padding:11px 11px 26px;
+box-shadow:0 24px 50px -16px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.6);
+}
+.kb.flat::before{content:none}
+.kb.flat .key{
+background:var(--tile);border-radius:7px;color:#52525b;
+box-shadow:0 1px 1.5px rgba(0,0,0,.2), 0 .5px 0 rgba(0,0,0,.06);
+font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+.kb.flat .key::before,.kb.flat .key::after{content:none}
+.kb.flat .row:nth-child(1) .key:nth-child(n){color:#52525b}
+.kb.flat .key[data-code="Escape"]{color:#52525b}
+.kb.flat .updown .half{
+background:var(--tile);
+box-shadow:0 1px 1.5px rgba(0,0,0,.2), 0 .5px 0 rgba(0,0,0,.06);
+}
+.kb.flat .updown .half::before{content:none}
+.kb.flat .capsdot{background:rgba(0,0,0,.14);box-shadow:none}
+/* V03 — the mech */
+.kb.mech{
+--case1:#2c2c31;--case2:#1e1e23;--etch:rgba(255,255,255,.35);
+border-radius:14px;padding:12px 12px 30px;
+box-shadow:0 36px 70px -20px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.kb.mech::before{content:none}
+.kb.mech .key{background:transparent;box-shadow:none;color:#4a463f;font-weight:700}
+.kb.mech .key::after{content:none}
+.kb.mech .key::before,
+.kb.mech .key.grow::before,.kb.mech .key.w-cmd::before{
+width:calc(100% - 4px);height:calc(100% - 9px);
+border-radius:6px;top:calc(50% - 3px);
+background:linear-gradient(180deg,#f4efe4,#e5dfd1);
+box-shadow:0 5px 0 #b7b0a0, 0 9px 12px -2px rgba(0,0,0,.5),
+inset 0 1px 0 rgba(255,255,255,.75), inset 0 -8px 10px -8px rgba(0,0,0,.2);
+}
+.kb.mech .row:nth-child(1) .key:not(:first-child):not(:last-child)::before{background:linear-gradient(180deg,#f4efe4,#e5dfd1)}
+.kb.mech .row:nth-child(1) .key:not(:first-child):not(:last-child){color:#4a463f}
+/* two-tone: modifiers get dark caps */
+.kb.mech .key.grow::before,.kb.mech .key.w-cmd::before,
+.kb.mech .key[data-code="ControlLeft"]::before,.kb.mech .key[data-code="AltLeft"]::before,
+.kb.mech .key[data-code="AltRight"]::before,.kb.mech .key[data-code="Fn"]::before,
+.kb.mech .key[data-code="Power"]::before{
+background:linear-gradient(180deg,#43424a,#35343b);
+box-shadow:0 5px 0 #1c1b20, 0 9px 12px -2px rgba(0,0,0,.55),
+inset 0 1px 0 rgba(255,255,255,.14), inset 0 -8px 10px -8px rgba(0,0,0,.4);
+}
+.kb.mech .key.grow,.kb.mech .key.w-cmd,
+.kb.mech .key[data-code="ControlLeft"],.kb.mech .key[data-code="AltLeft"],
+.kb.mech .key[data-code="AltRight"],.kb.mech .key[data-code="Fn"],
+.kb.mech .key[data-code="Power"]{color:#cfcfd6}
+/* accent: esc, return, arrows in orange */
+.kb.mech .key[data-code="Escape"]::before,.kb.mech .key[data-code="Enter"]::before,
+.kb.mech .key[data-code="ArrowLeft"]::before,.kb.mech .key[data-code="ArrowRight"]::before{
+background:linear-gradient(180deg,#ff6a2b,#e04e14);
+box-shadow:0 5px 0 #9c3408, 0 9px 12px -2px rgba(0,0,0,.5),
+inset 0 1px 0 rgba(255,255,255,.4), inset 0 -8px 10px -8px rgba(0,0,0,.25);
+}
+.kb.mech .key[data-code="Escape"],.kb.mech .key[data-code="Enter"],
+.kb.mech .key[data-code="ArrowLeft"],.kb.mech .key[data-code="ArrowRight"]{color:#fff}
+.kb.mech .updown .half{background:transparent;box-shadow:none}
+.kb.mech .updown .half::before{
+background:linear-gradient(180deg,#ff6a2b,#e04e14);
+box-shadow:0 3px 0 #9c3408, 0 5px 8px -2px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.kb.mech .updown .half{color:#fff}
+.kb.mech .capsdot{display:none}
+/* ---------- features : three clean cards ---------- */
+#features{padding:16vh 6vw 18vh}
+.fpanelx{position:relative;max-width:1180px;margin:0 auto}
+.fhead{
+display:flex;flex-direction:column;align-items:center;gap:16px;
+text-align:center;margin:0 auto 64px;max-width:600px;
+}
+.fhead h2{font-size:clamp(30px,4.2vw,54px);font-weight:650;letter-spacing:-.032em;line-height:1.1}
+.fhead p{font-size:16.5px;line-height:1.6;color:var(--ink-soft)}
+.fcols{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.fcol{
+position:relative;
+background:var(--card);
+border:1px solid rgba(0,0,0,.045);border-radius:24px;
+padding:26px 28px 30px;
+display:flex;flex-direction:column;gap:13px;
+box-shadow:0 2px 6px rgba(0,0,0,.035), 0 24px 50px -30px rgba(0,0,0,.22);
+opacity:0;transform:translateY(26px);
+transition:box-shadow .35s ease;
+}
+.fcol:hover{box-shadow:0 6px 14px rgba(0,0,0,.05), 0 34px 64px -30px rgba(0,0,0,.3)}
+@media(max-width:900px){.fcols{grid-template-columns:1fr;max-width:520px;margin:0 auto}}
+/* illustration stage */
+.fvis{
+height:196px;margin-bottom:14px;border-radius:16px;
+background:#f3f2ee;
+display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;
+position:relative;overflow:hidden;
+}
+.fcol h3{font-size:18px;font-weight:650;letter-spacing:-.012em}
+.fcol p{font-size:14.5px;line-height:1.62;color:var(--ink-soft);flex:1}
+.fcol .fnote{font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:2px}
+/* spec line under the cards */
+.fstrip{
+display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+margin-top:34px;
+font-size:10px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase;
+}
+.fstrip span{padding:7px 15px;border-radius:99px;box-shadow:inset 0 0 0 1px var(--hairline)}
+.fstrip em{font-style:normal;color:var(--acc)}
+/* --- visual 1 : live key events --- */
+.kvchip{
+background:#fff;border:1px solid var(--hairline);border-radius:10px;
+padding:8px 12px;font-size:10.5px;color:var(--ink-soft);
+box-shadow:0 8px 18px -8px rgba(0,0,0,.2);
+}
+.kvchip b{color:var(--acc);font-weight:600}
+.kvrow{display:flex;gap:8px}
+.kvkey{
+position:relative;width:50px;height:48px;border-radius:11px;
+background:#1d1d21;box-shadow:inset 0 0 0 1px rgba(0,0,0,.3);
+display:flex;align-items:center;justify-content:center;
+}
+.kvkey::before{
+content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+width:38px;height:38px;border-radius:50%;
+background:linear-gradient(180deg,#2d2d33,#232328);
+box-shadow:0 2.5px 5px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.1);
+}
+.kvkey i{
+position:absolute;top:9px;left:50%;transform:translateX(-50%);z-index:2;
+width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.15);
+}
+.kvkey span{position:relative;z-index:1;font-size:10.5px;font-weight:600;color:#c2c2c8;font-family:ui-monospace,Menlo,monospace}
+.kvkey.on::before{transform:translate(-50%,calc(-50% + 2px));filter:brightness(.86)}
+.kvkey.on i{background:var(--acc);box-shadow:0 0 6px var(--acc)}
+/* --- visual 2 : hand-drawn glyphs --- */
+.gvbig{
+position:relative;width:104px;height:104px;border-radius:18px;
+background:#fff;box-shadow:0 0 0 1px var(--hairline);
+display:flex;align-items:center;justify-content:center;color:var(--ink);
+}
+.gvbig svg{width:58px;height:58px;stroke-width:.4}
+.gvbig::before,.gvbig::after{content:"";position:absolute;background:rgba(0,0,0,.09)}
+.gvbig::before{left:12px;right:12px;top:50%;height:1px}
+.gvbig::after{top:12px;bottom:12px;left:50%;width:1px}
+.gvrow{display:flex;gap:7px}
+.gvsm{
+width:34px;height:34px;border-radius:9px;
+background:#f1f0ec;color:var(--ink-soft);
+display:flex;align-items:center;justify-content:center;
+}
+.gvsm svg{width:17px;height:17px;stroke-width:.75}
+/* --- visual 3 : two finishes --- */
+.fswaps{display:flex;align-items:center;gap:14px}
+.fsw{
+width:104px;padding:9px;border-radius:14px;
+display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+}
+.fsw.dk{background:linear-gradient(180deg,#17171a,#0f0f12);box-shadow:0 16px 30px -14px rgba(0,0,0,.55)}
+.fsw.lt{background:linear-gradient(180deg,#eae8e3,#dbd9d3);box-shadow:0 16px 30px -14px rgba(0,0,0,.28)}
+.fsw u{display:block;aspect-ratio:1;border-radius:50%;text-decoration:none}
+.fsw.dk u{background:linear-gradient(180deg,#2d2d33,#232328);box-shadow:0 1.5px 3px rgba(0,0,0,.5)}
+.fsw.lt u{background:linear-gradient(180deg,#f7f6f2,#eceae5);box-shadow:0 1.5px 3px rgba(0,0,0,.18)}
+.fsw u.a{background:linear-gradient(180deg,#ff6a2b,#e04e14)}
+.fswlabels{display:flex;gap:14px;font-size:9.5px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+.fswlabels span{width:104px;text-align:center}
+.fswarrow{color:var(--muted);font-size:15px}
+/* ---------- reviews : scroll-swipe badge deck ---------- */
+#voices{position:relative}
+.vstage{
+min-height:100vh;width:100%;max-width:1180px;margin:0 auto;
+display:flex;flex-direction:column;justify-content:center;
+padding:90px 6vw 40px;overflow:visible;
+}
+.vbar{
+display:flex;justify-content:space-between;align-items:center;gap:20px;
+padding-bottom:22px;border-bottom:1px solid var(--hairline);margin-bottom:40px;
+}
+.vscore{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.25em;color:var(--muted)}
+.vscore .leds{display:flex;gap:5px}
+.vscore .leds i{width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 6px var(--acc)}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:36px 70px;align-items:start}
+.vgrid h2{font-size:clamp(30px,3.6vw,50px);font-weight:650;letter-spacing:-.03em;line-height:1.12}
+.vgrid p{font-size:16.5px;line-height:1.65;color:var(--ink-soft);max-width:460px;padding-top:6px}
+@media(max-width:820px){.vgrid{grid-template-columns:1fr}}
+/* the deck */
+.tdeck{position:relative;width:min(560px,92vw);height:390px;margin:118px auto 0}
+/* hook + frosted strap, fixed above the swapping cards */
+/* the clip sits BEHIND the cards, so the strap shows through the slot cut-out */
+.tclip{
+position:absolute;left:50%;transform:translateX(-50%);top:-104px;
+display:flex;flex-direction:column;align-items:center;
+z-index:1;pointer-events:none;
+}
+.thook{
+position:relative;z-index:3;width:70px;height:22px;
+background:linear-gradient(180deg,#ffffff,#eef0ee);
+border:1px solid rgba(0,0,0,.08);border-radius:9px 9px 0 0;
+box-shadow:0 5px 15px rgba(0,0,0,.08), inset 0 1px 0 #fff;
+display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;
+}
+.thook i{
+display:block;width:40px;height:3px;border-radius:99px;
+background:linear-gradient(180deg,#d3d3cf,#a5a5a0);
+box-shadow:inset 0 1px 1px rgba(0,0,0,.2), 0 1px 0 rgba(255,255,255,.8);
+}
+.tglass{
+position:relative;z-index:2;width:44px;height:130px;margin-top:-1px;
+background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,.72) 50%,rgba(255,255,255,.2));
+-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+border-left:1px solid rgba(255,255,255,.5);border-right:1px solid rgba(255,255,255,.5);
+border-bottom:1px solid rgba(255,255,255,.5);
+border-radius:2px 2px 8px 8px;
+box-shadow:0 15px 25px -5px rgba(0,0,0,.1), inset 0 0 2px rgba(255,255,255,.9);
+}
+/* stacked swipe cards */
+.tcardx{
+position:absolute;inset:0;
+background:var(--card);border:1px solid rgba(0,0,0,.04);border-radius:24px;
+padding:46px 46px 34px;
+display:flex;flex-direction:column;gap:18px;
+box-shadow:0 8px 16px rgba(0,0,0,.04), 0 40px 80px -28px rgba(0,0,0,.28);
+will-change:transform;
+}
+/* punched slot — the strap behind the card is visible through it */
+.tnotch{
+position:absolute;top:15px;left:50%;transform:translateX(-50%);
+width:62px;height:13px;border-radius:999px;overflow:hidden;
+background:#d5d3ce;
+box-shadow:inset 0 3px 6px rgba(0,0,0,.3), 0 1px 0 rgba(255,255,255,.95);
+}
+.tnotch::after{
+content:"";position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);
+width:44px;
+background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(236,236,233,.97));
+box-shadow:inset 0 2px 3px rgba(0,0,0,.18), inset 0 -1px 2px rgba(0,0,0,.08);
+}
+.tglyph{font-family:Georgia,"Times New Roman",serif;font-size:54px;line-height:.6;height:26px;color:var(--ink);margin-top:16px}
+.tcardx blockquote{
+font-size:clamp(15.5px,1.8vw,18.5px);line-height:1.7;color:var(--ink-soft);
+border:none;margin:0;flex:1;
+}
+.tfoot{display:flex;align-items:center;gap:14px;padding-top:20px;border-top:1px solid rgba(0,0,0,.05)}
+.rcap{ /* keycap avatar */
+position:relative;width:44px;height:44px;border-radius:50%;flex-shrink:0;
+background:linear-gradient(180deg,#2d2d33,#232328);
+box-shadow:0 2.5px 5px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12);
+display:flex;align-items:center;justify-content:center;
+color:#e4e4e7;font-size:13px;font-weight:600;
+}
+.rcap::after{
+content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);
+width:2.5px;height:2.5px;border-radius:50%;
+background:var(--acc);box-shadow:0 0 5px var(--acc);
+}
+.twho{display:flex;flex-direction:column;gap:4px;min-width:0}
+.twho b{font-size:14.5px;font-weight:640;letter-spacing:-.01em}
+.twho span{font-size:10px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.tchip{
+margin-left:auto;flex-shrink:0;
+background:#f1f0ec;border-radius:13px;padding:10px 14px;
+color:var(--acc);font-size:12.5px;letter-spacing:.1em;
+box-shadow:inset 0 0 0 1px rgba(0,0,0,.05);
+}
+@media(max-width:640px){.tcardx{padding:40px 24px 26px}}
+/* ---------- finish flip ---------- */
+#finish .stage{gap:48px}
+#finish .shade{position:absolute;inset:0;background:var(--bg-dark);opacity:0;z-index:1}
+#finish .content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:48px}
+#finish h2{
+font-size:clamp(34px,4.6vw,60px);font-weight:650;letter-spacing:-.03em;
+color:var(--ink);text-align:center;
+}
+#finish .kb-stack{position:relative}
+#finish .kb-stack .dark-layer{position:absolute;inset:0;opacity:0}
+#finish .pill{
+display:flex;gap:4px;background:#fff;border:1px solid rgba(0,0,0,.06);
+border-radius:999px;padding:5px;
+box-shadow:0 2px 6px rgba(0,0,0,.06),0 12px 28px -12px rgba(0,0,0,.12);
+}
+#finish .pill span{
+font-size:14px;font-weight:500;border-radius:999px;
+padding:10px 22px;color:#71717a;transition:background .3s,color .3s;
+}
+#finish .pill span.on{background:#111113;color:#fff;font-weight:600}
+#finish.flipped .pill{background:#131316;border-color:rgba(255,255,255,.09)}
+#finish.flipped .pill span{color:#6b6b74}
+#finish.flipped .pill span.on{background:#fff;color:#111113}
+#finish.flipped h2{color:var(--ink-dark)}
+#finish h2,#finish .pill{transition:color .45s ease,background .45s ease}
+/* ---------- outro + footer ---------- */
+#end{background:var(--bg-dark);color:var(--ink-dark)}
+#end .stage{gap:56px;height:auto;min-height:100vh;padding:18vh 24px 0;overflow:visible}
+#end h2{
+font-size:clamp(38px,5.4vw,72px);font-weight:650;letter-spacing:-.03em;
+text-align:center;line-height:1.05;
+}
+#end .stats{display:flex;flex-wrap:wrap;justify-content:center}
+#end .stat{display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 44px}
+#end .stat + .stat{border-left:1px solid #1f1f23}
+#end .stat b{font-size:40px;font-weight:650;letter-spacing:-.02em}
+#end .stat b em{font-style:normal;color:var(--acc)}
+#end .stat i{font-style:normal;font-size:12px;letter-spacing:.25em;color:var(--ink-dark-soft);text-transform:uppercase}
+#end a.big-cta{
+text-decoration:none;color:#111113;background:#fafafa;
+font-size:17px;font-weight:600;
+padding:18px 38px;border-radius:999px;
+box-shadow:0 10px 40px -10px rgba(255,255,255,.25);
+transition:transform .15s ease;
+}
+#end a.big-cta:hover{transform:translateY(-2px)}
+#end .reveal{opacity:0;transform:translateY(30px)}
+#end footer{
+width:100%;max-width:1180px;margin-top:16vh;
+display:flex;flex-direction:column;
+}
+/* oversized wordmark + keycap links */
+#end footer .fbig{
+display:flex;align-items:flex-end;justify-content:space-between;gap:40px;flex-wrap:wrap;
+padding:60px 0 34px;border-top:1px solid #1a1a1e;
+}
+#end footer .fword{display:flex;flex-direction:column;line-height:.86}
+#end footer .fdot{
+width:15px;height:15px;border-radius:50%;background:var(--acc);
+margin-bottom:20px;box-shadow:0 0 16px rgba(244,88,28,.5);
+}
+#end footer .fword b,#end footer .fword em{
+font-style:normal;font-weight:650;letter-spacing:-.045em;
+font-size:clamp(50px,8.6vw,118px);
+}
+#end footer .fword em{color:transparent;-webkit-text-stroke:1.5px #35353c}
+#end footer .fkeys{display:flex;gap:10px;flex-wrap:wrap;padding-bottom:8px}
+.fkey{
+position:relative;text-decoration:none;
+min-width:106px;height:54px;border-radius:12px;
+background:#141418;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+display:flex;align-items:center;justify-content:center;
+}
+.fkey::before{
+content:"";position:absolute;left:4px;right:4px;top:3px;bottom:7px;border-radius:9px;
+background:linear-gradient(180deg,#2d2d33,#232328);
+box-shadow:0 4px 0 #0d0d10, 0 7px 11px -2px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.1);
+transition:transform .12s ease,box-shadow .12s ease;
+}
+.fkey span{
+position:relative;z-index:1;margin-top:3px;
+font-size:9px;letter-spacing:.2em;color:#b0b0b8;text-transform:uppercase;
+transition:color .2s ease;
+}
+.fkey i{
+position:absolute;z-index:1;top:11px;left:50%;transform:translateX(-50%);
+width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.16);
+transition:background .2s ease,box-shadow .2s ease;
+}
+.fkey:hover::before{
+transform:translateY(3px);
+box-shadow:0 1px 0 #0d0d10, 0 3px 6px -2px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.fkey:hover i{background:var(--acc);box-shadow:0 0 6px var(--acc)}
+.fkey:hover span{color:#fff}
+/* status panel */
+#end footer .fpanel{
+display:flex;justify-content:space-between;gap:26px;flex-wrap:wrap;
+background:#101013;border:1px solid #1e1e23;border-radius:16px;
+padding:18px 24px;font-size:12.5px;color:#6b6b74;
+}
+#end footer .fpanel .col{display:flex;flex-direction:column;gap:7px}
+#end footer .fpanel b{font-weight:400;color:#a8a8b0}
+#end footer .fpanel .ok{color:#4ade80}
+/* base bar */
+#end footer .fbase{
+display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+margin-top:22px;padding:22px 0 34px;border-top:1px solid #1a1a1e;
+font-size:12.5px;color:#5d5d66;
+}
+#end footer .fbase .live{display:flex;align-items:center;gap:9px}
+#end footer .fbase .pulse{
+width:6px;height:6px;border-radius:50%;background:#4ade80;
+box-shadow:0 0 8px #4ade80;animation:pulse 2.2s ease-in-out infinite;
+}
+@keyframes pulse{50%{opacity:.2}}
+/* =========================================================
+keyboard component (scoped) — identical to the preview page
+========================================================= */
+.kb{
+--case1:#17171a;--case2:#0f0f12;--tile:#1d1d21;
+--cap1:#2d2d33;--cap2:#232328;--ink:#c2c2c8;
+--ledbase:rgba(255,255,255,.14);--etch:rgba(255,255,255,.3);
+--kb-shadow:0 32px 60px -18px rgba(0,0,0,.5), 0 10px 22px -8px rgba(0,0,0,.25);
+background:linear-gradient(180deg,var(--case1),var(--case2));
+border-radius:26px;padding:13px 13px 34px;
+box-shadow:var(--kb-shadow), inset 0 1px 0 rgba(255,255,255,.07), inset 0 0 0 1px rgba(255,255,255,.03);
+display:flex;flex-direction:column;gap:7px;
+width:825px;position:relative;
+}
+.kb::after{
+content:"MK·78 — HAND-BUILT";
+position:absolute;right:22px;bottom:11px;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+font-size:7.5px;letter-spacing:.26em;color:var(--etch);
+}
+.kb::before{ /* speaker grille */
+content:"";position:absolute;left:22px;bottom:7px;
+width:66px;height:15px;
+background:radial-gradient(circle, var(--etch) 1px, transparent 1.3px);
+background-size:6px 5px;opacity:.7;
+}
+/* Chalk — the inverse colorway */
+.kb.dark{
+--case1:#eae8e3;--case2:#dbd9d3;--tile:#e0deda;
+--cap1:#f7f6f2;--cap2:#eceae5;--ink:#48484d;
+--ledbase:rgba(0,0,0,.18);--etch:rgba(0,0,0,.35);
+--kb-shadow:0 32px 60px -18px rgba(0,0,0,.35), 0 10px 22px -8px rgba(0,0,0,.15);
+box-shadow:var(--kb-shadow), inset 0 1px 0 rgba(255,255,255,.7), inset 0 0 0 1px rgba(0,0,0,.04);
+}
+.kb .row{display:flex;gap:7px}
+.kb .key{
+position:relative;width:50px;height:48px;flex-shrink:0;
+background:var(--tile);color:var(--ink);
+border-radius:10px;
+box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);
+display:flex;align-items:center;justify-content:center;
+font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--led:var(--ledbase);
+}
+.kb .key > *{position:relative;z-index:1}
+/* the raised cap: circle on square keys, pill on wide keys */
+.kb .key::before{
+content:"";position:absolute;left:50%;top:50%;
+width:38px;height:38px;border-radius:50%;
+transform:translate(-50%,-50%);
+background:linear-gradient(180deg,var(--cap1),var(--cap2));
+box-shadow:0 2.5px 5px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.kb.dark .key::before{box-shadow:0 2.5px 5px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.8)}
+.kb .key.grow::before,.kb .key.w-cmd::before{
+width:calc(100% - 12px);height:38px;border-radius:19px;
+}
+/* LED dot */
+.kb .key::after{
+content:"";position:absolute;left:50%;top:9px;
+width:3px;height:3px;border-radius:50%;
+transform:translateX(-50%);
+background:var(--led);box-shadow:0 0 5px var(--led);
+z-index:2;
+}
+.kb .key.grow{flex:1 1 auto;width:auto}
+.kb .key.w-cmd{width:64px}
+/* esc: the orange button */
+.kb .key[data-code="Escape"]{color:#fff}
+.kb .key[data-code="Escape"]::before{
+background:linear-gradient(180deg,#ff6a2b,#e04e14);
+box-shadow:0 2.5px 5px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.35);
+}
+/* always-lit orange LEDs: return + arrow cluster */
+.kb .key[data-code="Enter"],.kb .key[data-code="ArrowLeft"],
+.kb .key[data-code="ArrowRight"],.kb .updown .half{--led:#ff6a2b}
+/* function row = step-sequencer gradient (F1–F12) */
+.kb .row:nth-child(1) .key:nth-child(2)::before{background:#232327}
+.kb .row:nth-child(1) .key:nth-child(3)::before{background:#2e2e33}
+.kb .row:nth-child(1) .key:nth-child(4)::before{background:#3a3a40}
+.kb .row:nth-child(1) .key:nth-child(5)::before{background:#48484e}
+.kb .row:nth-child(1) .key:nth-child(6)::before{background:#57575d}
+.kb .row:nth-child(1) .key:nth-child(7)::before{background:#67676d}
+.kb .row:nth-child(1) .key:nth-child(8)::before{background:#78787e}
+.kb .row:nth-child(1) .key:nth-child(9)::before{background:#8a8a8f}
+.kb .row:nth-child(1) .key:nth-child(10)::before{background:#9d9da2}
+.kb .row:nth-child(1) .key:nth-child(11)::before{background:#b1b1b5}
+.kb .row:nth-child(1) .key:nth-child(12)::before{background:#c7c7ca}
+.kb .row:nth-child(1) .key:nth-child(13)::before{background:#dededf}
+.kb .row:nth-child(1) .key:nth-child(-n+8):not(:nth-child(1)){color:#c9c9cf}
+.kb .row:nth-child(1) .key:nth-child(n+9):not(:nth-child(14)){color:#2e2e33}
+.kb .letter{font-size:10.5px;font-weight:600}
+.kb .tri{font-size:6px}
+.kb .sym{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1;margin-top:3px}
+.kb .sym i{font-style:normal;font-size:8.5px;font-weight:600}
+.kb .fk{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1;margin-top:3px}
+.kb .fk svg{display:block;transform:scale(.9)}
+.kb .fk i{font-style:normal;font-size:7px;font-weight:600}
+.kb .mod{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1;margin-top:3px}
+.kb .mod .g{font-style:normal;font-size:9.5px}
+.kb .mod .n{font-style:normal;font-size:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.kb .corner{font-size:7px;font-weight:600;line-height:1;text-transform:uppercase;letter-spacing:.14em;margin-top:2px}
+/* caps lock LED lives on the indicator span, not the shared dot */
+.kb .key[data-code="CapsLock"]::after{content:none}
+.kb .capsdot{
+position:absolute;left:50%;top:9px;transform:translateX(-50%);
+width:3px;height:3px;border-radius:50%;
+background:var(--ledbase);box-shadow:0 0 5px var(--ledbase);z-index:2!important;
+}
+.kb .fnkey .top{font-size:7px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;margin-top:2px}
+.kb .fnkey .bot{display:none}
+.kb .key.updown{padding:0;flex-direction:column;background:transparent;box-shadow:none;gap:3px}
+.kb .key.updown::before,.kb .key.updown::after{content:none}
+.kb .updown .half{
+position:relative;flex:1;width:100%;border-radius:8px;
+background:var(--tile);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);
+display:flex;align-items:center;justify-content:center;
+}
+.kb .updown .half::before{
+content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+width:26px;height:13px;border-radius:7px;
+background:linear-gradient(180deg,var(--cap1),var(--cap2));
+box-shadow:0 1.5px 3px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.kb .updown .half .tri{position:relative;z-index:1}
+.kb-scale{transform-origin:center top}
+/* ---------- interactive keyboard ---------- */
+.kb .key{cursor:pointer}
+.kb .key.press::before{
+transform:translate(-50%,calc(-50% + 2.5px));
+filter:brightness(.86);
+box-shadow:0 1px 2px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.kb .key.grow.press::before,.kb .key.w-cmd.press::before{
+transform:translate(-50%,calc(-50% + 2.5px));
+}
+.kb.dark .key.press::before{filter:brightness(.94)}
+.kb .updown .half{cursor:pointer}
+#hero .caps .key{pointer-events:auto}
+.kb .updown .half.press::before{transform:translate(-50%,calc(-50% + 1.5px));filter:brightness(.86)}
+/* live character readout, independent of the scripted MAGIC display */
+#hero .userchar{
+position:absolute;top:0;left:50%;
+height:70px;display:flex;align-items:flex-end;
+font-size:52px;font-weight:550;color:var(--ink-soft);
+line-height:1;opacity:0;pointer-events:none;white-space:nowrap;z-index:3;
+}
+/* sound toggle */
+.sndbtn{
+pointer-events:auto;cursor:pointer;
+display:flex;align-items:center;gap:9px;
+background:none;border:none;font:inherit;
+font-size:10px;letter-spacing:.24em;color:var(--muted);
+text-transform:uppercase;padding:10px 4px;
+transition:color .3s ease;
+}
+.sndbtn:hover{color:var(--ink)}
+body.went-dark .sndbtn:hover{color:#e4e4e7}
+.sndbtn .bars{display:flex;align-items:flex-end;gap:2px;height:13px}
+.sndbtn .bars i{
+width:2px;background:var(--acc);border-radius:1px;
+transform-origin:bottom;transition:height .25s ease,opacity .25s ease;
+}
+.sndbtn .bars i:nth-child(1){height:5px}
+.sndbtn .bars i:nth-child(2){height:11px}
+.sndbtn .bars i:nth-child(3){height:7px}
+.sndbtn.muted .bars i{height:2px;opacity:.35}
+.sndbtn.playing .bars i{animation:eq .55s ease-in-out infinite alternate}
+.sndbtn.playing .bars i:nth-child(2){animation-delay:.12s}
+.sndbtn.playing .bars i:nth-child(3){animation-delay:.24s}
+@keyframes eq{to{height:3px}}
+nav .navright{display:flex;align-items:center;gap:22px;pointer-events:auto}
+/* graceful static fallback if GSAP fails to load */
+body.no-gsap #hero .title-group{position:static;padding-top:18vh}
+body.no-gsap .stage{height:auto;min-height:60vh;padding:60px 24px}
+body.no-gsap #hero .display,
+body.no-gsap #craft .copy .item,
+body.no-gsap #lineage .lcopy .item,
+body.no-gsap #statement .w,
+body.no-gsap .fcol,
+body.no-gsap #end .reveal{opacity:1;transform:none}
+body.no-gsap #craft .copy .item,
+body.no-gsap #lineage .lcopy .item{position:static}
+body.no-gsap .tcardx{position:static;margin-bottom:18px}
+body.no-gsap .tdeck{height:auto;margin-top:60px}
+body.no-gsap .tclip{display:none}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- start three.js downloading now so the boot keycap is ready before the loader clears -->
+<link rel="modulepreload" href="https://unpkg.com/three@0.160.0/build/three.module.js"></head>
+<body>
+
+<div id="loader">
+  <div class="bootmark" id="loadSlot"></div>
+  <div class="lwork mono">MK&middot;78&nbsp;&nbsp;KEYBOARD</div>
+  <div class="lterm mono">$ mk78 --boot&nbsp;&nbsp;<b>&gt; 78 keys OK</b>&nbsp;<span class="cursor"></span></div>
+</div>
+
+<div id="progress"></div>
+
+<nav>
+  <div class="wordmark mono"><span class="navdot"></span>MK&middot;78&nbsp;&nbsp;KEYBOARD</div>
+  <div class="navright">
+    <button class="sndbtn mono" id="sndBtn" aria-pressed="true" aria-label="Toggle typing sound">
+      <span class="bars"><i></i><i></i><i></i></span><span id="sndLabel">SOUND ON</span>
+    </button>
+    <a class="cta" href="mac-keyboard-preview.html">Try it live &#8594;</a>
+  </div>
+</nav>
+
+<!-- ============ chapter 1+2 : hero, assembly, typing ============ -->
+<section id="hero">
+  <div class="stage">
+    <div class="caps" id="heroCaps"></div>
+    <div class="title-group">
+      <div class="typeline mono"><span id="typelineText"></span><span class="cursor"></span></div>
+      <h1>every key.<br><em>every detail.</em></h1>
+      <p class="sub">MK&middot;78 is a 78-key custom board, drawn entirely in code.
+      Scroll to watch it come together &mdash; key by key.</p>
+    </div>
+    <div class="corner-note mono l">MADE IN ONE FILE <i>&#8984;</i></div>
+    <div class="corner-note mono r">TYPE &middot; SCROLL &middot; FLIP <i>&#9166;</i></div>
+    <div class="eyebrow mono type-eyebrow">KEEP SCROLLING &mdash; IT TYPES</div>
+    <div class="kb-scene">
+      <div class="display" id="typeDisplay"></div>
+      <span class="userchar" id="userChar"></span>
+      <div class="kb-scale"><div id="kbHero"></div></div>
+    </div>
+    <div class="hint"><span>SCROLL</span><span class="line"></span></div>
+  </div>
+</section>
+
+<!-- ============ ticker ============ -->
+<div class="ticker" id="ticker1">
+  <div class="track"></div>
+</div>
+
+<!-- ============ statement : word reveal ============ -->
+<section id="statement">
+  <div class="inner">
+    <div class="eyebrow mono">WHY BOTHER</div>
+    <p id="statementText">A real keyboard is a hundred small decisions. The curve of a corner. The weight of a shadow. The 6-pixel gap between two keys. This page rebuilds *every* *single* *one* &mdash; in code, by hand.</p>
+  </div>
+</section>
+
+<!-- ============ chapter 3 : the craft, zoomed ============ -->
+<section id="craft">
+  <div class="stage">
+    <div class="copy">
+      <div class="item">
+        <div class="idx mono">01 &mdash; THE FUNCTION ROW</div>
+        <h2>Fourteen glyphs, drawn by hand.</h2>
+        <p>Brightness, Mission Control, Spotlight, media keys &mdash; every icon is a tiny inline SVG, traced stroke by stroke. No fonts. No images.</p>
+      </div>
+      <div class="item">
+        <div class="idx mono">02 &mdash; THE LEGENDS</div>
+        <h2>Two labels, exactly where they belong.</h2>
+        <p>Shifted symbols ride above their numbers, just like the real thing &mdash; down to the 9.5&nbsp;pixel type and the 3&nbsp;pixel gap between them.</p>
+      </div>
+      <div class="item">
+        <div class="idx mono">03 &mdash; THE MODIFIERS</div>
+        <h2>Glyphs you already know.</h2>
+        <p>&#8963; control, &#8997; option, &#8984; command &mdash; real Unicode marks over their names, with fn and its globe tucked in the corner.</p>
+      </div>
+    </div>
+    <div class="zoom-window">
+      <div class="zoom-kb"><div id="kbZoom"></div></div>
+      <span class="ticks"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ticker ============ -->
+<div class="ticker" id="ticker2">
+  <div class="track"></div>
+</div>
+
+<!-- ============ lineage : version carousel ============ -->
+<section id="lineage">
+  <div class="stage">
+    <div class="lcopy">
+      <div class="item">
+        <div class="idx mono">V01 &mdash; THE FLAT ONE</div>
+        <h2>Where it started.</h2>
+        <p>Quiet flat caps, one soft shadow, sans-serif legends. A polite desk keyboard, drawn to disappear into the page.</p>
+      </div>
+      <div class="item">
+        <div class="idx mono">V02 &mdash; THE INSTRUMENT<b>CURRENT</b></div>
+        <h2>Where it is now.</h2>
+        <p>Round caps on dark tiles, orange LEDs, a step-sequencer for a function row. Less desk accessory, more studio hardware.</p>
+      </div>
+      <div class="item">
+        <div class="idx mono">V03 &mdash; THE MECH</div>
+        <h2>Where it&rsquo;s going.</h2>
+        <p>Sculpted two-tone caps with five pixels of travel over an exposed plate. Loud to look at &mdash; louder to imagine.</p>
+      </div>
+    </div>
+    <div class="lviewport">
+      <div class="lcol">
+        <div class="lslot"><div id="kbFlat"></div></div>
+        <div class="lslot"><div id="kbInstr"></div></div>
+        <div class="lslot"><div id="kbMech"></div></div>
+      </div>
+      <div class="ldots"><i class="on"></i><i></i><i></i></div>
+      <span class="ticks"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ features ============ -->
+<section id="features">
+  <div class="fpanelx">
+    <div class="fhead">
+      <div class="eyebrow mono">UNDER THE KEYCAPS</div>
+      <h2>Built like<br>the real thing.</h2>
+      <p>Every part of MK&middot;78 is drawn rather than photographed &mdash; the caps, the legends,
+      the light. Here is what that actually means.</p>
+    </div>
+    <div class="fcols">
+      <div class="fcol">
+        <div class="fvis">
+          <span class="kvchip mono">keydown &rarr; <b>KeyS</b></span>
+          <span class="kvrow">
+            <span class="kvkey"><i></i><span>A</span></span>
+            <span class="kvkey on"><i></i><span>S</span></span>
+            <span class="kvkey"><i></i><span>D</span></span>
+            <span class="kvkey"><i></i><span>F</span></span>
+          </span>
+        </div>
+        <h3>Real key events</h3>
+        <p>Every physical keystroke lights its on-screen twin &mdash; letters, modifiers, arrows, even the caps lock indicator.</p>
+        <div class="fnote mono">78 keys mapped</div>
+      </div>
+      <div class="fcol">
+        <div class="fvis">
+          <span class="gvbig" id="gvbig"></span>
+          <span class="gvrow" id="gvrow"></span>
+        </div>
+        <h3>Hand-drawn glyphs</h3>
+        <p>Fourteen function-row icons traced as inline SVG strokes on an 11-pixel grid. No icon font, no sprite sheet.</p>
+        <div class="fnote mono">0 images shipped</div>
+      </div>
+      <div class="fcol">
+        <div class="fvis">
+          <span class="fswaps">
+            <span class="fsw dk"><u class="a"></u><u></u><u></u><u></u><u></u><u></u><u></u><u></u><u></u></span>
+            <span class="fswarrow">&#8646;</span>
+            <span class="fsw lt"><u class="a"></u><u></u><u></u><u></u><u></u><u></u><u></u><u></u><u></u></span>
+          </span>
+          <span class="fswlabels mono"><span>Charcoal</span><span>Chalk</span></span>
+        </div>
+        <h3>Two finishes</h3>
+        <p>Every colour lives in a CSS variable, so the whole instrument re-skins itself from a single class flip.</p>
+        <div class="fnote mono">one class, 12 vars</div>
+      </div>
+    </div>
+    <div class="fstrip mono">
+      <span>ONE HTML FILE</span><span>NO BUILD STEP</span><span>NO DEPENDENCIES</span><span><em>&lt; 30 KB</em></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ reviews ============ -->
+<section id="voices">
+  <div class="vstage">
+    <div class="vbar">
+      <span class="eyebrow mono">TESTIMONIALS</span>
+      <span class="vscore mono">
+        <span class="leds"><i></i><i></i><i></i><i></i><i></i></span>
+        4.9 / 5 &middot; 214 TYPISTS
+      </span>
+    </div>
+    <div class="vgrid">
+      <h2>Rave reviews.<br>Zero keystrokes lost.</h2>
+      <p>Why two hundred and change typists swear by a board that ships no switches,
+      no cable and not a single real key &mdash; just pixels with travel. Keep scrolling
+      to deal through the deck.</p>
+    </div>
+    <div class="tdeck" id="tdeck">
+      <div class="tclip">
+        <span class="thook"><i></i></span>
+        <span class="tglass"></span>
+      </div>
+      <!-- cards injected here -->
+    </div>
+  </div>
+</section>
+
+<!-- ============ chapter 4 : two finishes ============ -->
+<section id="finish">
+  <div class="stage">
+    <div class="shade"></div>
+    <div class="content">
+      <h2>Two finishes.<br>One scroll apart.</h2>
+      <div class="kb-stack kb-scale">
+        <div id="kbLight"></div>
+        <div class="dark-layer"><div id="kbDark"></div></div>
+      </div>
+      <div class="pill">
+        <span class="on" id="pillLight">01 &mdash; Charcoal</span>
+        <span id="pillDark">02 &mdash; Chalk</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ chapter 5 : outro + footer ============ -->
+<section id="end">
+  <div class="stage">
+    <div class="eyebrow mono reveal">READY WHEN YOU ARE</div>
+    <h2 class="reveal">Try every key<br>yourself.</h2>
+    <div class="stats reveal">
+      <div class="stat"><b><em>78</em></b><i>keys</i></div>
+      <div class="stat"><b>14</b><i>svg icons</i></div>
+      <div class="stat"><b>0</b><i>images</i></div>
+      <div class="stat"><b>1</b><i>html file</i></div>
+    </div>
+    <a class="big-cta reveal" href="mac-keyboard-preview.html">Open the live keyboard &#8594;</a>
+    <footer>
+      <div class="fbig">
+        <div class="fword">
+          <span class="fdot"></span>
+          <b>mk&middot;78</b>
+          <em>keyboard</em>
+        </div>
+        <div class="fkeys">
+          <a class="fkey" href="mac-keyboard-preview.html"><i></i><span>Preview</span></a>
+          <a class="fkey" href="#lineage"><i></i><span>Lineage</span></a>
+          <a class="fkey" href="#features"><i></i><span>Specs</span></a>
+          <a class="fkey" href="#" id="backToTop"><i></i><span>Replay</span></a>
+        </div>
+      </div>
+      <div class="fpanel mono">
+        <div class="col">
+          <span>$ mk78 --status</span>
+          <span><b>&gt; 78/78 keys</b> <span class="ok">responding</span></span>
+        </div>
+        <div class="col">
+          <span><b>&gt; finish:</b> charcoal | chalk</span>
+          <span><b>&gt; session:</b> <span id="fclock">00:00:00</span><span class="cursor"></span></span>
+        </div>
+      </div>
+      <div class="fbase">
+        <div class="live mono"><span class="pulse"></span> ALL SYSTEMS TYPING</div>
+        <span>&copy; 2026 &middot; typed, not photographed</span>
+      </div>
+    </footer>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script>
+/* ---------- keyboard component (same data as the preview page) ---------- */
+const S = (inner, w = 11) =>
+  `<svg width="${w}" height="${w}" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const icons = {
+  briLow:  S('<circle cx="5.5" cy="5.5" r="1.7"/><path d="M5.5 1.6v1M5.5 8.4v1M1.6 5.5h1M8.4 5.5h1M2.9 2.9l.7.7M7.4 7.4l.7.7M8.1 2.9l-.7.7M3.6 7.4l-.7.7"/>'),
+  briHigh: S('<circle cx="5.5" cy="5.5" r="2.1"/><path d="M5.5 1.1v1.2M5.5 8.7v1.2M1.1 5.5h1.2M8.7 5.5h1.2M2.5 2.5l.8.8M7.7 7.7l.8.8M8.5 2.5l-.8.8M3.3 7.7l-.8.8"/>'),
+  mission: S('<rect x="1.3" y="2.6" width="8.4" height="5.8" rx="1"/><path d="M4.4 2.6v5.8M4.4 5.5h5.3"/>'),
+  search:  S('<circle cx="5" cy="5" r="3"/><path d="M7.3 7.3l2.2 2.2"/>'),
+  mic:     S('<rect x="4" y="1.2" width="3" height="5" rx="1.5"/><path d="M2.3 5.3a3.2 3.2 0 0 0 6.4 0M5.5 8.5v1.3"/>'),
+  moon:    `<svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor"><path d="M6.8 1.3a4.3 4.3 0 1 0 3 6.3A3.6 3.6 0 0 1 6.8 1.3Z"/></svg>`,
+  rew:     `<svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor"><path d="M5.4 3 2 5.5l3.4 2.5V3ZM9.6 3 6.2 5.5l3.4 2.5V3Z"/></svg>`,
+  play:    S('<path d="M3.6 2.6l4.6 2.9-4.6 2.9V2.6Z"/>'),
+  fwd:     `<svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor"><path d="M5.6 3 9 5.5 5.6 8V3ZM1.4 3l3.4 2.5L1.4 8V3Z"/></svg>`,
+  mute:    S('<path d="M1.6 4.2h1.7L6 2v7L3.3 6.8H1.6V4.2Z"/>'),
+  volLo:   S('<path d="M1.4 4.2h1.7L5.8 2v7L3.1 6.8H1.4V4.2Z"/><path d="M7.4 3.9a2.3 2.3 0 0 1 0 3.2"/>'),
+  volHi:   S('<path d="M1.2 4.2h1.7L5.6 2v7L2.9 6.8H1.2V4.2Z"/><path d="M7 3.9a2.3 2.3 0 0 1 0 3.2M8.5 2.7a4.1 4.1 0 0 1 0 5.6"/>'),
+  lock:    S('<rect x="2.8" y="4.6" width="5.4" height="4.4" rx="1.1"/><path d="M3.9 4.6V3.4a1.6 1.6 0 0 1 3.2 0v1.2"/>', 12),
+  globe:   S('<circle cx="5.5" cy="5.5" r="4.2"/><path d="M1.3 5.5h8.4M5.5 1.3c-2.6 2.4-2.6 6 0 8.4M5.5 1.3c2.6 2.4 2.6 6 0 8.4"/>', 10)
+};
+const fkey  = (code, ic, n)          => ({ code, html: `<span class="fk">${icons[ic]}<i>${n}</i></span>` });
+const sym   = (code, top, bot)       => ({ code, html: `<span class="sym"><i>${top}</i><i>${bot}</i></span>` });
+const letter= (ch)                   => ({ code: 'Key' + ch, html: `<span class="letter">${ch}</span>` });
+const mod   = (code, g, n, cls='')   => ({ code, cls, html: `<span class="mod"><i class="g">${g}</i><i class="n">${n}</i></span>` });
+const corner= (code, txt, pos, cls, extra='') => ({ code, cls, html: `${extra}<span class="corner ${pos}">${txt}</span>` });
+
+const rows = [
+  [
+    corner('Escape','esc','bl','grow'),
+    fkey('F1','briLow','F1'), fkey('F2','briHigh','F2'), fkey('F3','mission','F3'),
+    fkey('F4','search','F4'), fkey('F5','mic','F5'),     fkey('F6','moon','F6'),
+    fkey('F7','rew','F7'),    fkey('F8','play','F8'),    fkey('F9','fwd','F9'),
+    fkey('F10','mute','F10'), fkey('F11','volLo','F11'), fkey('F12','volHi','F12'),
+    { code:'Power', cls:'lockkey', html: icons.lock }
+  ],
+  [
+    sym('Backquote','~','`'),
+    sym('Digit1','!','1'), sym('Digit2','@','2'), sym('Digit3','#','3'),
+    sym('Digit4','$','4'), sym('Digit5','%','5'), sym('Digit6','^','6'),
+    sym('Digit7','&amp;','7'), sym('Digit8','*','8'), sym('Digit9','(','9'),
+    sym('Digit0',')','0'), sym('Minus','&#8212;','&#8211;'), sym('Equal','+','='),
+    corner('Backspace','delete','br','grow')
+  ],
+  [
+    corner('Tab','tab','bl','grow'),
+    letter('Q'), letter('W'), letter('E'), letter('R'), letter('T'), letter('Y'),
+    letter('U'), letter('I'), letter('O'), letter('P'),
+    sym('BracketLeft','{','['), sym('BracketRight','}',']'), sym('Backslash','|','\\')
+  ],
+  [
+    corner('CapsLock','caps lock','bl','grow','<span class="capsdot"></span>'),
+    letter('A'), letter('S'), letter('D'), letter('F'), letter('G'), letter('H'),
+    letter('J'), letter('K'), letter('L'),
+    sym('Semicolon',':',';'), sym('Quote','&quot;','&#39;'),
+    corner('Enter','return','br','grow')
+  ],
+  [
+    corner('ShiftLeft','shift','bl','grow'),
+    letter('Z'), letter('X'), letter('C'), letter('V'), letter('B'), letter('N'), letter('M'),
+    sym('Comma','&lt;',','), sym('Period','&gt;','.'), sym('Slash','?','/'),
+    corner('ShiftRight','shift','br','grow')
+  ],
+  [
+    { code:'Fn', cls:'fnkey', html:`<span class="top">fn</span><span class="bot">${icons.globe}</span>` },
+    mod('ControlLeft','&#8963;','control'),
+    mod('AltLeft','&#8997;','option'),
+    mod('MetaLeft','&#8984;','command','w-cmd'),
+    { code:'Space', cls:'grow', html:'' },
+    mod('MetaRight','&#8984;','command','w-cmd'),
+    mod('AltRight','&#8997;','option'),
+    { code:'ArrowLeft', html:'<span class="tri">&#9664;</span>' },
+    { updown:true },
+    { code:'ArrowRight', html:'<span class="tri">&#9654;</span>' }
+  ]
+];
+
+function buildKeyboard(mountId, dark) {
+  const mount = document.getElementById(mountId);
+  const kb = document.createElement('div');
+  kb.className = 'kb' + (dark ? ' dark' : '');
+  rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    r.forEach(k => {
+      const el = document.createElement('div');
+      if (k.updown) {
+        el.className = 'key updown';
+        el.innerHTML = '<div class="half" data-code="ArrowUp"><span class="tri">&#9650;</span></div>' +
+                       '<div class="half" data-code="ArrowDown"><span class="tri">&#9660;</span></div>';
+      } else {
+        el.className = 'key' + (k.cls ? ' ' + k.cls : '');
+        el.innerHTML = k.html;
+        el.dataset.code = k.code;
+      }
+      row.appendChild(el);
+    });
+    kb.appendChild(row);
+  });
+  mount.appendChild(kb);
+  return kb;
+}
+
+const kbHero  = buildKeyboard('kbHero', false);
+const kbZoom  = buildKeyboard('kbZoom', false);
+const kbLight = buildKeyboard('kbLight', false);
+const kbDark  = buildKeyboard('kbDark', true);
+const kbFlat  = buildKeyboard('kbFlat', false);  kbFlat.classList.add('flat');
+const kbInstr = buildKeyboard('kbInstr', false);
+const kbMech  = buildKeyboard('kbMech', false);  kbMech.classList.add('mech');
+
+/* responsive: scale keyboards down on narrow viewports */
+function fitKeyboards() {
+  const s = Math.min(1, (innerWidth - 48) / 860);
+  document.querySelectorAll('.kb-scale').forEach(w => { w.style.transform = `scale(${s})`; });
+}
+
+/* lineage: fit each board to the actual frame, width AND height */
+function fitLineage() {
+  const vp = document.querySelector('.lviewport');
+  if (!vp) return;
+  const { width, height } = vp.getBoundingClientRect();
+  document.querySelectorAll('.lslot > div').forEach(slot => {
+    const kb = slot.querySelector('.kb');
+    if (!kb || !kb.offsetWidth) return;
+    const s = Math.min((width - 56) / kb.offsetWidth, (height - 56) / kb.offsetHeight, 1);
+    slot.style.transform = `scale(${s.toFixed(3)})`;
+  });
+}
+
+function fitAll() { fitKeyboards(); fitLineage(); }
+fitAll();
+addEventListener('resize', fitAll);
+addEventListener('load', fitAll);
+
+/* =========================================================
+   typing sound — synthesised with Web Audio, zero assets
+   ========================================================= */
+const Snd = (() => {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let ctx = null, master = null, noiseBuf = null, enabled = true;
+  try { enabled = localStorage.getItem('mk78-sound') !== 'off'; } catch (e) {}
+
+  /* switch profiles: bigger keys sound deeper and longer */
+  const PROFILES = {
+    normal: { f: 168, bright: 2400, body: .42, click: .30, dur: .085 },
+    mod:    { f: 156, bright: 2250, body: .44, click: .28, dur: .09  },
+    wide:   { f: 146, bright: 2050, body: .50, click: .32, dur: .105 },
+    space:  { f: 104, bright: 1500, body: .68, click: .38, dur: .145 }
+  };
+
+  function ensure() {
+    if (ctx || !AC) return ctx;
+    ctx = new AC();
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 22; comp.ratio.value = 5;
+    comp.attack.value = .002;  comp.release.value = .12;
+    master = ctx.createGain();
+    master.gain.value = .55;
+    master.connect(comp); comp.connect(ctx.destination);
+    /* one reusable noise bed — cheaper than a new buffer per keystroke */
+    const len = Math.floor(ctx.sampleRate * .2);
+    noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return ctx;
+  }
+
+  function press(type) {
+    if (!enabled) return;
+    const c = ensure(); if (!c) return;
+    if (c.state === 'suspended') c.resume();
+    const p = PROFILES[type] || PROFILES.normal;
+    const t = c.currentTime;
+    const vary = .93 + Math.random() * .14;   /* no two presses identical */
+
+    /* 1 — the click transient of the switch */
+    const src = c.createBufferSource();
+    src.buffer = noiseBuf;
+    src.playbackRate.value = vary;
+    const bp = c.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = p.bright * vary; bp.Q.value = .9;
+    const hp = c.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 620;
+    const ng = c.createGain();
+    ng.gain.setValueAtTime(p.click, t);
+    ng.gain.exponentialRampToValueAtTime(.0001, t + .03);
+    src.connect(bp); bp.connect(hp); hp.connect(ng); ng.connect(master);
+    src.start(t, Math.random() * .1, .06);
+
+    /* 2 — the low "thock" of the case */
+    const osc = c.createOscillator();
+    osc.type = 'triangle';
+    const f0 = p.f * vary;
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(f0 * .55, t + p.dur);
+    const og = c.createGain();
+    og.gain.setValueAtTime(.0001, t);
+    og.gain.linearRampToValueAtTime(p.body, t + .005);
+    og.gain.exponentialRampToValueAtTime(.0001, t + p.dur);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 950;
+    osc.connect(og); og.connect(lp); lp.connect(master);
+    osc.start(t); osc.stop(t + p.dur + .04);
+  }
+
+  /* the lighter tick of the key coming back up */
+  function release(type) {
+    if (!enabled || !ctx || ctx.state !== 'running') return;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 3100 + Math.random() * 700; bp.Q.value = 1.3;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(type === 'space' ? .14 : .085, t);
+    g.gain.exponentialRampToValueAtTime(.0001, t + .024);
+    src.connect(bp); bp.connect(g); g.connect(master);
+    src.start(t, Math.random() * .1, .04);
+  }
+
+  function setEnabled(v) {
+    enabled = v;
+    try { localStorage.setItem('mk78-sound', v ? 'on' : 'off'); } catch (e) {}
+    if (v) { const c = ensure(); if (c && c.state === 'suspended') c.resume(); }
+  }
+  return { press, release, setEnabled, isOn: () => enabled, supported: !!AC };
+})();
+
+/* =========================================================
+   playable boards — click any key, or just type
+   ========================================================= */
+const sndBtn = document.getElementById('sndBtn');
+const sndLabel = document.getElementById('sndLabel');
+const userCharEl = document.getElementById('userChar');
+const ORANGE = '#ff6a2b';
+
+const WIDE = ['Enter', 'Backspace', 'Tab', 'CapsLock', 'ShiftLeft', 'ShiftRight'];
+const MODS = ['MetaLeft', 'MetaRight', 'AltLeft', 'AltRight', 'ControlLeft', 'ControlRight', 'Fn', 'Escape', 'Power'];
+const keyType = code => code === 'Space' ? 'space'
+  : WIDE.includes(code) ? 'wide'
+  : MODS.includes(code) ? 'mod' : 'normal';
+
+const LABELS = {
+  Escape: 'esc', Tab: 'tab', CapsLock: 'caps lock', Enter: 'return', Backspace: 'delete',
+  ShiftLeft: 'shift', ShiftRight: 'shift', ControlLeft: 'control', ControlRight: 'control',
+  AltLeft: 'option', AltRight: 'option', MetaLeft: 'command', MetaRight: 'command',
+  Space: 'space', Fn: 'fn', Power: 'lock',
+  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→'
+};
+for (let i = 1; i <= 12; i++) LABELS['F' + i] = 'f' + i;
+function labelFor(code, ev) {
+  if (LABELS[code]) return LABELS[code];
+  if (ev && ev.key && ev.key.length === 1) return /[a-z]/i.test(ev.key) ? ev.key.toUpperCase() : ev.key;
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  return '';
+}
+
+/* press state lives on the cap pseudo-element + the LED, so it never
+   fights the scroll timeline, which animates transform on .key itself */
+function pressVisual(el, on) {
+  if (!el) return;
+  el.classList.toggle('press', on);
+  if (on) el.style.setProperty('--led', ORANGE);
+  else el.style.removeProperty('--led');
+}
+
+let charTimer = null;
+function showUserChar(txt) {
+  if (!userCharEl || !txt) return;
+  userCharEl.textContent = txt;
+  userCharEl.style.transition = 'none';
+  userCharEl.style.opacity = '0';
+  userCharEl.style.transform = 'translate(-50%,14px)';
+  requestAnimationFrame(() => {
+    userCharEl.style.transition = 'opacity .16s ease, transform .3s cubic-bezier(.22,1,.36,1)';
+    userCharEl.style.opacity = '1';
+    userCharEl.style.transform = 'translate(-50%,0)';
+  });
+  clearTimeout(charTimer);
+  charTimer = setTimeout(() => {
+    userCharEl.style.transition = 'opacity .45s ease, transform .45s ease';
+    userCharEl.style.opacity = '0';
+    userCharEl.style.transform = 'translate(-50%,-34px)';
+  }, 620);
+}
+
+let eqTimer = null;
+function pulseEq() {
+  if (!sndBtn || !Snd.isOn()) return;
+  sndBtn.classList.add('playing');
+  clearTimeout(eqTimer);
+  eqTimer = setTimeout(() => sndBtn.classList.remove('playing'), 300);
+}
+
+/* pointer input on a board */
+function bindBoard(kb, withReadout) {
+  kb.querySelectorAll('[data-code]').forEach(el => {
+    const code = el.dataset.code;
+    const type = keyType(code);
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      pressVisual(el, true);
+      Snd.press(type);
+      pulseEq();
+      if (withReadout) showUserChar(labelFor(code));
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev =>
+      el.addEventListener(ev, () => {
+        if (el.classList.contains('press')) Snd.release(type);
+        pressVisual(el, false);
+      }));
+  });
+}
+const boards = [kbHero, kbLight, kbDark, kbInstr, kbFlat, kbMech];
+boards.forEach(kb => bindBoard(kb, kb === kbHero));
+document.querySelectorAll('#heroCaps .kb').forEach(kb => bindBoard(kb, true));
+
+/* physical typing lights every board currently on screen */
+const onScreen = el => {
+  const r = el.getBoundingClientRect();
+  return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+};
+const boardKey = (kb, code) => {
+  try { return kb.querySelector('[data-code="' + CSS.escape(code) + '"]'); }
+  catch (e) { return null; }
+};
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey) return;           /* leave real shortcuts alone */
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  boards.filter(onScreen).forEach(kb => pressVisual(boardKey(kb, e.code), true));
+  if (e.repeat) return;                          /* no machine-gun audio */
+  Snd.press(keyType(e.code));
+  pulseEq();
+  if (onScreen(kbHero)) showUserChar(labelFor(e.code, e));
+});
+addEventListener('keyup', e => {
+  let wasDown = false;
+  boards.forEach(kb => {
+    const el = boardKey(kb, e.code);
+    if (el && el.classList.contains('press')) wasDown = true;
+    pressVisual(el, false);
+  });
+  if (wasDown) Snd.release(keyType(e.code));
+});
+addEventListener('blur', () =>
+  document.querySelectorAll('.key.press, .half.press').forEach(el => pressVisual(el, false)));
+
+/* sound toggle */
+function syncSnd() {
+  if (!sndBtn) return;
+  const on = Snd.isOn();
+  sndBtn.classList.toggle('muted', !on);
+  sndBtn.setAttribute('aria-pressed', String(on));
+  sndLabel.textContent = on ? 'SOUND ON' : 'SOUND OFF';
+}
+if (sndBtn) {
+  if (!Snd.supported) sndBtn.style.display = 'none';
+  sndBtn.addEventListener('click', () => {
+    Snd.setEnabled(!Snd.isOn());
+    syncSnd();
+    if (Snd.isOn()) { Snd.press('normal'); pulseEq(); }
+  });
+  syncSnd();
+}
+
+/* ---------- floating hero keycaps ---------- */
+const capSpecs = [
+  { k: letter('M'),                          x:'10%',  y:'16%', s:1.5,  r:'-9deg',  d:'5.4s', dl:'-1.2s', depth:26 },
+  { k: letter('A'),                          x:'84%',  y:'14%', s:1.2,  r:'7deg',   d:'4.6s', dl:'-2.8s', depth:18 },
+  { k: letter('G'),                          x:'6%',   y:'62%', s:1.1,  r:'6deg',   d:'6.2s', dl:'-.6s',  depth:14, hide:1 },
+  { k: letter('I'),                          x:'90%',  y:'58%', s:1.35, r:'-6deg',  d:'5s',   dl:'-3.4s', depth:22 },
+  { k: letter('C'),                          x:'19%',  y:'84%', s:1.05, r:'8deg',   d:'4.4s', dl:'-1.8s', depth:12, hide:1 },
+  { k: mod('MetaLeft','&#8984;','command','w-cmd'), x:'76%', y:'80%', s:1.25, r:'-7deg', d:'5.8s', dl:'-2.2s', depth:20 },
+  { k: corner('Escape','esc','bl','grow'),   x:'26%',  y:'10%', s:.95,  r:'5deg',   d:'6.6s', dl:'-4s',   depth:10, hide:1 },
+  { k: fkey('F6','moon','F6'),               x:'68%',  y:'32%', s:.9,   r:'-5deg',  d:'4.8s', dl:'-.9s',  depth:8,  hide:1 },
+  { k: fkey('F8','play','F8'),               x:'45%',  y:'11%', s:.85,  r:'9deg',   d:'5.6s', dl:'-3s',   depth:6,  hide:1 }
+];
+const capsWrap = document.getElementById('heroCaps');
+capSpecs.forEach(c => {
+  const cap = document.createElement('span');
+  cap.className = 'cap' + (c.hide ? ' hide-sm' : '');
+  cap.style.left = c.x; cap.style.top = c.y;
+  const par = document.createElement('span');
+  par.className = 'par'; par.dataset.depth = c.depth;
+  const bob = document.createElement('span');
+  bob.className = 'bob kb bare';
+  bob.style.setProperty('--d', c.d); bob.style.setProperty('--dl', c.dl);
+  const key = document.createElement('div');
+  key.className = 'key' + (c.k.cls ? ' ' + c.k.cls : '');
+  key.innerHTML = c.k.html;
+  key.dataset.code = c.k.code;
+  key.style.setProperty('--s', c.s); key.style.setProperty('--r', c.r);
+  bob.appendChild(key); par.appendChild(bob); cap.appendChild(par);
+  capsWrap.appendChild(cap);
+});
+/* handles the three.js layer needs from this script (module scope can't see consts) */
+window.MK78 = {
+  Snd, keyType, labelFor, showUserChar, pulseEq, icons, ORANGE,
+  exit: { p: 0 }                 /* 0 = resting hero, 1 = fully scrolled away */
+};
+
+/* mouse parallax */
+const parEls = [...document.querySelectorAll('.cap .par')];
+document.getElementById('hero').addEventListener('mousemove', e => {
+  const cx = e.clientX / innerWidth - .5, cy = e.clientY / innerHeight - .5;
+  parEls.forEach(p => {
+    const d = +p.dataset.depth;
+    p.style.transform = `translate(${(-cx * d).toFixed(1)}px, ${(-cy * d).toFixed(1)}px)`;
+  });
+});
+
+/* ---------- hero typewriter ---------- */
+const twText = '$ mk78 --ready · 78 keys ok';
+const twEl = document.getElementById('typelineText');
+let twI = 0;
+function twTick() {
+  if (twI <= twText.length) {
+    twEl.textContent = twText.slice(0, twI++);
+    setTimeout(twTick, 52);
+  }
+}
+setTimeout(twTick, 1700);
+
+/* ---------- boot loader ---------- */
+const dismissLoader = () => document.getElementById('loader').classList.add('done');
+setTimeout(dismissLoader, 1400);
+addEventListener('load', () => setTimeout(dismissLoader, 1400));
+
+/* ---------- marquee tickers ---------- */
+function fillTicker(id, phrase, glyph) {
+  const track = document.querySelector(`#${id} .track`);
+  const half = `<div class="half">${Array.from({length: 8}, () =>
+    `<span>${phrase}</span><i>${glyph}</i>`).join('')}</div>`;
+  track.innerHTML = half + half;
+}
+fillTicker('ticker1', 'made to be typed on', '&#8984;');
+fillTicker('ticker2', 'down to the pixel', '&#8997;');
+
+/* ---------- features: real glyphs in the illustration ---------- */
+document.getElementById('gvbig').innerHTML = icons.mission;
+document.getElementById('gvrow').innerHTML =
+  ['briHigh', 'search', 'moon', 'play', 'volHi', 'globe']
+    .map(k => `<span class="gvsm">${icons[k]}</span>`).join('');
+
+/* ---------- reviews ---------- */
+const reviews = [
+  { s:5,   w:'Detail Dana',     r:'Typographer',      q:'I pressed S for a full minute. The little caps lock dot gets me every time.' },
+  { s:4.5, w:'Tactile Tom',     r:'Switch collector', q:'My real keyboard is officially jealous of my fake keyboard.' },
+  { s:5,   w:'Crumb-free Cleo', r:'Desk minimalist',  q:'Finally, a board that never needs charging, cleaning, or forgiveness.' },
+  { s:4.5, w:'Midnight Mia',    r:'Night shift',      q:'Came for the keys. Stayed for the Chalk flip.' },
+  { s:5,   w:'Scrolling Sam',   r:'Serial scroller',  q:'Typed MAGIC by scrolling. Briefly felt like a wizard. No regrets.' },
+  { s:5,   w:'Squinting Quinn', r:'Pixel auditor',    q:'Zoomed into the function row and found actual craftsmanship. In a browser.' },
+  { s:5,   w:'Latency Lena',    r:'Speed typist',     q:'Zero milliseconds of input lag, because there is no input. Flawless.' },
+  { s:4.5, w:'Bezel Bruno',     r:'Hardware nerd',    q:'The etched badge in the bezel is a level of commitment I did not expect.' }
+];
+const stars = n => '&#9733;'.repeat(Math.floor(n)) + (n % 1 ? '&frac12;' : '');
+const initials = w => w.split(/[\s-]+/).map(p => p[0]).join('').slice(0, 2).toUpperCase();
+
+/* scroll-swipe badge deck: build one card per review */
+const deckReviews = reviews.slice(0, 5);
+const tdeckEl = document.getElementById('tdeck');
+const tCards = deckReviews.map((v, i) => {
+  const el = document.createElement('div');
+  el.className = 'tcardx';
+  el.innerHTML = `
+    <span class="tnotch"></span>
+    <div class="tglyph">&ldquo;</div>
+    <blockquote>${v.q}</blockquote>
+    <div class="tfoot">
+      <span class="rcap mono">${initials(v.w)}</span>
+      <span class="twho"><b>${v.w}</b><span class="mono">${v.r}</span></span>
+      <span class="tchip">${stars(v.s)}</span>
+    </div>`;
+  tdeckEl.appendChild(el);
+  return el;
+});
+/* resting poses, front to back */
+const tSlots = [
+  { x: 0,   y: 0,  rotation: 0,    scale: 1,    opacity: 1 },
+  { x: 16,  y: 12, rotation: 3,    scale: .965, opacity: 1 },
+  { x: -14, y: 20, rotation: -3.5, scale: .94,  opacity: 1 },
+  { x: 2,   y: 24, rotation: 1.5,  scale: .925, opacity: 1 },
+  { x: 2,   y: 24, rotation: 1.5,  scale: .925, opacity: 1 }
+];
+tCards.forEach((el, i) => {
+  const s = tSlots[Math.min(i, tSlots.length - 1)];
+  el.style.zIndex = 50 - i;
+  if (window.gsap) gsap.set(el, s);
+});
+
+/* ---------- statement word split ---------- */
+const stEl = document.getElementById('statementText');
+stEl.innerHTML = stEl.textContent.split(/\s+/).map(w => {
+  const acc = w.startsWith('*');
+  return `<span class="w${acc ? ' acc' : ''}">${acc ? w.replace(/\*/g,'') : w}</span>`;
+}).join(' ');
+
+/* ---------- footer: nav + live session clock ---------- */
+document.getElementById('backToTop').addEventListener('click', e => {
+  e.preventDefault();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+document.querySelectorAll('.fkey[href^="#"]:not(#backToTop)').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (!target) return;
+    e.preventDefault();
+    window.scrollTo({ top: window.scrollY + target.getBoundingClientRect().top, behavior: 'smooth' });
+  });
+});
+const clockStart = Date.now();
+const clockEl = document.getElementById('fclock');
+setInterval(() => {
+  const s = Math.floor((Date.now() - clockStart) / 1000);
+  clockEl.textContent = [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60]
+    .map(n => String(n).padStart(2, '0')).join(':');
+}, 1000);
+
+/* ---------- scroll experience ---------- */
+if (!window.gsap || !window.ScrollTrigger) {
+  document.body.classList.add('no-gsap');
+  dismissLoader();
+} else {
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* progress bar */
+  ScrollTrigger.create({
+    start: 0, end: 'max',
+    onUpdate: self => gsap.set('#progress', { scaleX: self.progress })
+  });
+
+  /* ----- chapter 1+2: title out, keyboard assembles, then types ----- */
+  const WORD = 'MAGIC';
+  const displayEl = document.getElementById('typeDisplay');
+  const charSpans = [...WORD].map(ch => {
+    const s = document.createElement('span');
+    s.textContent = ch;
+    displayEl.appendChild(s);
+    return s;
+  });
+  const heroKeys = kbHero.querySelectorAll('.key, .half');
+
+  const heroTl = gsap.timeline({
+    scrollTrigger: { trigger: '#hero', start: 'top top', end: () => '+=' + Math.round(innerHeight * 4.2), pin: true, scrub: 0.4 }
+  });
+  heroTl
+    .to('#hero .cap', { y: 460, opacity: 0, scale: .55, duration: .5, ease: 'power1.in',
+                        stagger: { each: .035, from: 'random' } }, 0)
+    .to(window.MK78.exit, { p: 1, duration: .78, ease: 'power1.in' }, 0)
+    .to('#hero .corner-note', { opacity: 0, duration: .2 }, 0)
+    .to('#hero .title-group', { opacity: 0, y: -70, duration: .45, ease: 'none' }, 0)
+    .to('#hero .hint',        { opacity: 0, duration: .2 }, 0)
+    .from('#hero .kb-scene',  { yPercent: 155, duration: .9, ease: 'power1.out' }, .15)
+    .from(heroKeys, { opacity: 0, y: 10, duration: .7, ease: 'none',
+                      stagger: { amount: .8, from: 'random' } }, .55)
+    .to('#hero .display',     { opacity: 1, duration: .2 }, 1.5)
+    .to('#hero .type-eyebrow',{ opacity: 1, duration: .2 }, 1.5)
+    .to('#hero .type-eyebrow',{ opacity: 0, duration: .2 }, 2.4);
+
+  const LED_ON = '#ff6a2b', LED_OFF = 'rgba(255,255,255,.14)';
+  [...WORD].forEach((ch, i) => {
+    const keyEl = kbHero.querySelector(`[data-code="Key${ch}"]`);
+    const t = 1.8 + i * .5;
+    heroTl
+      .to(keyEl, { y: 2, scale: .97, '--led': LED_ON,  duration: .12, ease: 'none' }, t)
+      .to(keyEl, { y: 0, scale: 1,  '--led': LED_OFF, duration: .12, ease: 'none' }, t + .2)
+      .fromTo(charSpans[i], { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .15, ease: 'none' }, t);
+    if (i < WORD.length - 1)
+      heroTl.to(charSpans[i], { y: -46, opacity: 0, duration: .18, ease: 'none' }, t + .42);
+  });
+  heroTl.to({}, { duration: .4 });
+
+  /* ----- statement: word by word ----- */
+  gsap.to('#statement .w', {
+    opacity: 1, ease: 'none', stagger: .06,
+    scrollTrigger: { trigger: '#statement', start: 'top 78%', end: 'bottom 55%', scrub: 0.3 }
+  });
+
+  /* ----- chapter 3: craft zoom ----- */
+  gsap.set('.zoom-kb', { scale: 2.6, x: -80, y: -30 });
+  const items = gsap.utils.toArray('#craft .item');
+  const craftTl = gsap.timeline({
+    scrollTrigger: { trigger: '#craft', start: 'top top', end: () => '+=' + Math.round(innerHeight * 3), pin: true, scrub: 0.4 }
+  });
+  craftTl
+    .to(items[0], { opacity: 1, duration: .15 }, 0)
+    .to('.zoom-kb', { x: -1330, y: -40, duration: .85, ease: 'none' }, 0)
+    .to(items[0], { opacity: 0, duration: .15 }, .85)
+    .to(items[1], { opacity: 1, duration: .15 }, 1.0)
+    .to('.zoom-kb', { x: -760, y: -300, duration: .85, ease: 'none' }, 1.0)
+    .to(items[1], { opacity: 0, duration: .15 }, 1.85)
+    .to(items[2], { opacity: 1, duration: .15 }, 2.0)
+    .to('.zoom-kb', { x: -240, y: -520, duration: .85, ease: 'none' }, 2.0)
+    .to({}, { duration: .3 });
+
+  /* ----- lineage: horizontal version carousel ----- */
+  const litems = gsap.utils.toArray('#lineage .item');
+  const ldots = gsap.utils.toArray('.ldots i');
+  const lineTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#lineage', start: 'top top', end: () => '+=' + Math.round(innerHeight * 2.5), pin: true, scrub: 0.4,
+      onUpdate(self) {
+        const idx = self.progress < .34 ? 0 : self.progress < .72 ? 1 : 2;
+        ldots.forEach((d, i) => d.classList.toggle('on', i === idx));
+      }
+    }
+  });
+  lineTl
+    .to(litems[0], { opacity: 1, duration: .15 }, 0)
+    .to(litems[0], { opacity: 0, duration: .15 }, .7)
+    .to('.lcol',   { xPercent: -33.3333, duration: .55, ease: 'power1.inOut' }, .72)
+    .to(litems[1], { opacity: 1, duration: .15 }, .95)
+    .to(litems[1], { opacity: 0, duration: .15 }, 1.7)
+    .to('.lcol',   { xPercent: -66.6666, duration: .55, ease: 'power1.inOut' }, 1.72)
+    .to(litems[2], { opacity: 1, duration: .15 }, 1.95)
+    .to({}, { duration: .35 });
+
+  /* ----- features: column reveals ----- */
+  gsap.utils.toArray('.fcol').forEach((col, i) => {
+    gsap.to(col, {
+      opacity: 1, y: 0, duration: .75, ease: 'power2.out', delay: i * .12,
+      scrollTrigger: { trigger: '.fcols', start: 'top 82%', toggleActions: 'play none none reverse' }
+    });
+  });
+
+  /* ----- reviews: scroll-swipe deck ----- */
+  const tSegs = tCards.length - 1; /* 4 swipes for 5 cards */
+  const deckTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#voices', start: 'top top',
+      end: () => '+=' + Math.round(innerHeight * .65 * tSegs),
+      pin: true, scrub: 0.4
+    }
+  });
+  for (let s = 0; s < tSegs; s++) {
+    const front = tCards[s];
+    /* front card swings out right, then tucks in at the back of the pile */
+    deckTl
+      .to(front, { x: 480, y: -26, rotation: 15, duration: .48, ease: 'power2.in' }, s)
+      .set(front, { zIndex: 30 - s }, s + .5)
+      .to(front, { ...tSlots[tSlots.length - 1], duration: .42, ease: 'power2.out' }, s + .52);
+    /* the rest of the pile shuffles one pose forward */
+    for (let j = s + 1; j < tCards.length; j++) {
+      deckTl.to(tCards[j], {
+        ...tSlots[Math.min(j - s - 1, tSlots.length - 1)],
+        duration: .5, ease: 'power1.inOut'
+      }, s + .3);
+    }
+  }
+  deckTl.to({}, { duration: .25 });
+
+  /* ----- chapter 4: finish flip ----- */
+  const finishTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#finish', start: 'top top', end: () => '+=' + Math.round(innerHeight * 1.8), pin: true, scrub: 0.4,
+      onUpdate(self) {
+        const dark = self.progress > .5;
+        document.getElementById('finish').classList.toggle('flipped', dark);
+        document.getElementById('pillLight').classList.toggle('on', !dark);
+        document.getElementById('pillDark').classList.toggle('on', dark);
+        document.body.classList.toggle('went-dark', dark);
+      }
+    }
+  });
+  finishTl
+    .to('#finish .shade',      { opacity: 1, duration: 1, ease: 'none' }, 0)
+    .to('#finish .dark-layer', { opacity: 1, duration: 1, ease: 'none' }, 0);
+
+  /* keep the page dark once the story ends there */
+  ScrollTrigger.create({
+    trigger: '#end', start: 'top 80%',
+    onEnter: () => document.body.classList.add('went-dark'),
+  });
+
+  /* ----- chapter 5: outro reveals ----- */
+  gsap.utils.toArray('#end .reveal').forEach((el, i) => {
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: .8, ease: 'power2.out', delay: i * .12,
+      scrollTrigger: { trigger: '#end', start: 'top 55%', toggleActions: 'play none none reverse' }
+    });
+  });
+
+  /* soft intro on load (after the loader clears) */
+  gsap.from('#hero .title-group > *', { opacity: 0, y: 26, duration: .9, ease: 'power2.out', stagger: .09, delay: 1.3 });
+
+  /* defensive refreshes for late layout settles */
+  addEventListener('load', () => ScrollTrigger.refresh());
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) ScrollTrigger.refresh(); });
+}
+</script>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+/* =========================================================
+   the nine floating keycaps, rebuilt as real geometry
+   — same sizes, same colours, same drift as the CSS version
+   ========================================================= */
+import * as THREE from 'three';
+
+const MK    = window.MK78;
+const hero  = document.getElementById('hero');
+const wrap  = document.getElementById('heroCaps');
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const webglOK = () => {
+  try {
+    const c = document.createElement('canvas');
+    return !!(window.WebGL2RenderingContext && c.getContext('webgl2'))
+        || !!(window.WebGLRenderingContext  && c.getContext('webgl'));
+  } catch (e) { return false; }
+};
+
+/* anything short of a clean boot leaves the CSS keycaps in charge */
+if (MK && hero && wrap && webglOK()) {
+  try { boot(); }
+  catch (err) {
+    console.warn('MK·78: 3D keycaps unavailable, falling back to CSS —', err);
+    wrap.classList.remove('gl-on');
+    const c = document.getElementById('capsGL');
+    if (c) c.remove();
+  }
+}
+
+function boot() {
+
+/* ---------- the numbers, lifted from the stylesheet ---------- */
+const TILE_H = 48, TILE_R = 10, TILE_D = 11.5, TILE_B = 1.7;  /* housing */
+const CAP_H  = 38, CAP_D  = 10, CAP_B  = 2.4;                 /* keycap  */
+const CAP_INSET = 12;                                         /* wide caps: width - 12 */
+const TILE_TOP = TILE_D / 2;                                  /* the tile's flat face */
+const CAP_Z    = TILE_TOP + 3.2;                              /* cap centre — its skirt sinks into the tile */
+const PRESS  = 2.6;
+const LED_Y  = TILE_H / 2 - 10.5, LED_R = 1.6;                /* .key::after — top:9px, 3px across */
+
+/* opening beat: huddle in the middle behind the loader, then burst outward */
+const INTRO_AT = 1.5, INTRO_STEP = 0.05, HUDDLE = 48, HUDDLE_S = 0.34;
+/* cursor magnetism */
+const PULL_R = 290, PULL_MAX = 44;
+
+const INK      = '#c2c2c8';
+const CAP_C1   = '#31313a', CAP_C2 = '#232328';   /* .key::before gradient */
+const ESC_C1   = '#ff6f31', ESC_C2 = '#dd4a11';   /* the esc button */
+const LED_OFF  = new THREE.Color(0x8d8d97);
+const LED_ON   = new THREE.Color(0xff6a2b);
+
+/* ---------- the cast — positions match the CSS capSpecs exactly ---------- */
+const SPECS = [
+  { code:'KeyM',     kind:'letter', text:'M',  w:50, x:.10, y:.16, s:1.5,  rz:-9, bob:5.4, ph:-1.2, depth:26 },
+  { code:'KeyA',     kind:'letter', text:'A',  w:50, x:.84, y:.14, s:1.2,  rz: 7, bob:4.6, ph:-2.8, depth:18 },
+  { code:'KeyG',     kind:'letter', text:'G',  w:50, x:.06, y:.62, s:1.1,  rz: 6, bob:6.2, ph:-0.6, depth:14, small:1 },
+  { code:'KeyI',     kind:'letter', text:'I',  w:50, x:.90, y:.58, s:1.35, rz:-6, bob:5.0, ph:-3.4, depth:22 },
+  { code:'KeyC',     kind:'letter', text:'C',  w:50, x:.19, y:.84, s:1.05, rz: 8, bob:4.4, ph:-1.8, depth:12, small:1 },
+  { code:'MetaLeft', kind:'mod',    glyph:'⌘', text:'command', w:64, x:.76, y:.80, s:1.25, rz:-7, bob:5.8, ph:-2.2, depth:20 },
+  { code:'Escape',   kind:'corner', text:'esc', accent:1, w:88, x:.26, y:.10, s:.95, rz: 5, bob:6.6, ph:-4.0, depth:10, small:1 },
+  { code:'F6',       kind:'fkey',   icon:'moon', text:'F6', w:50, x:.68, y:.32, s:.90, rz:-5, bob:4.8, ph:-0.9, depth:8,  small:1 },
+  { code:'F8',       kind:'fkey',   icon:'play', text:'F8', w:50, x:.45, y:.11, s:.85, rz: 9, bob:5.6, ph:-3.0, depth:6,  small:1 }
+];
+
+let boot3d = null;                 /* the loader's keycap, torn down when the loader clears */
+
+/* ---------- renderer ---------- */
+const canvas = document.createElement('canvas');
+canvas.id = 'capsGL';
+wrap.appendChild(canvas);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setClearAlpha(0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
+
+const scene  = new THREE.Scene();
+const FOV    = 26;
+const camera = new THREE.PerspectiveCamera(FOV, 1, 10, 6000);
+let camDist  = 1000;
+scene.add(camera);
+
+/* ---------- light: a soft overhead studio, like the CSS shadows imply ---------- */
+lightRig(scene);
+scene.environment = buildEnv();
+
+function buildEnv(rr = renderer) {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 256;
+  const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, 256);
+  grd.addColorStop(0.00, '#f7f7f5');
+  grd.addColorStop(0.42, '#dededb');
+  grd.addColorStop(0.54, '#8f8f8b');       /* keep the horizon down — the walls reflect it edge-on */
+  grd.addColorStop(1.00, '#3c3c39');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const pmrem = new THREE.PMREMGenerator(rr);
+  const env = pmrem.fromEquirectangular(tex).texture;
+  pmrem.dispose(); tex.dispose();
+  return env;
+}
+
+/* the same lighting rig, for whichever scene asks for it */
+function lightRig(target) {
+  target.add(new THREE.HemisphereLight(0xffffff, 0x8e8e8a, 0.55));
+  const a = new THREE.DirectionalLight(0xffffff, 1.45); a.position.set(-260, 620, 520);
+  const b = new THREE.DirectionalLight(0xf3e7de, 0.45); b.position.set(480, -180, 340);
+  const c = new THREE.DirectionalLight(0xffffff, 0.35); c.position.set(120, 260, -420);
+  target.add(a, b, c);
+}
+
+/* ---------- shapes ----------
+   The slab is built by hand rather than with ExtrudeGeometry: its bevel
+   routine divides by the edge's dy, so a perfectly horizontal contour
+   edge — which every rounded rectangle has — throws a spike off the side. */
+
+/* the rounded-rect outline as arc parameters, so any inset re-uses the same ring topology */
+function slabOutline(w, h, r, seg) {
+  const hw = Math.max(0, w / 2 - r), hh = Math.max(0, h / 2 - r);
+  const pts = [];
+  for (let c = 0; c < 4; c++) {
+    const cx = (c === 0 || c === 3) ? hw : -hw;
+    const cy = (c === 0 || c === 1) ? hh : -hh;
+    for (let i = 0; i <= seg; i++) {
+      const a = (c + i / seg) * (Math.PI / 2);
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      const p = pts[pts.length - 1];
+      if (p && Math.hypot(p.x - x, p.y - y) < 1e-4) continue;   /* circles collapse the straight edges */
+      pts.push({ cx, cy, a, x, y });
+    }
+  }
+  const f = pts[0], l = pts[pts.length - 1];
+  if (pts.length > 2 && Math.hypot(f.x - l.x, f.y - l.y) < 1e-4) pts.pop();
+  return pts;
+}
+
+/* a slab with quarter-round fillets top and bottom, centred on z, footprint exactly w x h.
+   UVs are a flat top-down projection, so one texture wraps the face and its shoulder. */
+function roundedSlab(w, h, r, d, b, seg) {
+  const outline = slabOutline(w, h, r, seg);
+  const M = outline.length;
+  const FIL = 5;
+
+  const rings = [];
+  for (let k = 0; k <= FIL; k++) {                    /* bottom fillet, flat face -> wall */
+    const th = (k / FIL) * Math.PI / 2;
+    rings.push({ inset: b * (1 - Math.sin(th)), z: -d / 2 + b * (1 - Math.cos(th)),
+                 rad: Math.sin(th), up: -Math.cos(th) });
+  }
+  for (let k = FIL; k >= 0; k--) {                    /* top fillet, wall -> flat face */
+    const th = (k / FIL) * Math.PI / 2;
+    rings.push({ inset: b * (1 - Math.sin(th)), z: d / 2 - b * (1 - Math.cos(th)),
+                 rad: Math.sin(th), up: Math.cos(th) });
+  }
+
+  const pos = [], nor = [], uv = [], idx = [];
+  const put = (x, y, z, nx, ny, nz) => {
+    pos.push(x, y, z); nor.push(nx, ny, nz); uv.push(x / w + 0.5, y / h + 0.5);
+    return pos.length / 3 - 1;
+  };
+
+  const ringAt = [];
+  rings.forEach(ring => {
+    ringAt.push(pos.length / 3);
+    const rr = Math.max(0.001, r - ring.inset);
+    outline.forEach(p => {
+      const ox = Math.cos(p.a), oy = Math.sin(p.a);
+      put(p.cx + ox * rr, p.cy + oy * rr, ring.z, ox * ring.rad, oy * ring.rad, ring.up);
+    });
+  });
+  for (let j = 0; j < rings.length - 1; j++) {
+    const lo = ringAt[j], hi = ringAt[j + 1];
+    for (let i = 0; i < M; i++) {
+      const n = (i + 1) % M;
+      idx.push(lo + i, lo + n, hi + n, lo + i, hi + n, hi + i);   /* CCW seen from outside */
+    }
+  }
+
+  /* the two flat faces, as fans off a centre vertex */
+  [[-1, 0], [1, rings.length - 1]].forEach(([dir, ringIdx]) => {
+    const ring = rings[ringIdx];
+    const rr = Math.max(0.001, r - ring.inset);
+    const mid = put(0, 0, ring.z, 0, 0, dir);
+    const base = pos.length / 3;
+    outline.forEach(p => put(p.cx + Math.cos(p.a) * rr, p.cy + Math.sin(p.a) * rr, ring.z, 0, 0, dir));
+    for (let i = 0; i < M; i++) {
+      const n = (i + 1) % M;
+      if (dir > 0) idx.push(mid, base + i, base + n);
+      else         idx.push(mid, base + n, base + i);
+    }
+  });
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal',   new THREE.Float32BufferAttribute(nor, 3));
+  geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  return geo;
+}
+
+/* ---------- springs ---------- */
+const SUB = 1 / 120;
+function springStep(s, target, k, c, dt) {
+  let n = Math.min(8, Math.max(1, Math.ceil(dt / SUB)));
+  const h = dt / n;
+  while (n--) {
+    s.v += ((target - s.x) * k - s.v * c) * h;
+    s.x += s.v * h;
+  }
+}
+
+/* ---------- keycap face art: gradient + legend, baked into one texture ---------- */
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+const SS   = 10;                                  /* supersample factor */
+
+function tracked(g, text, cx, cy, tracking) {
+  const chars = [...text];
+  const w = chars.map(c => g.measureText(c).width);
+  const total = w.reduce((a, b) => a + b, 0) + tracking * (chars.length - 1);
+  let x = cx - total / 2;
+  g.textAlign = 'left';
+  chars.forEach((c, i) => { g.fillText(c, x, cy); x += w[i] + tracking; });
+  g.textAlign = 'center';
+}
+
+function svgURL(markup, color) {
+  const s = markup
+    .replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+    .replace(/currentColor/g, color)
+    .replace(/ width="([\d.]+)"/,  (m, v) => ' width="'  + v * 16 + '"')
+    .replace(/ height="([\d.]+)"/, (m, v) => ' height="' + v * 16 + '"');
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+}
+
+function faceTexture(spec, fw, fh) {
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(fw * SS); cv.height = Math.round(fh * SS);
+  const g = cv.getContext('2d');
+  g.scale(SS, SS);
+
+  const ink = spec.accent ? '#ffffff' : INK;
+  const grd = g.createLinearGradient(0, 0, 0, fh);
+  grd.addColorStop(0, spec.accent ? ESC_C1 : CAP_C1);
+  grd.addColorStop(1, spec.accent ? ESC_C2 : CAP_C2);
+  g.fillStyle = grd; g.fillRect(0, 0, fw, fh);
+
+  const cx = fw / 2, cy = fh / 2;
+  g.fillStyle = ink;
+  g.textBaseline = 'middle';
+  g.textAlign = 'center';
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+  if (spec.kind === 'letter') {                       /* .letter — 10.5px / 600 */
+    g.font = '600 10.5px ' + MONO;
+    g.fillText(spec.text, cx, cy);
+
+  } else if (spec.kind === 'corner') {                /* .corner — 7px / 600 / .14em, uppercase */
+    g.font = '600 7px ' + MONO;
+    tracked(g, spec.text.toUpperCase(), cx, cy + 1, 7 * 0.14);
+
+  } else if (spec.kind === 'mod') {                   /* .mod — glyph 9.5px over name 6px, gap 2 */
+    const top = cy + 1.5 - 17.5 / 2;
+    g.font = '9.5px ' + MONO;
+    g.fillText(spec.glyph, cx, top + 9.5 / 2);
+    g.font = '600 6px ' + MONO;
+    tracked(g, spec.text.toUpperCase(), cx, top + 9.5 + 2 + 3, 6 * 0.03);
+
+  } else if (spec.kind === 'fkey') {                  /* .fk — 11px icon at .9 over a 7px label */
+    const ic = 11 * 0.9, top = cy + 1.5 - (ic + 2 + 7) / 2;
+    g.font = '600 7px ' + MONO;
+    g.fillText(spec.text, cx, top + ic + 2 + 3.5);
+    const img = new Image();
+    img.onload = () => { g.drawImage(img, cx - ic / 2, top, ic, ic); tex.needsUpdate = true; };
+    img.src = svgURL(MK.icons[spec.icon], ink);
+  }
+  return tex;
+}
+
+/* ---------- shadow plates, blurred to the same numbers the CSS uses ----------
+   `0 14px 30px -10px` under the key, `0 2.5px 5px` under the cap
+   (a CSS blur radius is 2 sigma, so canvas blur() gets half of it)          */
+const SH_SS = 2;
+const DROP = { blur: 15, spread: -10, dy: 14, alpha: 0.4 };
+const SEAT = { blur: 2.5, spread: 0,   dy: 2.5, alpha: 0.5 };
+
+function shadowPlate(w, h, r, o) {
+  const pad = Math.max(6, o.blur * 3);
+  const cw = w + pad * 2, ch = h + pad * 2;
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(cw * SH_SS); cv.height = Math.round(ch * SH_SS);
+  const g = cv.getContext('2d');                     /* drawn in device px so `filter` scales with it */
+  g.filter = 'blur(' + o.blur * SH_SS + 'px)';
+  g.fillStyle = '#000';
+  const iw = (w + o.spread) * SH_SS, ih = (h + o.spread) * SH_SS;
+  const ir = Math.max(1, r + o.spread / 2) * SH_SS;
+  const ox = (pad - o.spread / 2) * SH_SS, oy = (pad - o.spread / 2) * SH_SS;
+  g.beginPath();
+  if (g.roundRect) g.roundRect(ox, oy, iw, ih, ir);
+  else g.rect(ox, oy, iw, ih);
+  g.fill();
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return { tex, w: cw, h: ch };
+}
+
+const glowTex = (() => {
+  const n = 128, cv = document.createElement('canvas');
+  cv.width = cv.height = n;
+  const g = cv.getContext('2d');
+  const grd = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+  grd.addColorStop(0.00, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.25, 'rgba(255,255,255,.45)');
+  grd.addColorStop(1.00, 'rgba(255,255,255,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, n, n);
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+})();
+
+mountLoaderKey();
+
+/* ---------- build one key ----------
+   Returns the pieces unparented, so the hero and the boot loader can each
+   mount the same keycap into their own scene.                            */
+function buildKey(spec) {
+  const tileW = spec.w;
+  const capW  = tileW > 50 ? tileW - CAP_INSET : CAP_H;   /* circle on square keys, pill on wide ones */
+
+  const body = new THREE.Group();
+  body.rotation.order = 'ZYX';
+
+  /* housing */
+  /* the walls sit edge-on to the camera, where Fresnel runs to 1 — keep the
+     gloss and the environment restrained or the rims blow out to white */
+  const tileMat = new THREE.MeshPhysicalMaterial({
+    color: 0x1d1d21, roughness: 0.55, metalness: 0.0,
+    envMapIntensity: 0.38, specularIntensity: 0.5,
+    clearcoat: 0.25, clearcoatRoughness: 0.45,
+    transparent: true, depthWrite: true
+  });
+  const tile = new THREE.Mesh(roundedSlab(tileW, TILE_H, TILE_R, TILE_D, TILE_B, 8), tileMat);
+  body.add(tile);
+
+  /* the cap's own shadow, pooled on the housing — this is what sells the lift */
+  const seat = shadowPlate(capW, CAP_H, CAP_H / 2, SEAT);
+  const seatMat = new THREE.MeshBasicMaterial({
+    map: seat.tex, color: 0x000000, transparent: true, opacity: SEAT.alpha, depthWrite: false
+  });
+  const seatMesh = new THREE.Mesh(new THREE.PlaneGeometry(seat.w, seat.h), seatMat);
+  seatMesh.position.set(0, -SEAT.dy, TILE_TOP + 0.3);
+  seatMesh.renderOrder = 1;
+  body.add(seatMesh);
+
+  /* keycap — gradient + legend projected straight down over face and shoulder */
+  const capMat = new THREE.MeshPhysicalMaterial({
+    map: faceTexture(spec, capW, CAP_H), roughness: 0.36, metalness: 0.0,
+    envMapIntensity: 0.5, specularIntensity: 0.55,
+    clearcoat: 0.45, clearcoatRoughness: 0.35,
+    transparent: true, depthWrite: true
+  });
+  const cap = new THREE.Mesh(roundedSlab(capW, CAP_H, CAP_H / 2, CAP_D, CAP_B, 14), capMat);
+  cap.renderOrder = 2;
+  const capGroup = new THREE.Group();
+  capGroup.position.z = CAP_Z;
+  capGroup.add(cap);
+  body.add(capGroup);
+
+  /* LED — rides the cap, exactly like `.key::after` sits over `.key::before` */
+  const ledMat = new THREE.MeshBasicMaterial({ color: LED_OFF.clone(), transparent: true, opacity: 0.3, depthWrite: false });
+  const led = new THREE.Mesh(new THREE.CircleGeometry(LED_R, 20), ledMat);
+  led.position.set(0, LED_Y, CAP_D / 2 + 0.12);
+  led.renderOrder = 3;
+  capGroup.add(led);
+
+  const glowMat = new THREE.MeshBasicMaterial({
+    map: glowTex, color: LED_ON.clone(), transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(15, 15), glowMat);
+  glow.position.copy(led.position); glow.position.z += 0.08;
+  glow.renderOrder = 4;
+  capGroup.add(glow);
+
+  /* drop shadow — lives outside `body` so it never tilts with the key */
+  const plate = shadowPlate(tileW, TILE_H, TILE_R, DROP);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    map: plate.tex, color: 0x14140f, transparent: true, opacity: DROP.alpha, depthWrite: false
+  });
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(plate.w, plate.h), shadowMat);
+  shadow.position.set(0, -DROP.dy, -TILE_D / 2 - 8);
+  shadow.renderOrder = -1;
+
+  return { body, capGroup, shadow, shadowMat, seatMat, ledMat, glowMat,
+           mats: [tileMat, capMat], tileW, capZ: capGroup.position.z };
+}
+
+const keys = [];
+
+SPECS.forEach((spec, i) => {
+  const part = buildKey(spec);
+  const holder = new THREE.Group();
+  holder.add(part.body);
+  holder.add(part.shadow);
+  scene.add(holder);
+
+  keys.push({
+    ...part,
+    spec, holder,
+    baseZ: (spec.depth - 14) * 2.2,
+    /* a little static attitude so each cap reads as a solid, not a sticker */
+    tiltX: -0.16 + (i % 3) * 0.035,
+    tiltY: (i % 2 ? 1 : -1) * (0.12 + (i % 4) * 0.03),
+    press: 0, pressTarget: 0,
+    exitDelay: [0.10, 0.26, 0.00, 0.19, 0.31, 0.06, 0.35, 0.14, 0.23][i],
+    type: MK.keyType(spec.code),
+    baseX: 0, baseY: 0, dirX: 0, dirY: 0, fit: spec.s,
+    /* the burst out of the huddle, and the pull toward the cursor */
+    intro: { x: REDUCED ? 1 : 0, v: 0 },
+    introAt: INTRO_AT + i * INTRO_STEP,
+    spin: (i % 2 ? 1 : -1) * (0.8 + (i % 3) * 0.35),
+    pullX: { x: 0, v: 0 }, pullY: { x: 0, v: 0 }
+  });
+});
+
+/* ---------- boot loader: one real keycap where the pulsing dot used to be ----------
+   Its own tiny renderer, so it can live inside the loader overlay instead of
+   fighting the hero canvas for stacking order. Torn down when the loader clears. */
+function mountLoaderKey() {
+  const loader = document.getElementById('loader');
+  const slot = document.getElementById('loadSlot');
+  if (!loader || !slot || loader.classList.contains('done')) return;
+
+  const LW = slot.clientWidth || 140, LH = slot.clientHeight || 140;
+  const cv = document.createElement('canvas');
+  let rr;
+  try { rr = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); }
+  catch (e) { return; }                                  /* loader just runs without a mark */
+  rr.setClearAlpha(0);
+  rr.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  rr.setSize(LW, LH, false);
+  rr.toneMapping = THREE.ACESFilmicToneMapping;
+  rr.toneMappingExposure = 1.12;
+
+  const sc = new THREE.Scene();
+  lightRig(sc);
+  sc.environment = buildEnv(rr);
+
+  const cam = new THREE.PerspectiveCamera(FOV, LW / LH, 10, 2000);
+  cam.position.set(0, 0, (LH / 2) / Math.tan(FOV / 2 * Math.PI / 180));
+
+  /* a square esc — keeps the loader's orange accent, and reads better turning than a pill */
+  const part = buildKey({ code: 'Escape', kind: 'corner', text: 'esc', accent: 1, w: 50 });
+  /* pull the shadow in so it stays inside the canvas — nothing to catch it out here anyway */
+  part.shadow.scale.setScalar(0.7);
+  part.shadow.position.y = -DROP.dy * 0.7;
+
+  const g = new THREE.Group();
+  g.add(part.body, part.shadow);
+  g.scale.setScalar(1.6);
+  sc.add(g);
+
+  slot.appendChild(cv);
+  requestAnimationFrame(() => cv.classList.add('in'));
+  boot3d = { rr, sc, cam, g, part, cv, loader };
+
+  /* let it go when the loader does */
+  new MutationObserver(() => {
+    if (!loader.classList.contains('done') || !boot3d) return;
+    setTimeout(() => {
+      if (!boot3d) return;
+      boot3d.rr.dispose();
+      boot3d.rr.forceContextLoss();
+      boot3d.cv.remove();
+      boot3d = null;
+    }, 700);                                             /* after the .55s fade */
+  }).observe(loader, { attributes: true, attributeFilter: ['class'] });
+}
+
+function drawLoaderKey(t) {
+  const { rr, sc, cam, g, part } = boot3d;
+  const turn = REDUCED ? 0 : 1;
+  part.body.rotation.y = turn * Math.sin(t * 1.15) * 0.72;      /* rocks, never edge-on */
+  part.body.rotation.x = -0.2 + turn * Math.sin(t * 0.83) * 0.07;
+  part.body.rotation.z = turn * Math.sin(t * 0.61) * 0.05;
+  g.position.y = turn * Math.sin(t * 1.5) * 3.5;
+  part.capGroup.position.z = part.capZ - PRESS * (turn ? Math.max(0, Math.sin(t * 2.3) - 0.86) * 7 : 0);
+  rr.render(sc, cam);
+}
+
+/* ---------- layout ---------- */
+let W = 0, H = 0;
+const pickable = [];
+function layout() {
+  W = wrap.clientWidth || innerWidth;
+  H = wrap.clientHeight || innerHeight;
+  if (!W || !H) return;
+
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.setSize(W, H, false);
+  camera.aspect = W / H;
+  camDist = (H / 2) / Math.tan(FOV / 2 * Math.PI / 180);
+  camera.position.set(0, 0, camDist);
+  camera.updateProjectionMatrix();
+
+  const wide = W > 900;
+  pickable.length = 0;
+  keys.forEach(k => {
+    const s = k.spec;
+    k.holder.visible = wide || !s.small;
+    if (k.holder.visible) pickable.push(k.body);
+    const cx = s.x * W + k.tileW / 2;
+    const cy = s.y * H + TILE_H / 2;
+    k.baseX = cx - W / 2;
+    k.baseY = H / 2 - cy;
+    const len = Math.hypot(k.baseX, k.baseY) || 1;
+    k.dirX = k.baseX / len; k.dirY = k.baseY / len;   /* which way it flies out of the huddle */
+    k.holder.position.z = k.baseZ;
+    /* hold the on-screen size steady no matter how far back the key sits */
+    k.fit = s.s * (camDist - k.baseZ) / camDist;
+  });
+}
+
+/* ---------- pointer ---------- */
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let mx = 0, my = 0, hovered = null, downKey = null, pointerIn = false;
+
+function pick(ev) {
+  const r = wrap.getBoundingClientRect();
+  ndc.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+  ndc.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(pickable, true);
+  if (!hits.length) return null;
+  let o = hits[0].object;
+  while (o && !o.userData.key) { o = o.parent; }
+  return o ? o.userData.key : null;
+}
+
+keys.forEach(k => k.body.traverse(o => { o.userData.key = k; }));
+
+hero.addEventListener('pointermove', ev => {
+  const r = wrap.getBoundingClientRect();
+  mx = (ev.clientX - r.left) / r.width - 0.5;
+  my = (ev.clientY - r.top) / r.height - 0.5;
+  pointerIn = ev.pointerType !== 'touch';
+  if (MK.exit.p > 0.05) { setHover(null); return; }
+  setHover(pick(ev));
+});
+hero.addEventListener('pointerleave', () => { mx = my = 0; pointerIn = false; setHover(null); });
+
+function setHover(k) {
+  if (hovered === k) return;
+  hovered = k;
+  hero.classList.toggle('gl-hot', !!k);
+}
+
+hero.addEventListener('pointerdown', ev => {
+  if (MK.exit.p > 0.05) return;
+  const k = pick(ev);
+  if (!k) return;
+  ev.preventDefault();
+  downKey = k;
+  k.pressTarget = 1;
+  MK.Snd.press(k.type);
+  MK.pulseEq();
+  MK.showUserChar(MK.labelFor(k.spec.code));
+});
+['pointerup', 'pointercancel'].forEach(ev =>
+  addEventListener(ev, () => {
+    if (!downKey) return;
+    MK.Snd.release(downKey.type);
+    downKey.pressTarget = 0;
+    downKey = null;
+  }));
+
+/* typing on the real keyboard lights the matching cap */
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey) return;
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  keys.forEach(k => { if (k.spec.code === e.code) k.pressTarget = 1; });
+});
+addEventListener('keyup', e => { keys.forEach(k => { if (k.spec.code === e.code) k.pressTarget = 0; }); });
+addEventListener('blur', () => keys.forEach(k => { k.pressTarget = 0; }));
+
+/* ---------- frame ---------- */
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+let px = 0, py = 0, last = performance.now(), idle = 0, started = false;
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (boot3d) drawLoaderKey(now / 1000);
+  if (!W || !H) { layout(); return; }
+
+  const t  = now / 1000;                                  /* seconds since the page opened */
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const e  = Math.min(1, Math.max(0, MK.exit.p));
+
+  /* a slow three.js download can leave the opening beat in the past — don't replay it */
+  if (!started) {
+    started = true;
+    if (t > INTRO_AT + 1.2) keys.forEach(k => { k.intro.x = 1; });
+  }
+
+  /* stop drawing once the caps have fallen out of the story */
+  if (e >= 0.999) { if (idle++ > 2) return; } else idle = 0;
+
+  /* frame-rate independent easing */
+  const ease = 1 - Math.exp(-dt * 5), snap = 1 - Math.exp(-dt * 26);
+  px = lerp(px, mx, ease);
+  py = lerp(py, my, ease);
+
+  const ptrX = mx * W, ptrY = -my * H;                    /* cursor, in the same units as the keys */
+  const magnetOn = pointerIn && e < 0.05;
+
+  keys.forEach(k => {
+    if (!k.holder.visible) return;
+    const s = k.spec;
+
+    /* huddle -> burst, on a spring that overshoots and settles */
+    if (t >= k.introAt) springStep(k.intro, 1, 90, 11, dt);
+    const ix = k.intro.x;
+    const settled = clamp01(ix);
+
+    /* magnetism: leaning toward the cursor, springing back once it's out of range */
+    let tx = 0, ty = 0;
+    if (magnetOn && settled > 0.85) {
+      const dx = ptrX - k.baseX, dy = ptrY - k.baseY;
+      const d = Math.hypot(dx, dy);
+      if (d < PULL_R) {
+        const f = 1 - d / PULL_R;
+        const amt = Math.min(Math.min(d, PULL_MAX) * f * f * 1.4, d * 0.8);  /* never overshoot the cursor */
+        tx = dx / (d || 1) * amt;
+        ty = dy / (d || 1) * amt;
+      }
+    }
+    springStep(k.pullX, tx, 110, 13, dt);
+    springStep(k.pullY, ty, 110, 13, dt);
+    const pullMag = Math.hypot(k.pullX.x, k.pullY.x) / PULL_MAX;
+
+    /* the CSS `bob` keyframe: 0 -> -16px -> 0, ease-in-out */
+    const bob = REDUCED ? 0 : (8 - 8 * Math.cos(2 * Math.PI * (t - s.ph) / s.bob)) * settled;
+
+    /* scroll exit — falls, shrinks, fades, tumbles a touch */
+    const ex = clamp01((e - k.exitDelay) / (1 - 0.36));
+    const easeIn = ex * ex;
+
+    const hx = k.dirX * HUDDLE, hy = k.dirY * HUDDLE;
+    k.holder.position.x = hx + (k.baseX - hx) * ix + k.pullX.x - px * s.depth;
+    k.holder.position.y = hy + (k.baseY - hy) * ix + k.pullY.x - py * s.depth + bob - 460 * easeIn;
+    k.holder.position.z = k.baseZ + pullMag * 14;
+    k.holder.scale.setScalar(k.fit * (HUDDLE_S + (1 - HUDDLE_S) * ix) * (1 + pullMag * 0.05) * (1 - 0.45 * easeIn));
+
+    k.press = lerp(k.press, k.pressTarget, snap);
+    k.capGroup.position.z = k.capZ - PRESS * k.press;
+
+    const wob = REDUCED ? 0 : 1;
+    const tumble = (1 - settled) * k.spin;
+    k.body.rotation.z = -s.rz * Math.PI / 180 + tumble
+                      + wob * Math.sin(t * 0.31 + s.ph) * 0.03 * settled
+                      + easeIn * (s.rz > 0 ? 0.5 : -0.5);
+    k.body.rotation.y = k.tiltY + px * 0.38 + tumble * 0.5 + wob * Math.sin(t * 0.43 + s.ph * 1.7) * 0.045 * settled;
+    k.body.rotation.x = k.tiltX - py * 0.38 - tumble * 0.4 + wob * Math.sin(t * 0.37 + s.ph * 1.3) * 0.045 * settled;
+
+    /* LED: dim white at rest, orange under the finger */
+    k.ledMat.color.copy(LED_OFF).lerp(LED_ON, k.press);
+    k.ledMat.opacity = (0.3 + 0.7 * k.press) * (1 - easeIn);
+    k.glowMat.opacity = 0.85 * k.press * (1 - easeIn);
+
+    const appear = REDUCED ? 1 : clamp01((t - INTRO_AT + 0.28) / 0.3);
+    const fade = (1 - easeIn) * appear;
+    k.mats.forEach(m => { m.opacity = fade; });
+    k.seatMat.opacity = SEAT.alpha * (1 - 0.55 * k.press) * fade;
+    k.shadowMat.opacity = DROP.alpha * fade * fade * settled;
+    k.shadow.scale.setScalar(1 - 0.05 * k.press);
+  });
+
+  renderer.render(scene, camera);
+}
+
+/* ---------- go ---------- */
+layout();
+wrap.classList.add('gl-on');
+requestAnimationFrame(frame);
+
+addEventListener('resize', layout);
+if (window.ResizeObserver) new ResizeObserver(layout).observe(wrap);
+addEventListener('load', layout);
+
+/* if the GPU drops us, hand the hero back to the CSS keycaps */
+canvas.addEventListener('webglcontextlost', e => {
+  e.preventDefault();
+  wrap.classList.remove('gl-on');
+  canvas.style.display = 'none';
+});
+
+}
+</script>
+</body>
+</html>

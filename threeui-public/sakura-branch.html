@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sakura Branch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font-family: 'Inter', system-ui, sans-serif; color: #fff; background: #d4738a; }
+
+  /* white on a warm sky is far lower contrast than white on blue — a soft
+     plum shadow buys back legibility without darkening the type */
+  .logo, h1, .hero-note p, .hero-scroll span, .hero-year span, .nav-pill button, .menu-btn {
+    text-shadow: 0 1px 14px rgba(104, 32, 62, .30);
+  }
+
+  /* Sky at golden hour: plum overhead falling away to an apricot glow low
+     on the right. Painted into a 1280x714 box scaled to cover. */
+  .sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; }
+  .sky::before {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width:  max(100vw, 179.272vh);
+    height: max(100vh, 55.781vw);
+    transform: translate(-50%, -50%);
+    background: radial-gradient(100% 125% at 130% 240%,
+      rgb(255,238,211) 116.0%, rgb(255,227,195) 122.1%, rgb(255,217,179) 128.2%,
+      rgb(254,206,166) 134.3%, rgb(253,194,155) 140.4%, rgb(252,182,145) 146.5%,
+      rgb(250,171,139) 152.6%, rgb(248,160,135) 158.7%, rgb(245,150,131) 164.8%,
+      rgb(242,140,128) 170.9%, rgb(236,130,128) 177.0%, rgb(230,121,128) 183.1%,
+      rgb(225,111,128) 189.2%, rgb(216,103,127) 195.3%, rgb(206,95,126)  201.4%,
+      rgb(196,87,125)  207.5%, rgb(185,79,123)  213.6%, rgb(173,73,119)  219.7%,
+      rgb(160,66,116)  225.8%, rgb(148,60,112)  231.9%);
+  }
+
+  .font-display { font-family: 'Playfair Display', Georgia, serif; }
+  canvas { position: fixed; inset: 0; display: block; z-index: 0; }
+
+  /* ---------------- navigation ---------------- */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px;
+  }
+  .logo { font-size: 24px; line-height: 32px; font-style: italic; font-weight: 400; }
+
+  .nav-pill {
+    display: none;
+    position: absolute; left: 50%; transform: translateX(-50%);
+    align-items: center; gap: 4px;
+    padding: 8px; border-radius: 9999px;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.3);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  }
+  .nav-pill button {
+    font: 500 14px/20px 'Inter', sans-serif;
+    color: rgba(255,255,255,.8);
+    background: none; border: 0; cursor: pointer;
+    padding: 6px 16px; border-radius: 9999px; text-align: center;
+    transition: background-color .15s ease, color .15s ease;
+  }
+  .nav-pill button.is-active { color: #fff; }
+  .nav-pill button:hover { background: rgba(255,255,255,.2); color: #fff; }
+
+  .menu-btn {
+    display: none;
+    font: 500 14px/20px 'Inter', sans-serif; color: #fff; cursor: pointer;
+    padding: 8px 20px; border-radius: 9999px;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.3);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    transition: background-color .15s ease;
+  }
+  .menu-btn:hover { background: rgba(255,255,255,.3); }
+
+  .hamburger {
+    position: relative;
+    width: 44px; height: 44px; border-radius: 9999px; cursor: pointer;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.3);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: background-color .3s ease, border-color .3s ease, transform .3s ease;
+  }
+  .hamburger:active { transform: scale(.95); }
+  .hamburger .bar {
+    height: 1.5px; width: 20px; border-radius: 9999px; background: #fff;
+    transition: transform .3s cubic-bezier(.16,.84,.44,1), opacity .3s ease, background-color .3s ease;
+  }
+  .hamburger .bar-top { transform: translateY(-5px); }
+  .hamburger .bar-mid { position: absolute; }
+  .hamburger .bar-bot { transform: translateY(5px); }
+  .hamburger.open { background: #fdf3ec; border-color: #f2ddd0; }
+  .hamburger.open .bar { background: #4a2230; }
+  .hamburger.open .bar-top { transform: rotate(45deg); }
+  .hamburger.open .bar-mid { opacity: 0; transform: scaleX(0); }
+  .hamburger.open .bar-bot { transform: rotate(-45deg); }
+
+  /* ---------------- hero ---------------- */
+  .hero { position: relative; width: 100%; height: 100dvh; overflow: hidden; }
+
+  .hero-head {
+    position: absolute; top: 16%; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-left: 20px; padding-right: 20px;
+    pointer-events: none;
+  }
+  h1 { margin: 0; font-weight: 400; text-align: center; }
+  h1 .line { display: block; font-size: 60px; line-height: 1; font-weight: 400; }
+  h1 .l1 { font-style: italic; letter-spacing: -0.05em; }
+  h1 .l2 { letter-spacing: -0.08em; margin-top: -4px; }
+
+  .hero-note {
+    position: absolute; bottom: 64px; left: 20px; right: 20px; z-index: 50;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 16px;
+  }
+  .hero-note p { margin: 0; font-size: 14px; line-height: 1.625; }
+
+  .hero-scroll {
+    position: absolute; bottom: 24px; left: 20px; z-index: 50;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero-scroll .dot {
+    width: 28px; height: 28px; border-radius: 9999px; background: #fff;
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .hero-scroll .dot svg { animation: nudge 2.4s ease-in-out infinite; }
+  @keyframes nudge { 0%,70%,100% { transform: translateY(0); } 82% { transform: translateY(2px); } }
+  .hero-scroll span, .hero-year span { font-size: 12px; line-height: 16px; color: rgba(255,255,255,.72); }
+  .hero-year { position: absolute; bottom: 24px; right: 20px; z-index: 50; font-size: 16px; line-height: 24px; }
+
+  /* ---------------- entrance ---------------- */
+  .anim { opacity: 0; animation-duration: .9s; animation-timing-function: cubic-bezier(.16,.84,.44,1); animation-fill-mode: both; }
+  .reveal { animation-name: heroReveal; }
+  .fade   { animation-name: heroFade; }
+  @keyframes heroReveal { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes heroFade   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---------------- breakpoints ---------------- */
+  @media (min-width: 640px) {
+    nav { padding: 20px; }
+    h1 .line { font-size: 72px; }
+    .hero-head { padding-left: 40px; padding-right: 40px; }
+    .hero-note { bottom: 96px; left: auto; right: 40px; max-width: 268px; gap: 20px; }
+    .hero-note p { font-size: 16px; line-height: 24px; }
+    .hero-scroll { left: 40px; }
+    .hero-year { right: 40px; }
+  }
+  @media (min-width: 768px) {
+    .nav-pill { display: flex; }
+    .menu-btn { display: block; }
+    .hamburger { display: none; }
+    h1 .line { font-size: 128px; }
+    .hero-head { padding-left: 56px; padding-right: 56px; }
+    .hero-note { right: 56px; }
+    .hero-scroll { left: 56px; }
+    .hero-year { right: 56px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .anim { animation: none; opacity: 1; }
+    .hero-scroll .dot svg { animation: none; }
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<style data-threeui-sakura-branch>
+html,
+body {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+body {
+  position: relative !important;
+  background: #d4738a !important;
+}
+
+.sky,
+canvas {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+</style></head>
+<body>
+
+<div class="sky" aria-hidden="true"></div>
+
+<!-- ThreeUI scene-only presentation -->
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ------------------------------------------------------------------ *
+ * A cherry bough crosses a sunset. The main limb is a tapered tube
+ * swept along a curve; everything beyond it is grown recursively —
+ * four generations of forks thinning to twigs that carry the blossom.
+ * ------------------------------------------------------------------ */
+
+const BLADES = 11000;    // moss-grass, tufted on the old wood only
+const PETALS = 130;      // petals adrift in the air
+
+const rng = (() => {
+  let a = 0x51a7d3;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+})();
+const rand = (lo, hi) => lo + (hi - lo) * rng();
+const smoothstep = (a, b, x) => { const t = Math.min(Math.max((x - a) / (b - a), 0), 1); return t * t * (3 - 2 * t); };
+
+// ---------- renderer ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.domElement.setAttribute('aria-label', 'Interactive procedural sakura branch');
+renderer.domElement.setAttribute('role', 'img');
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(0, 1.0, 14);
+camera.lookAt(0, 1.0, 0);
+
+// low sun off to the right, where the sky's glow is — so the branch is
+// side-lit and the petals on that side light up from behind
+// Well off the limb's axis. A sun nearly parallel to the branch gives almost
+// no variation in N.L across the cross-section, and the bough renders as a
+// flat plank however good the bark texture is.
+const SUN     = new THREE.Vector3(4.0, 5.5, 3.2).normalize();
+const SUN_COL = new THREE.Vector3(1.00, 0.72, 0.46);
+const SKY_COL = new THREE.Vector3(0.86, 0.50, 0.46);
+
+// ---------- the main limb ----------
+const curve = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(-16.0,  2.6,  0.0),
+  new THREE.Vector3( -8.0, -0.6,  0.3),
+  new THREE.Vector3( -1.0, -2.0,  0.6),
+  new THREE.Vector3(  6.0, -0.6,  0.3),
+  new THREE.Vector3( 11.0,  3.0, -0.6),
+  new THREE.Vector3( 14.5,  9.5, -1.5),
+]);
+
+const R0 = 0.185, R1 = 0.042;
+function boughRadius(t) {
+  const taper = R0 + (R1 - R0) * Math.pow(t, 0.85);
+  const knot = 1 + 0.26 * Math.sin(t * 24.0 + 1.3) + 0.13 * Math.sin(t * 57.0) + 0.07 * Math.sin(t * 101.0 + 2.2);
+  return taper * knot;
+}
+
+function clumpJS(t) {
+  const c = Math.sin(t * 97.0 + 0.9) * 0.5 + Math.sin(t * 39.3 + 2.4) * 0.35 + Math.sin(t * 163.7 + 5.1) * 0.15;
+  return smoothstep(0.34, 0.72, c);
+}
+const CLUMP_GLSL = `
+  float clumpMask(float t) {
+    float c = sin(t*97.0+0.9)*0.5 + sin(t*39.3+2.4)*0.35 + sin(t*163.7+5.1)*0.15;
+    return smoothstep(0.34, 0.72, c);
+  }`;
+
+const UP = new THREE.Vector3(0, 1, 0);
+
+function boughFrame(t) {
+  const P = curve.getPointAt(t);
+  const T = curve.getTangentAt(t).normalize();
+  const B = new THREE.Vector3().crossVectors(T, UP).normalize();
+  const N = new THREE.Vector3().crossVectors(B, T).normalize();
+  return { P, T, B, N };
+}
+function boughSurface(t, th, outP, outN) {
+  const { P, B, N } = boughFrame(t);
+  const r = boughRadius(t);
+  const c = Math.cos(th), s = Math.sin(th);
+  outN.set(N.x * c + B.x * s, N.y * c + B.y * s, N.z * c + B.z * s).normalize();
+  outP.copy(P).addScaledVector(outN, r);
+}
+
+const WIND_GLSL = `
+  uniform float uTime;
+  vec3 windOffset(vec3 p) {
+    float ph = p.x * 0.16 + p.y * 0.11 + p.z * 0.30;
+    float a  = 0.048;
+    return vec3(
+      (sin(uTime*0.62 + ph) + 0.45*sin(uTime*1.43 + ph*2.3)) * a,
+      (sin(uTime*0.81 + ph*1.7)) * a * 0.40,
+      (sin(uTime*0.55 + ph*0.9)) * a * 0.55
+    );
+  }`;
+
+const NOISE_GLSL = `
+  float hash21(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+
+  // Gradient noise, not value noise. Value noise puts its extrema on the
+  // lattice, which on a tube shows up as blobs in rows; gradient noise puts
+  // zeroes there instead and reads as grain.
+  // Sin-based, and deliberately so: the cheap fract-only hashes correlate
+  // their gradients along the diagonal and weave the bark into a basket.
+  // The wings pay for this by baking their noise to a texture instead.
+  vec2 hash22(vec2 p){
+    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+    return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+  }
+  float gnoise(vec2 p){
+    vec2 i = floor(p), f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(dot(hash22(i + vec2(0,0)), f - vec2(0,0)),
+                   dot(hash22(i + vec2(1,0)), f - vec2(1,0)), u.x),
+               mix(dot(hash22(i + vec2(0,1)), f - vec2(0,1)),
+                   dot(hash22(i + vec2(1,1)), f - vec2(1,1)), u.x), u.y);
+  }
+  // each octave is rotated as well as scaled, so no octave lines up with
+  // another and the grid never resolves
+  const mat2 ROT = mat2(0.80, 0.60, -0.60, 0.80);
+  float gfbm(vec2 p){
+    float a = 0.5, s = 0.0;
+    for (int i = 0; i < 5; i++) { s += a * gnoise(p); p = ROT * p * 2.03; a *= 0.5; }
+    return s;                                   // ~[-1,1]
+  }
+  float gfbm3(vec2 p){
+    float a = 0.5, s = 0.0;
+    for (int i = 0; i < 3; i++) { s += a * gnoise(p); p = ROT * p * 2.07; a *= 0.5; }
+    return s;
+  }
+  float ridged(vec2 p){
+    float a = 0.5, s = 0.0;
+    for (int i = 0; i < 4; i++) { s += a * (1.0 - abs(gnoise(p) * 2.0)); p = ROT * p * 2.11; a *= 0.5; }
+    return s;                                   // creased ridges, ~[0,1]
+  }
+  float fbm(vec2 p){ return gfbm(p) * 0.5 + 0.5; }
+  float fbm4(vec2 p){ return gfbm(p) * 0.5 + 0.5; }
+  // one warp pass before sampling: fissures stop looking like combed noise
+  // and start meandering the way split bark does
+  float fbmw(vec2 p){
+    vec2 q = vec2(gfbm(p * 0.55 + 1.7), gfbm(p * 0.55 + 8.3));
+    return gfbm(p + q * 0.85) * 0.5 + 0.5;
+  }`;
+
+const uTime  = { value: 0 };
+const uMouse = { value: new THREE.Vector3(9999, 9999, 9999) };
+const uMouseR = { value: 2.6 };
+
+/* ================================================================== *
+ * WOOD — main limb, four generations of forks, and pedicels
+ * ================================================================== */
+const wood = { pos: [], nor: [], uvw: [], rad: [], idx: [] };
+
+function transportFrames(curve, segs) {
+  const pts = [], tans = [], nrms = [];
+  for (let i = 0; i <= segs; i++) {
+    pts.push(curve.getPointAt(i / segs));
+    tans.push(curve.getTangentAt(i / segs).normalize());
+  }
+  const ref = Math.abs(tans[0].y) < 0.9 ? UP : new THREE.Vector3(1, 0, 0);
+  nrms.push(new THREE.Vector3().crossVectors(tans[0], ref).normalize());
+  for (let i = 1; i <= segs; i++) {
+    const axis = new THREE.Vector3().crossVectors(tans[i - 1], tans[i]);
+    const n = nrms[i - 1].clone();
+    if (axis.lengthSq() > 1e-12) {
+      axis.normalize();
+      n.applyAxisAngle(axis, Math.acos(Math.min(1, Math.max(-1, tans[i - 1].dot(tans[i])))));
+    }
+    nrms.push(n.normalize());
+  }
+  return { pts, tans, nrms };
+}
+
+// youth 0 = fissured old bark, 1 = smooth red twig
+function addTube(curve, radiusFn, segs, radial, youth, vScale) {
+  const { pts, tans, nrms } = transportFrames(curve, segs);
+  const base = wood.pos.length / 3;
+  const n = new THREE.Vector3(), bi = new THREE.Vector3();
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const r = radiusFn(t);
+    bi.crossVectors(tans[i], nrms[i]).normalize();
+    for (let j = 0; j <= radial; j++) {
+      const th = (j / radial) * Math.PI * 2;
+      const c = Math.cos(th), s = Math.sin(th);
+      n.set(nrms[i].x * c + bi.x * s, nrms[i].y * c + bi.y * s, nrms[i].z * c + bi.z * s).normalize();
+      wood.pos.push(pts[i].x + n.x * r, pts[i].y + n.y * r, pts[i].z + n.z * r);
+      wood.nor.push(n.x, n.y, n.z);
+      wood.uvw.push(j / radial, t * vScale, youth);
+      wood.rad.push(r);
+    }
+  }
+  for (let i = 0; i < segs; i++) for (let j = 0; j < radial; j++) {
+    const a = base + i * (radial + 1) + j, b = a + radial + 1;
+    wood.idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+}
+
+addTube(curve, boughRadius, 280, 20, 0.0, 34.0);
+
+/* ---------- recursive growth ---------- */
+// per generation: how many forks, how much of the parent's length they keep,
+// how sharply they diverge, how strongly they reach for the light
+const GEN = [
+  { kids: [2, 3], lenMul: [0.64, 0.88], radMul: 0.58, spread: [0.45, 1.00], light: 0.12, segs: 14, radial: 7, youth: 0.22, buds: 0 },
+  { kids: [2, 3], lenMul: [0.64, 0.88], radMul: 0.57, spread: [0.50, 1.10], light: 0.14, segs: 11, radial: 6, youth: 0.46, buds: 0 },
+  { kids: [2, 3], lenMul: [0.64, 0.88], radMul: 0.56, spread: [0.55, 1.20], light: 0.06, segs: 9,  radial: 5, youth: 0.70, buds: 1 },
+  { kids: [1, 2], lenMul: [0.64, 0.88], radMul: 0.55, spread: [0.58, 1.30], light: 0.04, segs: 7,  radial: 5, youth: 0.86, buds: 2 },
+  { kids: [0, 0], lenMul: [0, 0],       radMul: 0,    spread: [0, 0],       light: 0,    segs: 6,  radial: 4, youth: 0.96, buds: 2 },
+];
+
+const clusters = [];   // { p, dir, size }
+const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
+
+/* The standing copy must stay legible, so nothing is allowed to grow behind
+ * it. The test runs in NDC through this camera, not in world space: a world
+ * box cannot express "in front of the text", and a twig two units nearer the
+ * lens covers a screen rect that a far one misses entirely.
+ * Every viewport that matters is checked, so one build serves all of them. */
+const KEEPOUT = (() => {
+  const TAN = Math.tan(THREE.MathUtils.degToRad(45 / 2));
+  const VIEWPORTS = [[1280,720],[1366,768],[1440,900],[1680,1050],[1920,1080],[2560,1440],
+                     [390,844],[430,932],[768,1024],[834,1112]];
+  const boxes = [];
+  for (const [W, H] of VIEWPORTS) {
+    const pad = W >= 768 ? 56 : (W >= 640 ? 40 : 20);
+    const rects = [];
+    if (W >= 640) rects.push({ x: W - pad - 268, y: H - 192, w: 268, h: 100 });   // paragraph
+    else          rects.push({ x: 20, y: H - 140, w: W - 40, h: 78 });
+    rects.push({ x: pad, y: H - 54, w: 152, h: 32 });                              // scroll hint
+    rects.push({ x: W - pad - 62, y: H - 50, w: 64, h: 30 });                      // year
+    const A = W / H;
+    for (const r of rects) boxes.push({
+      A,
+      x0: 2 * r.x / W - 1 - 0.035,       x1: 2 * (r.x + r.w) / W - 1 + 0.035,
+      y0: 1 - 2 * (r.y + r.h) / H - 0.05, y1: 1 - 2 * r.y / H + 0.05,
+    });
+  }
+  return { TAN, boxes };
+})();
+
+function inKeepOut(p) {
+  const h = KEEPOUT.TAN * (14 - p.z);            // half-height of the frustum at p
+  if (h <= 0.05) return false;
+  const ndcY = (p.y - 1.0) / h;
+  for (const b of KEEPOUT.boxes) {
+    if (ndcY < b.y0 || ndcY > b.y1) continue;
+    const ndcX = p.x / (h * b.A);
+    if (ndcX > b.x0 && ndcX < b.x1) return true;
+  }
+  return false;
+}
+const addCluster = (c) => { if (!inKeepOut(c.p)) clusters.push(c); };
+
+function growBranch(startP, dir, len, r0, gen, maxGen) {
+  maxGen = maxGen === undefined ? GEN.length - 1 : maxGen;
+  const g = GEN[gen];
+  const r1 = r0 * g.radMul;
+
+  // a branch bows once and kinks sideways — a straight cylinder reads as
+  // dowel, and a whole tree of them reads as a rake
+  const side = tmpA.crossVectors(dir, UP).normalize();
+  if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
+  const up = tmpB.crossVectors(side, dir).normalize();
+  // outer twigs are as likely to droop as to arch — without the sign flip
+  // every terminal ends up at the same height and the blossom reads as a mat
+  const bow = gen >= 2 ? rand(-0.34, 0.40) : rand(0.14, 0.42);
+  const kink = rand(-0.30, 0.30);
+
+  // Four control points, not a single quadratic: a branch reverses its
+  // curvature between nodes, and one arc can't do that. Centripetal
+  // Catmull-Rom so the wobble never cusps.
+  const sway = rand(-0.24, 0.24);
+  const node = (f, u, k) => startP.clone()
+    .addScaledVector(dir, len * f)
+    .addScaledVector(up, len * u)
+    .addScaledVector(side, len * k);
+
+  const c = new THREE.CatmullRomCurve3([
+    startP.clone(),
+    node(0.30, bow * 0.34 + sway * 0.55, kink * 0.72),
+    node(0.66, bow * 0.86 - sway * 0.40, kink * 0.20 + rand(-0.13, 0.13)),
+    node(1.00, bow, kink * 0.40 + rand(-0.20, 0.20)),
+  ], false, 'centripetal', 0.5);
+
+  // Sample the finished curve, not just its origin: a limb can start well
+  // clear of the copy and still sweep straight through it.
+  for (let i = 0; i <= 6; i++) if (inKeepOut(c.getPointAt(i / 6))) return;
+
+  // Draw the last few percent down to a point. Tubes are open-ended, so a
+  // twig that simply stops shows a flat hollow cap hanging in the air.
+  addTube(c, t => (r0 + (r1 - r0) * t) * (1.0 - 0.88 * smoothstep(0.93, 1.0, t)),
+          g.segs, g.radial, g.youth, len * 6.0);
+
+  // flower along the outer twigs, not only at their very ends
+  for (let i = 0; i < g.buds; i++) {
+    const tt = Math.min(0.34 + (i / g.buds) * 0.66 + rand(-0.08, 0.08), 1.0);
+    addCluster({ p: c.getPointAt(tt), dir: c.getTangentAt(tt).normalize(), size: Math.round(rand(2, 4)) });
+  }
+
+  if (gen >= maxGen) return;
+
+  const nKids = Math.round(rand(g.kids[0], g.kids[1]));
+  for (let i = 0; i < nKids; i++) {
+    // fork from the outer half of the parent, alternating sides
+    const t = 0.22 + (i / Math.max(nKids, 1)) * 0.72 + rand(-0.07, 0.07);
+    const tt = Math.min(t, 0.995);
+    const pt = c.getPointAt(tt);
+    const tan = c.getTangentAt(tt).normalize();
+
+    const ax = new THREE.Vector3().crossVectors(tan, UP).normalize();
+    if (ax.lengthSq() < 1e-6) ax.set(1, 0, 0);
+    const roll = (i / Math.max(nKids, 1)) * Math.PI * 2 + rand(-0.7, 0.7);
+    ax.applyAxisAngle(tan, roll);
+
+    const kdir = tan.clone().applyAxisAngle(ax, rand(g.spread[0], g.spread[1]));
+    kdir.addScaledVector(UP, g.light).normalize();     // phototropism
+
+    // Start the child from the parent's radius AT THE FORK, never from the
+    // parent's base radius — otherwise a child forking off a tapered tip is
+    // fatter than what it grows out of, and the junction visibly steps.
+    const parentR = r0 + (r1 - r0) * tt;
+    growBranch(pt, kdir, len * rand(g.lenMul[0], g.lenMul[1]), parentR * rand(0.62, 0.84), gen + 1, maxGen);
+  }
+}
+
+{
+  const LIMBS = 27;
+  const p = new THREE.Vector3(), n = new THREE.Vector3();
+  for (let i = 0; i < LIMBS; i++) {
+    // jitter the spacing hard: evenly spaced limbs of equal length read as a comb
+    const t = Math.min(Math.max((i + rand(-0.46, 0.46)) / LIMBS * 0.93 + 0.045, 0.02), 0.98);
+    const th = rng() < 0.82 ? rand(-1.3, 1.3) : rand(2.1, 4.2);
+    boughSurface(t, th, p, n);
+    const { T } = boughFrame(t);
+    // some limbs stand off the bough, some run along it, a few sweep back
+    const dir = n.clone().multiplyScalar(rand(0.45, 1.25))
+      .addScaledVector(T, rand(-0.30, 1.90))
+      .addScaledVector(UP, rand(-0.30, 0.65))
+      .normalize();
+    // seat the limb's base inside the bough so the two solids interpenetrate
+    p.addScaledVector(n, -boughRadius(t) * 0.75);
+    growBranch(p.clone(), dir, rand(0.85, 2.20) * (0.65 + 0.70 * (1 - t)), boughRadius(t) * rand(0.34, 0.50), 0);
+  }
+
+  // ---- weeping limbs, left of centre ----
+  // The frame was bottom-heavy on the right and empty on the left; these hang
+  // off the underside of the bough and fall, the way a shidarezakura does.
+  const tAtX = (targetX) => {
+    let best = 0.5, bestD = 1e9;
+    for (let i = 0; i <= 400; i++) {
+      const t = i / 400, d = Math.abs(curve.getPointAt(t).x - targetX);
+      if (d < bestD) { bestD = d; best = t; }
+    }
+    return best;
+  };
+
+  // Four, not seven, and capped at two generations. Letting these recurse the
+  // full depth turned the underside into a thicket; a weeping cherry reads as
+  // a few long clean strands, and the bottom of the frame wants air.
+  const DROOPS = 4;
+  for (let i = 0; i < DROOPS; i++) {
+    const targetX = -6.1 + (i / (DROOPS - 1)) * 3.0 + rand(-0.20, 0.20);   // −6.1 … −3.1
+    const t = tAtX(targetX);
+    const th = Math.PI + rand(-0.55, 0.55);            // off the underside
+    boughSurface(t, th, p, n);
+    const { T } = boughFrame(t);
+    const dir = n.clone().multiplyScalar(rand(0.35, 0.7))
+      .addScaledVector(UP, rand(-1.7, -1.15))          // committed to falling
+      .addScaledVector(T, rand(-0.30, 0.30))
+      .normalize();
+    p.addScaledVector(n, -boughRadius(t) * 0.75);
+    growBranch(p.clone(), dir, rand(1.7, 2.9), boughRadius(t) * rand(0.26, 0.36), 0, 2);
+  }
+}
+
+/* ---------- blossoms, buds, leaves and their pedicels ---------- */
+const blossoms = [], buds = [], leaves = [];
+{
+  const q = new THREE.Quaternion();
+  const zAxis = new THREE.Vector3(0, 0, 1), yAxis = new THREE.Vector3(0, 1, 0);
+  const tmp = new THREE.Vector3(), face = new THREE.Vector3();
+
+  for (const cl of clusters) {
+    const side = new THREE.Vector3().crossVectors(cl.dir, UP).normalize();
+    if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
+    const up2 = new THREE.Vector3().crossVectors(side, cl.dir).normalize();
+
+    for (let k = 0; k < cl.size; k++) {
+      const a = (k / cl.size) * Math.PI * 2 + rand(-0.5, 0.5);
+      const spread = rand(0.055, 0.145);
+      const outward = new THREE.Vector3()
+        .addScaledVector(side, Math.cos(a) * spread)
+        .addScaledVector(up2, Math.sin(a) * spread)
+        .addScaledVector(cl.dir, rand(0.04, 0.13));
+      const head = cl.p.clone().add(outward);
+
+      const pc = new THREE.QuadraticBezierCurve3(
+        cl.p.clone(),
+        cl.p.clone().addScaledVector(outward, 0.55).addScaledVector(UP, -0.015),
+        head.clone());
+      addTube(pc, t => 0.0065 - 0.0028 * t, 4, 4, 1.0, 1.0);
+
+      const isBud = rng() < 0.26;
+      face.copy(outward).normalize().addScaledVector(UP, -0.26).normalize();
+      tmp.set(rand(-0.3, 0.3), rand(-0.3, 0.3), rand(-0.3, 0.3));
+      face.add(tmp).normalize();
+      q.setFromUnitVectors(zAxis, face);
+      q.multiply(new THREE.Quaternion().setFromAxisAngle(zAxis, rng() * Math.PI * 2));
+
+      if (inKeepOut(head)) continue;
+      (isBud ? buds : blossoms).push({
+        p: head, q: q.clone(),
+        s: isBud ? rand(0.040, 0.068) : rand(0.098, 0.158),
+        tint: rng(),
+      });
+    }
+
+    if (rng() < 0.42) {
+      const a = rng() * Math.PI * 2;
+      const out = new THREE.Vector3()
+        .addScaledVector(side, Math.cos(a) * 0.9)
+        .addScaledVector(up2, Math.sin(a) * 0.9)
+        .addScaledVector(cl.dir, rand(0.4, 1.1)).normalize();
+      face.copy(out).addScaledVector(UP, -0.45).normalize();
+      q.setFromUnitVectors(yAxis, face);
+      q.multiply(new THREE.Quaternion().setFromAxisAngle(yAxis, rng() * Math.PI * 2));
+      const lp = cl.p.clone().addScaledVector(out, rand(0.03, 0.09));
+      if (!inKeepOut(lp)) leaves.push({ p: lp, q: q.clone(), s: rand(0.13, 0.24), tint: rng() });
+    }
+  }
+}
+
+/* ---------- bark ---------- */
+const barkMat = new THREE.ShaderMaterial({
+  uniforms: { uTime, uSun: { value: SUN }, uSunCol: { value: SUN_COL }, uSkyCol: { value: SKY_COL } },
+  vertexShader: WIND_GLSL + `
+    attribute vec3 uvw;
+    attribute float rad;
+    varying vec3 vN; varying vec3 vW; varying vec3 vUvw; varying float vRad;
+    void main() {
+      vUvw = uvw; vRad = rad;
+      vN = normalize(normal);
+      vec3 p = position + windOffset(position);
+      vW = p;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    }`,
+  fragmentShader: NOISE_GLSL + CLUMP_GLSL + `
+    precision highp float;
+    uniform vec3 uSun, uSunCol, uSkyCol;
+    varying vec3 vN; varying vec3 vW; varying vec3 vUvw; varying float vRad;
+
+    // relief: ridges running the length of the limb, cracks between them,
+    // lenticel bumps on young wood. Returned as a height we differentiate.
+    // Bark grain is strongly anisotropic — features run ten times longer
+    // along the limb than around it, so the domain is squashed in v before
+    // any noise is taken.
+    vec2 barkDomain(vec2 uv) { return vec2(uv.x * 8.0, uv.y * 0.72); }
+
+    float barkHeight(vec2 uv, float youth) {
+      vec2 q = barkDomain(uv);
+      vec2 w = vec2(gfbm(q * 0.5), gfbm(q * 0.5 + 9.1));
+      vec2 p = q + w * 0.55;                              // meander the fissures
+
+      float ridge = ridged(p);                            // creased ribs of bark
+      float plate = smoothstep(-0.25, 0.45, gfbm(q * 0.34));   // rough vs. smooth stretches
+      float crack = smoothstep(0.30, 0.86, ridged(p * 1.9 + 4.0));
+      float fine  = gfbm(p * 5.5) * 0.5 + 0.5;
+      // young wood: raised horizontal lenticels on an otherwise smooth skin
+      float lent  = smoothstep(0.42, 0.78, gfbm(vec2(uv.x * 2.4, uv.y * 5.5)) * 0.5 + 0.5);
+
+      float oldH   = (ridge - 0.5) * 1.9 * mix(0.35, 1.0, plate) - crack * 0.38 + fine * 0.22;
+      float youngH = lent * 0.55 + fine * 0.28;
+      return mix(oldH, youngH, youth);
+    }
+
+    // bump-map an unparametrised surface from screen-space derivatives
+    vec3 bumped(vec3 N, vec3 p, float h, float k) {
+      vec3 dpx = dFdx(p), dpy = dFdy(p);
+      float dhx = dFdx(h) * k, dhy = dFdy(h) * k;
+      vec3 r1 = cross(dpy, N), r2 = cross(N, dpx);
+      float det = dot(dpx, r1);
+      vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
+      return normalize(abs(det) * N - grad);
+    }
+
+    void main() {
+      float u = vUvw.x, v = vUvw.y, youth = vUvw.z;
+      vec2 uv = vec2(u, v);
+      vec3 N = normalize(vN);
+
+      float h = barkHeight(uv, youth);
+      N = bumped(N, vW, h, mix(0.16, 0.035, youth));
+
+      vec2 q = barkDomain(uv);
+      float grain = gfbm(q * 1.25) * 0.5 + 0.5;
+      float mottle = gfbm(q * 0.28 + 21.0) * 0.5 + 0.5;   // slow drifts of colour
+      float crack = smoothstep(0.30, 0.86, ridged(q * 1.9 + 4.0));
+      float lent  = smoothstep(0.42, 0.78, gfbm(vec2(u * 2.4, v * 5.5)) * 0.5 + 0.5) * youth;
+
+      // old wood is grey-brown and fissured; new wood is a warm red-bronze.
+      // The slow mottle swings it between ashy grey and russet so no two
+      // stretches of the same limb read alike.
+      vec3 ashy   = mix(vec3(0.022, 0.019, 0.018), vec3(0.150, 0.134, 0.122), grain);
+      vec3 russet = mix(vec3(0.032, 0.020, 0.014), vec3(0.198, 0.136, 0.092), grain);
+      vec3 oldW   = mix(ashy, russet, mottle);
+      vec3 youngW = mix(vec3(0.070, 0.030, 0.024), vec3(0.190, 0.098, 0.070), grain);
+      vec3 col = mix(oldW, youngW, youth);
+      col *= 1.0 - 0.46 * crack * (1.0 - youth);
+      col = mix(col, vec3(0.215, 0.160, 0.112), lent * 0.55);
+
+      // lichen: pale sage crusts, only on old wood and mostly facing up
+      float lich = smoothstep(0.62, 0.86, gfbm(q * 0.6 + 31.0) * 0.5 + 0.5);
+      lich *= (1.0 - youth) * smoothstep(-0.1, 0.7, N.y) * smoothstep(0.15, 0.5, h);
+      col = mix(col, vec3(0.130, 0.145, 0.095), lich * 0.60);
+
+      float moss = clumpMask(v / 34.0) * smoothstep(0.15, 0.85, N.y) * (1.0 - youth);
+      col = mix(col, vec3(0.050, 0.078, 0.026), moss * 0.55);
+
+      // crevices sit in their own shadow
+      float ao = mix(0.45, 1.0, smoothstep(-0.35, 0.60, h));
+
+      float d = max(dot(N, uSun), 0.0);
+      float sky = 0.5 + 0.5 * N.y;
+      vec3 lit = col * (uSunCol * (0.14 + 1.70 * d) + uSkyCol * (0.20 + 0.52 * sky)) * ao;
+
+      vec3 V = normalize(cameraPosition - vW);
+      lit += col * uSkyCol * pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.9;
+
+      float spec = pow(max(dot(reflect(-uSun, N), V), 0.0), 18.0);
+      lit += uSunCol * spec * 0.075 * mix(0.4, 1.0, youth) * ao;
+
+      gl_FragColor = vec4(lit, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+});
+
+const woodGeo = new THREE.BufferGeometry();
+woodGeo.setAttribute('position', new THREE.Float32BufferAttribute(wood.pos, 3));
+woodGeo.setAttribute('normal', new THREE.Float32BufferAttribute(wood.nor, 3));
+woodGeo.setAttribute('uvw', new THREE.Float32BufferAttribute(wood.uvw, 3));
+woodGeo.setAttribute('rad', new THREE.Float32BufferAttribute(wood.rad, 1));
+woodGeo.setIndex(wood.idx);
+const woodMesh = new THREE.Mesh(woodGeo, barkMat);
+woodMesh.frustumCulled = false;
+scene.add(woodMesh);
+
+/* ================================================================== *
+ * PETAL / BLOSSOM GEOMETRY
+ * ================================================================== */
+function petalGeometry(NS = 7, NV = 5) {
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i < NS; i++) {
+    const s = i / (NS - 1);
+    for (let j = 0; j < NV; j++) {
+      const v = (j / (NV - 1)) * 2 - 1;
+      const wid = Math.pow(Math.sin(Math.PI * 0.5 * Math.min(s / 0.60, 1)), 0.72) * (1 - 0.10 * Math.max(s - 0.60, 0) / 0.40);
+      const notch = 0.19 * Math.exp(-Math.pow(v * 3.1, 2)) * smoothstep(0.70, 1.0, s);
+      pos.push(0.60 * wid * v, s - notch, 0.26 * s * s + 0.11 * v * v * s);
+      uv.push(s, (v + 1) * 0.5);
+    }
+  }
+  for (let i = 0; i < NS - 1; i++) for (let j = 0; j < NV - 1; j++) {
+    const a = i * NV + j, b = a + NV;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  return { pos, uv, idx, count: NS * NV };
+}
+
+const stamenTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.translate(64, 64);
+  g.strokeStyle = 'rgba(255,248,250,0.95)'; g.lineWidth = 2.4; g.lineCap = 'round';
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2 + 0.2;
+    const len = 26 + (i % 3) * 7;
+    g.beginPath(); g.moveTo(0, 0);
+    g.quadraticCurveTo(Math.cos(a) * len * 0.5, Math.sin(a) * len * 0.5, Math.cos(a) * len, Math.sin(a) * len);
+    g.stroke();
+    g.fillStyle = i % 4 === 0 ? '#e8d24a' : '#f6e79a';
+    g.beginPath(); g.arc(Math.cos(a) * len, Math.sin(a) * len, 4.2, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = '#cfe07a';
+  g.beginPath(); g.arc(0, 0, 7, 0, Math.PI * 2); g.fill();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+})();
+
+function blossomGeometry() {
+  const P = petalGeometry();
+  const pos = [], uv = [], kind = [], idx = [];
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * Math.PI * 2;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const base = pos.length / 3;
+    for (let i = 0; i < P.count; i++) {
+      const x = P.pos[i * 3], y = P.pos[i * 3 + 1], z = P.pos[i * 3 + 2];
+      pos.push(x * ca - y * sa, x * sa + y * ca, z);
+      uv.push(P.uv[i * 2], P.uv[i * 2 + 1]);
+      kind.push(0);
+    }
+    for (const t of P.idx) idx.push(base + t);
+  }
+  const base = pos.length / 3, S = 0.46;
+  pos.push(-S, -S, 0.10, S, -S, 0.10, S, S, 0.10, -S, S, 0.10);
+  uv.push(0, 0, 1, 0, 1, 1, 0, 1);
+  kind.push(1, 1, 1, 1);
+  idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('kind', new THREE.Float32BufferAttribute(kind, 1));
+  g.setIndex(idx);
+  const tmp = new THREE.BufferGeometry();
+  tmp.setAttribute('position', g.getAttribute('position')); tmp.setIndex(idx); tmp.computeVertexNormals();
+  g.setAttribute('normal', tmp.getAttribute('normal'));
+  return g;
+}
+
+const PETAL_LIGHT_GLSL = `
+  uniform vec3 uSunCol, uSkyCol;
+  vec3 petalShade(vec3 N, vec3 V, vec3 L, vec3 base, vec3 warm) {
+    float wrap = dot(N, L) * 0.5 + 0.5;
+    vec3 col = base * (uSunCol * (0.30 + 0.90 * wrap) + uSkyCol * (0.5 + 0.5 * N.y) * 0.42);
+    float back = pow(max(dot(V, -L), 0.0), 2.4);
+    col += warm * back * 0.80;                       // low sun burning through the petal
+    return col;
+  }`;
+
+const blossomMat = new THREE.ShaderMaterial({
+  uniforms: { uTime, uSun: { value: SUN }, uSunCol: { value: SUN_COL }, uSkyCol: { value: SKY_COL },
+              uMouse, uMouseR, uStamen: { value: stamenTex } },
+  side: THREE.DoubleSide,
+  vertexShader: WIND_GLSL + `
+    attribute vec3 iPos;
+    attribute vec4 iQuat;
+    attribute vec3 iRnd;
+    attribute float kind;
+    uniform vec3 uMouse;
+    uniform float uMouseR;
+    varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+    varying float vTint; varying float vKind;
+
+    vec3 qrot(vec4 q, vec3 v) { return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
+
+    void main() {
+      vUv = uv; vKind = kind; vTint = iRnd.y;
+      vec3 local = qrot(iQuat, position * iRnd.x);
+      vN = normalize(qrot(iQuat, normal));
+
+      vec3 anchor = iPos + windOffset(iPos);
+      float w = sin(uTime * 1.55 + iRnd.z * 6.28) * 0.050 + sin(uTime * 0.83 + iRnd.z * 3.1) * 0.032;
+      anchor += vec3(w, w * 0.45, w * 0.3);
+
+      vec3 rel = anchor - uMouse;
+      vec3 planar = rel * vec3(1.0, 1.0, 0.26);      // depth barely counts
+      float infl = smoothstep(uMouseR, 0.0, length(planar));
+      infl *= infl;
+      anchor += normalize(planar + vec3(0.0001)) * infl * 0.17;
+      anchor.y -= infl * 0.055;
+      float shiver = sin(uTime * 7.5 + iRnd.z * 6.28) * infl * 0.028;
+      anchor += vec3(shiver, shiver * 0.5, 0.0);
+
+      vec3 p = anchor + local;
+      vW = p;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    }`,
+  fragmentShader: PETAL_LIGHT_GLSL + `
+    precision highp float;
+    uniform vec3 uSun;
+    uniform sampler2D uStamen;
+    varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+    varying float vTint; varying float vKind;
+
+    void main() {
+      vec3 N = normalize(vN);
+      if (!gl_FrontFacing) N = -N;
+      vec3 V = normalize(cameraPosition - vW);
+
+      if (vKind > 0.5) {
+        vec4 s = texture2D(uStamen, vUv);
+        if (s.a < 0.35) discard;
+        vec3 st = s.rgb * s.rgb;
+        st *= uSunCol * (0.55 + 0.70 * max(dot(N, uSun), 0.0)) + uSkyCol * 0.38;
+        gl_FragColor = vec4(st, 1.0);
+      } else {
+        vec3 throat = mix(vec3(0.640, 0.150, 0.235), vec3(0.520, 0.175, 0.255), vTint);
+        vec3 rim    = mix(vec3(0.980, 0.860, 0.900), vec3(0.940, 0.780, 0.850), vTint);
+        vec3 base = mix(throat, rim, smoothstep(0.08, 0.99, vUv.x));
+        base *= 0.94 + 0.06 * sin(vUv.y * 22.0 + vUv.x * 3.0);
+        gl_FragColor = vec4(petalShade(N, V, uSun, base, vec3(1.00, 0.46, 0.44)), 1.0);
+      }
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+});
+
+function instanceFlowers(geo, list) {
+  const n = list.length;
+  const iPos = new Float32Array(n * 3), iQuat = new Float32Array(n * 4), iRnd = new Float32Array(n * 3);
+  list.forEach((b, i) => {
+    iPos[i * 3] = b.p.x; iPos[i * 3 + 1] = b.p.y; iPos[i * 3 + 2] = b.p.z;
+    iQuat[i * 4] = b.q.x; iQuat[i * 4 + 1] = b.q.y; iQuat[i * 4 + 2] = b.q.z; iQuat[i * 4 + 3] = b.q.w;
+    const phase = rng();
+    b.phase = phase;
+    iRnd[i * 3] = b.s; iRnd[i * 3 + 1] = b.tint; iRnd[i * 3 + 2] = phase;
+  });
+  geo.setAttribute('iPos', new THREE.InstancedBufferAttribute(iPos, 3));
+  geo.setAttribute('iQuat', new THREE.InstancedBufferAttribute(iQuat, 4));
+  geo.setAttribute('iRnd', new THREE.InstancedBufferAttribute(iRnd, 3));
+  geo.instanceCount = n;
+  return geo;
+}
+
+{
+  const m = new THREE.Mesh(instanceFlowers(blossomGeometry(), blossoms), blossomMat);
+  m.frustumCulled = false;
+  scene.add(m);
+}
+
+/* ---------- buds ---------- */
+{
+  const NS = 7, NV = 6, pos = [], uv = [], idx = [];
+  for (let i = 0; i < NS; i++) {
+    const s = i / (NS - 1);
+    const r = Math.sin(s * Math.PI * 0.92) * (0.55 - 0.18 * s) + 0.06;
+    for (let j = 0; j < NV; j++) {
+      const a = (j / (NV - 1)) * Math.PI * 2;
+      const lobe = 1 + 0.16 * Math.cos(a * 5.0);
+      pos.push(Math.cos(a) * r * lobe, Math.sin(a) * r * lobe, s * 1.25 - 0.1);
+      uv.push(s, j / (NV - 1));
+    }
+  }
+  for (let i = 0; i < NS - 1; i++) for (let j = 0; j < NV - 1; j++) {
+    const a = i * NV + j, b = a + NV;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  const tmp = new THREE.BufferGeometry();
+  tmp.setAttribute('position', g.getAttribute('position')); tmp.setIndex(idx); tmp.computeVertexNormals();
+  g.setAttribute('normal', tmp.getAttribute('normal'));
+  g.setAttribute('kind', new THREE.Float32BufferAttribute(new Float32Array(pos.length / 3), 1));
+
+  const budMat = blossomMat.clone();
+  budMat.uniforms = blossomMat.uniforms;
+  budMat.fragmentShader = blossomMat.fragmentShader
+    .replace('vec3 throat = mix(vec3(0.640, 0.150, 0.235), vec3(0.520, 0.175, 0.255), vTint);',
+             'vec3 throat = mix(vec3(0.680, 0.180, 0.280), vec3(0.580, 0.150, 0.240), vTint);')
+    .replace('vec3 rim    = mix(vec3(0.980, 0.860, 0.900), vec3(0.940, 0.780, 0.850), vTint);',
+             'vec3 rim    = mix(vec3(0.900, 0.470, 0.600), vec3(0.840, 0.390, 0.530), vTint);');
+  budMat.needsUpdate = true;
+
+  const m = new THREE.Mesh(instanceFlowers(g, buds), budMat);
+  m.frustumCulled = false;
+  scene.add(m);
+}
+
+/* ---------- young leaves ---------- */
+{
+  const NS = 8, NV = 5, pos = [], uv = [], idx = [];
+  for (let i = 0; i < NS; i++) {
+    const s = i / (NS - 1);
+    for (let j = 0; j < NV; j++) {
+      const v = (j / (NV - 1)) * 2 - 1;
+      const wid = Math.pow(Math.sin(Math.PI * Math.pow(s, 0.62)), 0.85);
+      const serr = 1 + 0.055 * Math.sin(s * 34.0) * Math.abs(v);
+      pos.push(0.42 * wid * v * serr, s, 0.13 * Math.abs(v) * wid + 0.10 * s * s);
+      uv.push(s, (v + 1) * 0.5);
+    }
+  }
+  for (let i = 0; i < NS - 1; i++) for (let j = 0; j < NV - 1; j++) {
+    const a = i * NV + j, b = a + NV;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  const tmp = new THREE.BufferGeometry();
+  tmp.setAttribute('position', g.getAttribute('position')); tmp.setIndex(idx); tmp.computeVertexNormals();
+  g.setAttribute('normal', tmp.getAttribute('normal'));
+  g.setAttribute('kind', new THREE.Float32BufferAttribute(new Float32Array(pos.length / 3), 1));
+
+  const leafMat = blossomMat.clone();
+  leafMat.uniforms = blossomMat.uniforms;
+  leafMat.fragmentShader = blossomMat.fragmentShader
+    .replace('vec3 throat = mix(vec3(0.640, 0.150, 0.235), vec3(0.520, 0.175, 0.255), vTint);',
+             'vec3 throat = mix(vec3(0.150, 0.060, 0.030), vec3(0.095, 0.070, 0.022), vTint);')
+    .replace('vec3 rim    = mix(vec3(0.980, 0.860, 0.900), vec3(0.940, 0.780, 0.850), vTint);',
+             'vec3 rim    = mix(vec3(0.105, 0.185, 0.038), vec3(0.170, 0.205, 0.045), vTint);')
+    .replace('vec3(1.00, 0.46, 0.44)', 'vec3(0.52, 0.52, 0.12)')
+    .replace('base *= 0.94 + 0.06 * sin(vUv.y * 22.0 + vUv.x * 3.0);',
+             'base *= 1.0 - 0.16 * smoothstep(0.55, 0.95, abs(sin(vUv.y * 9.0 + vUv.x * 7.0)));');
+  leafMat.needsUpdate = true;
+
+  const m = new THREE.Mesh(instanceFlowers(g, leaves), leafMat);
+  m.frustumCulled = false;
+  scene.add(m);
+}
+
+/* ---------- petals adrift ---------- */
+{
+  const P = petalGeometry(5, 4);
+  const g = new THREE.InstancedBufferGeometry();
+  const cpos = P.pos.slice();
+  for (let i = 0; i < cpos.length; i += 3) cpos[i + 1] -= 0.5;
+  g.setAttribute('position', new THREE.Float32BufferAttribute(cpos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(P.uv, 2));
+  g.setIndex(P.idx);
+  const tmp = new THREE.BufferGeometry();
+  tmp.setAttribute('position', g.getAttribute('position')); tmp.setIndex(P.idx); tmp.computeVertexNormals();
+  g.setAttribute('normal', tmp.getAttribute('normal'));
+
+  const seed = new Float32Array(PETALS * 4), org = new Float32Array(PETALS * 3);
+  for (let i = 0; i < PETALS; i++) {
+    org[i * 3] = rand(-16, 16); org[i * 3 + 1] = rand(-9, 11); org[i * 3 + 2] = rand(-5, 6);
+    seed[i * 4] = rand(0.30, 0.72);
+    seed[i * 4 + 1] = rng() * 6.28;
+    seed[i * 4 + 2] = rand(0.055, 0.115);
+    seed[i * 4 + 3] = rand(0.5, 1.7);
+  }
+  g.setAttribute('iOrg', new THREE.InstancedBufferAttribute(org, 3));
+  g.setAttribute('iSeed', new THREE.InstancedBufferAttribute(seed, 4));
+  g.instanceCount = PETALS;
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uTime, uSun: { value: SUN }, uSunCol: { value: SUN_COL }, uSkyCol: { value: SKY_COL } },
+    side: THREE.DoubleSide,
+    vertexShader: `
+      uniform float uTime;
+      attribute vec3 iOrg;
+      attribute vec4 iSeed;
+      varying vec3 vN; varying vec3 vW; varying vec2 vUv;
+
+      mat3 rotAxis(vec3 a, float ang) {
+        float c = cos(ang), s = sin(ang), t = 1.0 - c;
+        return mat3(t*a.x*a.x+c, t*a.x*a.y-s*a.z, t*a.x*a.z+s*a.y,
+                    t*a.x*a.y+s*a.z, t*a.y*a.y+c, t*a.y*a.z-s*a.x,
+                    t*a.x*a.z-s*a.y, t*a.y*a.z+s*a.x, t*a.z*a.z+c);
+      }
+
+      void main() {
+        vUv = uv;
+        float ph = iSeed.y;
+        float fall = uTime * iSeed.x;
+        vec3 p = iOrg;
+        p.y = mod(iOrg.y - fall + 11.0, 22.0) - 11.0;
+        p.x = iOrg.x + fall * 0.34 + sin(uTime * 0.9 + ph) * 0.85;
+        p.z = iOrg.z + sin(uTime * 0.6 + ph * 1.7) * 0.5;
+
+        mat3 R = rotAxis(normalize(vec3(sin(ph), 0.7, cos(ph * 1.3))), uTime * iSeed.w + ph);
+        vec3 local = R * (position * iSeed.z);
+        vN = normalize(R * normal);
+        vec3 w = p + local;
+        vW = w;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(w, 1.0);
+      }`,
+    fragmentShader: PETAL_LIGHT_GLSL + `
+      precision highp float;
+      uniform vec3 uSun;
+      varying vec3 vN; varying vec3 vW; varying vec2 vUv;
+      void main() {
+        vec3 N = normalize(vN);
+        if (!gl_FrontFacing) N = -N;
+        vec3 V = normalize(cameraPosition - vW);
+        vec3 base = mix(vec3(0.720, 0.320, 0.400), vec3(0.980, 0.870, 0.905), smoothstep(0.0, 0.7, vUv.x));
+        gl_FragColor = vec4(petalShade(N, V, uSun, base, vec3(1.00, 0.48, 0.46)), 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+  const m = new THREE.Mesh(g, mat);
+  m.frustumCulled = false;
+  scene.add(m);
+}
+
+/* ================================================================== *
+ * GRASS — a few tufts of moss-grass on the old wood
+ * ================================================================== */
+{
+  const SEGS = 3;
+  const geo = new THREE.InstancedBufferGeometry();
+  const verts = [], uvs = [], idx = [];
+  for (let i = 0; i <= SEGS; i++) {
+    const t = i / SEGS, w = 0.5 * (1 - t * t);
+    verts.push(-w, t, 0, w, t, 0);
+    uvs.push(0, t, 1, t);
+  }
+  verts[verts.length - 6] = 0; verts[verts.length - 3] = 0;
+  for (let i = 0; i < SEGS; i++) {
+    const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+    idx.push(a, b, c, b, d, c);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(idx);
+
+  const offsets = new Float32Array(BLADES * 3);
+  const normals = new Float32Array(BLADES * 3);
+  const rnd = new Float32Array(BLADES * 4);
+  const p = new THREE.Vector3(), n = new THREE.Vector3();
+  let i = 0, guard = 0;
+  while (i < BLADES && guard++ < BLADES * 60) {
+    const t = rng();
+    const th = rng() * Math.PI * 2;
+    const topness = Math.max(Math.cos(th), 0);
+    if (rng() > clumpJS(t) * Math.pow(topness, 1.4)) continue;
+
+    boughSurface(t, th, p, n);
+    offsets[i * 3] = p.x; offsets[i * 3 + 1] = p.y; offsets[i * 3 + 2] = p.z;
+    normals[i * 3] = n.x; normals[i * 3 + 1] = n.y; normals[i * 3 + 2] = n.z;
+    rnd[i * 4] = rng() * Math.PI * 2;
+    rnd[i * 4 + 1] = (0.030 + 0.098 * topness * topness) * (0.6 + 0.8 * rng());
+    rnd[i * 4 + 2] = (rng() - 0.5) * 0.9;
+    rnd[i * 4 + 3] = rng();
+    i++;
+  }
+  geo.setAttribute('offset', new THREE.InstancedBufferAttribute(offsets, 3));
+  geo.setAttribute('nrm', new THREE.InstancedBufferAttribute(normals, 3));
+  geo.setAttribute('rand', new THREE.InstancedBufferAttribute(rnd, 4));
+  geo.instanceCount = i;
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uTime, uMouse, uMouseR, uSun: { value: SUN }, uSunCol: { value: SUN_COL }, uSkyCol: { value: SKY_COL } },
+    side: THREE.DoubleSide,
+    vertexShader: WIND_GLSL + `
+      attribute vec3 offset;
+      attribute vec3 nrm;
+      attribute vec4 rand;
+      uniform vec3 uMouse;
+      uniform float uMouseR;
+      varying float vT; varying float vShade; varying float vDark;
+
+      void main() {
+        float t = uv.y; vT = t;
+        float len = rand.y;
+
+        vec3 ref = abs(nrm.y) < 0.95 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        vec3 T0 = normalize(cross(nrm, ref));
+        vec3 B0 = cross(nrm, T0);
+        float ca = cos(rand.x), sa = sin(rand.x);
+        vec3 widthDir = T0 * ca + B0 * sa;
+        vec3 leanDir  = T0 * -sa + B0 * ca;
+
+        float bend = t * t;
+        float gust = sin(uTime * 1.9 + offset.x * 0.9 + rand.x) * 0.12
+                   + sin(uTime * 0.9 + offset.x * 0.3) * 0.07;
+
+        vec3 world = offset + windOffset(offset)
+                   + nrm * (t * len)
+                   + widthDir * (position.x * 0.017)
+                   + leanDir * (rand.z * 0.40 * len) * bend
+                   + (T0 * gust + B0 * gust * 0.6) * bend * len * 2.0;
+
+        vec3 toB = offset - uMouse;
+        float infl = smoothstep(uMouseR, 0.0, length(toB * vec3(1.0, 1.0, 0.26)));
+        infl *= infl;
+        vec3 push = toB - nrm * dot(toB, nrm);
+        float pl = length(push);
+        push = pl > 0.0001 ? push / pl : T0;
+        world += push * infl * bend * (0.25 + len * 2.5);
+        world -= nrm * infl * bend * len * 0.75;
+        vDark = infl;
+
+        vShade = (0.7 + 0.3 * rand.w) * (0.8 + 0.2 * sin(rand.x * 2.0));
+        vShade *= 0.5 + 0.5 * clamp(nrm.y * 0.5 + 0.6, 0.0, 1.0);
+
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(world, 1.0);
+      }`,
+    fragmentShader: `
+      precision highp float;
+      uniform vec3 uSunCol, uSkyCol;
+      varying float vT; varying float vShade; varying float vDark;
+      void main() {
+        vec3 base = vec3(0.010, 0.032, 0.006);
+        vec3 tip  = vec3(0.070, 0.150, 0.030);
+        vec3 col = mix(base, tip, vT * vT) * vShade;
+        col *= 1.0 - vDark * 0.5;
+        col *= uSunCol * 0.9 + uSkyCol * 0.5;      // sits in the same warm light
+        gl_FragColor = vec4(col, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+
+  const m = new THREE.Mesh(geo, mat);
+  m.frustumCulled = false;
+  scene.add(m);
+}
+
+/* ================================================================== *
+ * BUTTERFLY — a swallowtail working the blossom
+ *
+ * Wings are modelled to their real outline rather than alpha-cut from a
+ * texture: cleaner edges, and no transparency to sort against the crown.
+ * The pattern is procedural in wing (span, chord) space, so the veins fan
+ * from the hinge the way scales actually lie.
+ * ================================================================== */
+const butterfly = new THREE.Group();
+scene.add(butterfly);
+
+const wingBend = { fore: { value: 0 }, hind: { value: 0 } };
+
+// span-by-chord grid between a leading and a trailing edge
+function wingGeometry(hind) {
+  // Chord positions are absolute in body space so the two wings sit where a
+  // real pair sits: forewing reaching FORWARD to an apex at the outer top,
+  // hindwing hung behind and inboard of it. The step between the forewing's
+  // tornus and the hindwing's margin is the notch that makes a silhouette
+  // read as a butterfly rather than one continuous shell.
+  const NS = 30, NU = 10;
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i < NS; i++) {
+    const s = i / (NS - 1);
+    let lead, chord, span;
+    if (!hind) {
+      // Morpho forewing: broad, costa nearly straight, apex ROUNDED rather than
+      // drawn to a point, termen falling away to a tornus near mid-span.
+      span  = 0.95;
+      lead  = 0.10 + 0.32 * s - 0.14 * s * s;                 // costa arches gently to the apex
+      chord = (0.56 + 0.46 * s) * Math.pow(Math.max(0, 1 - Math.pow(s, 2.6)), 0.55);
+    } else {
+      // Morpho hindwing: broad and round, margin scalloped, and no streamer —
+      // tails belong to swallowtails, not to this. It still juts past the
+      // forewing's tornus, which is the notch between the two wings.
+      span  = 0.78;
+      lead  = -0.06 - 0.26 * s;
+      chord = (0.54 + 0.48 * s) * Math.pow(Math.max(0, 1 - Math.pow(s, 2.2)), 0.55);
+      chord *= 1 + 0.035 * Math.cos(s * 22.0);                // scalloped margin, no tail
+    }
+    // Both pairs hinge on the thorax, so both roots have to be SHORT — a wing
+    // whose root chord is as long as the wing is wide floats beside the body
+    // instead of growing out of it. The chord opens up over the first third.
+    chord *= 0.26 + 0.74 * smoothstep(0, 0.32, s);
+    chord = Math.max(chord, 0.014);                            // never fully degenerate
+    for (let j = 0; j < NU; j++) {
+      const u = j / (NU - 1);
+      // slight camber, and the membrane relaxes toward the trailing edge
+      const cam = 0.030 * Math.sin(Math.PI * u) * (1 - 0.35 * s);
+      // roots sit INSIDE the thorax radius so the two solids interpenetrate
+      pos.push(0.018 + s * span, cam, lead - chord * u);
+      uv.push(s, u);
+    }
+  }
+  for (let i = 0; i < NS - 1; i++) for (let j = 0; j < NU - 1; j++) {
+    const a = i * NU + j, b = a + NU;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+// Wing scale texture, baked once. It is a pure function of (span, chord), so
+// evaluating a dozen noise octaves per fragment every frame was paying over and
+// over for a constant — and on the wings that cost more than the entire branch.
+// R rows, G grain, B mottle, A shimmer.
+const wingTex = (() => {
+  const N = 256;
+  const cv = document.createElement('canvas'); cv.width = cv.height = N;
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(N, N), d = img.data;
+
+  const h2 = (x, y) => {
+    const a = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
+    const b = Math.sin(x * 269.5 + y * 183.3) * 43758.5453123;
+    return [(a - Math.floor(a)) * 2 - 1, (b - Math.floor(b)) * 2 - 1];
+  };
+  const gn = (x, y) => {
+    const ix = Math.floor(x), iy = Math.floor(y);
+    const fx = x - ix, fy = y - iy;
+    const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+    const g00 = h2(ix, iy), g10 = h2(ix + 1, iy), g01 = h2(ix, iy + 1), g11 = h2(ix + 1, iy + 1);
+    const a = g00[0] * fx + g00[1] * fy;
+    const b = g10[0] * (fx - 1) + g10[1] * fy;
+    const c = g01[0] * fx + g01[1] * (fy - 1);
+    const e = g11[0] * (fx - 1) + g11[1] * (fy - 1);
+    const top = a + (b - a) * ux, bot = c + (e - c) * ux;
+    return top + (bot - top) * uy;
+  };
+  const fbm = (x, y, oct) => {
+    let sum = 0, amp = 0.5;
+    for (let i = 0; i < oct; i++) {
+      sum += amp * gn(x, y);
+      const nx = 0.8 * x + 0.6 * y, ny = -0.6 * x + 0.8 * y;
+      x = nx * 2.03; y = ny * 2.03; amp *= 0.5;
+    }
+    return sum;
+  };
+  const b255 = v => Math.max(0, Math.min(255, Math.round((v * 0.5 + 0.5) * 255)));
+
+  for (let yi = 0; yi < N; yi++) {
+    const u = yi / (N - 1);                       // chord
+    for (let xi = 0; xi < N; xi++) {
+      const sp = xi / (N - 1);                    // span
+      const o = (yi * N + xi) * 4;
+      d[o]     = b255(fbm(u * 70.0, sp * 16.0, 4));      // scale rows
+      d[o + 1] = b255(gn(u * 165.0, sp * 52.0));         // individual scales
+      d[o + 2] = b255(fbm(sp * 4.5, u * 3.0, 3));        // iridescent mottle
+      d[o + 3] = b255(fbm(sp * 6.5 + 4.0, u * 4.5, 3));  // hue shimmer
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(cv);
+  t.flipY = false;                                 // vUv maps straight to (span, chord)
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+})();
+
+function wingMaterial(hind, bendUniform) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uSun: { value: SUN }, uSunCol: { value: SUN_COL }, uSkyCol: { value: SKY_COL },
+                uBend: bendUniform, uHind: { value: hind ? 1 : 0 }, uTex: { value: wingTex } },
+    side: THREE.DoubleSide,
+    vertexShader: `
+      uniform float uBend;
+      varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+      void main() {
+        vUv = uv;
+        // the tip lags the stroke — a rigid flapping plate reads as paper
+        vec3 p = position;
+        float s = uv.x;
+        p.y += uBend * s * s;
+        p.z += uBend * s * s * (uv.y - 0.45) * 0.35;
+        vN = normalize(normalMatrix * normal);
+        vec4 wp = modelMatrix * vec4(p, 1.0);
+        vW = wp.xyz;
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }`,
+    fragmentShader: PETAL_LIGHT_GLSL + `
+      precision highp float;
+      uniform vec3 uSun;
+      uniform float uHind;
+      uniform sampler2D uTex;
+      varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+
+      void main() {
+        float s = vUv.x, u = vUv.y;
+
+        vec3 N = normalize(vN);
+        if (!gl_FrontFacing) N = -N;
+        vec3 V = normalize(cameraPosition - vW);
+
+        // --- structural blue -------------------------------------------------
+        // A morpho's blue is a diffraction effect, not a pigment: the hue swings
+        // with viewing angle — brilliant cyan-blue square on, sliding to violet
+        // at a glance. Albedo runs past 1.0 on purpose; it is HDR into ACES.
+        float facing = abs(dot(N, V));
+        vec3 blueFace = vec3(0.050, 0.300, 1.450);
+        vec3 blueEdge = vec3(0.100, 0.060, 0.820);
+        vec3 blue = mix(blueEdge, blueFace, pow(facing, 0.65));
+        // brighter across the disc, deeper toward the root
+        blue *= 0.62 + 0.72 * smoothstep(0.02, 0.46, s) * (1.0 - 0.34 * smoothstep(0.45, 1.0, u));
+
+        // --- scale texture ---------------------------------------------------
+        // Wing scales lie in overlapping rows running out from the base, so the
+        // noise is squashed hard along the span and kept tight across it. A
+        // perfectly smooth membrane is what makes CG wings look like plastic.
+        vec4 tx = texture2D(uTex, vUv);
+        float rows = tx.r, grain = tx.g, mottle = tx.b, shim = tx.a;
+        blue *= 0.78 + 0.44 * mottle;                  // iridescence is never even
+        // and it shifts hue in patches, not just brightness — the disc reads
+        // cooler here and warmer there as the scale angle wanders
+        float shimmer = shim;
+        blue = mix(blue * vec3(0.72, 0.88, 1.08), blue * vec3(1.30, 1.12, 0.94), shimmer);
+
+        vec3 dark  = vec3(0.028, 0.019, 0.016);
+        vec3 white = vec3(0.880, 0.880, 0.860);
+        vec3 amber = vec3(0.700, 0.470, 0.110);
+
+        // --- the wide sooty border down the whole distal edge -----------------
+        float border = max(smoothstep(0.60, 0.74, s), smoothstep(0.78, 0.94, u));
+        vec3 c = mix(blue, dark, border);
+
+        // --- veins: pale tan over the blue, lost inside the border ------------
+        float vp = pow(u, 0.72) * 5.2 + s * 0.55 + (mottle - 0.5) * 0.22;
+        float vk = abs(fract(vp) - 0.5) * 2.0;
+        float aa = fwidth(vp) * 2.0 + 0.045;
+        float vw = 0.050 * (1.0 - 0.42 * s);           // veins taper toward the margin
+        float vein = 1.0 - smoothstep(vw, vw + aa, vk);
+        c = mix(c, vec3(0.520, 0.430, 0.270), vein * 0.24 * (1.0 - border * 0.85));
+
+        // --- lunules set into the border: white on the forewing, amber behind -
+        float lunBand = exp(-pow((border - 0.58) / 0.20, 2.0));
+        float edgeT = u * 0.62 + s * 0.58;                  // runs along the margin
+        float lun = exp(-pow((fract(edgeT * 7.0) - 0.5) * 4.2, 2.0));
+        c = mix(c, mix(white, amber, uHind), border * lunBand * lun * 0.90);
+
+        // --- the big apical blazes, forewing only -----------------------------
+        float ap1 = exp(-pow((s - 0.86) / 0.085, 2.0)) * exp(-pow((u - 0.15) / 0.100, 2.0));
+        float ap2 = exp(-pow((s - 0.66) / 0.070, 2.0)) * exp(-pow((u - 0.07) / 0.075, 2.0));
+        c = mix(c, white, (1.0 - uHind) * clamp(ap1 + ap2 * 0.75, 0.0, 1.0) * 0.92);
+
+        // scale rows first, then individual scales on top
+        c *= 0.88 + 0.25 * rows;
+        c *= 0.935 + 0.13 * grain;
+
+        // the very edge is a fringe of loose scales, paler and duller
+        float rim = clamp(smoothstep(0.93, 1.0, s) + smoothstep(0.955, 1.0, u), 0.0, 1.0);
+        c = mix(c, vec3(0.250, 0.225, 0.200), rim * 0.55);
+
+        // --- shading ----------------------------------------------------------
+        // The warm low sun would tint the blue to steel if it lit the wing like
+        // an ordinary diffuse surface, so the light is pulled toward neutral
+        // across the iridescent area. Structural colour keeps its own hue.
+        float wrap = dot(N, uSun) * 0.5 + 0.5;
+        vec3 sunW = mix(uSunCol, vec3(1.00, 0.94, 0.86), 0.75 * (1.0 - border));
+        vec3 lit = c * (sunW * (0.34 + 0.86 * wrap) + uSkyCol * (0.5 + 0.5 * N.y) * mix(0.40, 0.28, 1.0 - border));
+        float back = pow(max(dot(V, -uSun), 0.0), 2.4);
+        lit += mix(vec3(0.90, 0.45, 0.16), vec3(0.30, 0.42, 0.90), 1.0 - border) * back * 0.45;
+        float sheen = pow(max(dot(reflect(-uSun, N), V), 0.0), 26.0);
+        lit += vec3(0.50, 0.68, 1.00) * sheen * 0.40 * (1.0 - border);
+
+        gl_FragColor = vec4(lit, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+}
+
+const foreGeo = wingGeometry(false), hindGeo = wingGeometry(true);
+const foreMat = wingMaterial(false, wingBend.fore), hindMat = wingMaterial(true, wingBend.hind);
+
+const wingR1 = new THREE.Mesh(foreGeo, foreMat);
+const wingL1 = new THREE.Mesh(foreGeo, foreMat);
+const wingR2 = new THREE.Mesh(hindGeo, hindMat);
+const wingL2 = new THREE.Mesh(hindGeo, hindMat);
+wingL1.scale.x = -1; wingL2.scale.x = -1;
+wingR1.position.set(0.012, 0.012, 0); wingL1.position.copy(wingR1.position);
+wingR2.position.set(0.010, 0.000, 0); wingL2.position.copy(wingR2.position);
+butterfly.add(wingR1, wingL1, wingR2, wingL2);
+
+// ---- body ----
+{
+  const N = 30, R = 9, pos = [], idx = [];
+  for (let i = 0; i <= N; i++) {
+    const a = i / N;                                  // 0 abdomen tip -> 1 head
+    let r = 0.014 + 0.026 * Math.sin(Math.PI * Math.pow(a, 0.80));
+    r += 0.020 * Math.exp(-Math.pow((a - 0.70) / 0.14, 2));    // thorax
+    r += 0.013 * Math.exp(-Math.pow((a - 0.97) / 0.05, 2));    // head
+    const z = -0.55 + a * 0.72;
+    for (let j = 0; j <= R; j++) {
+      const th = (j / R) * Math.PI * 2;
+      pos.push(Math.cos(th) * r, Math.sin(th) * r * 0.90, z);
+    }
+  }
+  for (let i = 0; i < N; i++) for (let j = 0; j < R; j++) {
+    const a = i * (R + 1) + j, b = a + R + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx); g.computeVertexNormals();
+
+  const bodyMat = new THREE.ShaderMaterial({
+    uniforms: { uSun: { value: SUN }, uSunCol: { value: SUN_COL }, uSkyCol: { value: SKY_COL } },
+    vertexShader: `
+      varying vec3 vN; varying vec3 vW; varying vec3 vP;
+      void main() {
+        vN = normalize(normalMatrix * normal); vP = position;
+        vec4 wp = modelMatrix * vec4(position, 1.0); vW = wp.xyz;
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }`,
+    fragmentShader: NOISE_GLSL + `
+      precision highp float;
+      uniform vec3 uSun, uSunCol, uSkyCol;
+      varying vec3 vN; varying vec3 vW; varying vec3 vP;
+      void main() {
+        vec3 N = normalize(vN);
+        // the thorax is furred, the abdomen banded
+        float band = 0.5 + 0.5 * sin(vP.z * 150.0);
+        float furry = smoothstep(-0.02, 0.10, vP.z);
+        vec3 base = mix(vec3(0.016, 0.014, 0.015), vec3(0.052, 0.046, 0.048), band * (1.0 - furry * 0.5));
+        float fleck = smoothstep(0.86, 0.99, sin(vP.z * 120.0) * sin(atan(vP.y, vP.x) * 7.0) * 0.5 + 0.5);
+        base = mix(base, vec3(0.42, 0.40, 0.38), fleck * 0.75);
+        // the thorax is furred, so break it up with fine hair-scale noise
+        float fur = gfbm3(vec2(atan(vP.y, vP.x) * 9.0, vP.z * 70.0)) * 0.5 + 0.5;
+        base *= mix(1.0, 0.62 + 0.85 * fur, furry);
+        float d = max(dot(N, uSun), 0.0);
+        vec3 col = base * (uSunCol * (0.22 + 1.35 * d) + uSkyCol * (0.5 + 0.5 * N.y) * 0.55);
+        vec3 V = normalize(cameraPosition - vW);
+        col += uSunCol * pow(max(dot(reflect(-uSun, N), V), 0.0), 22.0) * 0.05;
+        gl_FragColor = vec4(col, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+  butterfly.add(new THREE.Mesh(g, bodyMat));
+
+  // Tegulae — the little scaled shoulder pads over each wing base. Real
+  // butterflies have them, and they are what visually welds wing to thorax.
+  for (const sx of [1, -1]) {
+    const teg = new THREE.Mesh(new THREE.SphereGeometry(0.052, 12, 9), bodyMat);
+    teg.position.set(0.030 * sx, 0.026, 0.020);
+    teg.scale.set(1.15, 0.62, 1.5);
+    teg.rotation.z = -0.35 * sx;
+    butterfly.add(teg);
+  }
+
+  // ---- antennae: thin, swept back, clubbed at the tip ----
+  const antMat = new THREE.MeshBasicMaterial({ color: 0x14100f });
+  for (const sx of [1, -1]) {
+    const c = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0.010 * sx, 0.020, 0.150),
+      new THREE.Vector3(0.062 * sx, 0.075, 0.300),
+      new THREE.Vector3(0.105 * sx, 0.110, 0.430));
+    butterfly.add(new THREE.Mesh(new THREE.TubeGeometry(c, 12, 0.0042, 5, false), antMat));
+    const club = new THREE.Mesh(new THREE.SphereGeometry(0.013, 8, 6), antMat);
+    club.position.copy(c.getPointAt(1)); club.scale.z = 1.9;
+    butterfly.add(club);
+  }
+}
+
+butterfly.scale.setScalar(0.88);        // ~1.7 world units tip to tip
+
+/* ---------- flight ----------
+ * A cycle rather than aimless wandering: cruise, approach, land on one
+ * nominated blossom near the middle of the frame, sit there with the wings
+ * held open, then take off and go round again.                             */
+
+// mirrors windOffset() and the per-flower nod in the blossom shader, so the
+// butterfly rides the flower it is standing on instead of sliding off it
+function flowerPoint(out, b, t) {
+  const ph = b.p.x * 0.16 + b.p.y * 0.11 + b.p.z * 0.30, a = 0.048;
+  out.set(
+    b.p.x + (Math.sin(t * 0.62 + ph) + 0.45 * Math.sin(t * 1.43 + ph * 2.3)) * a,
+    b.p.y + Math.sin(t * 0.81 + ph * 1.7) * a * 0.40,
+    b.p.z + Math.sin(t * 0.55 + ph * 0.9) * a * 0.55);
+  const w = Math.sin(t * 1.55 + b.phase * 6.28) * 0.050 + Math.sin(t * 0.83 + b.phase * 3.1) * 0.032;
+  out.x += w; out.y += w * 0.45; out.z += w * 0.3;
+  return out;
+}
+
+// Only flowers on the near face of the crown, and only ones inside the frame:
+// a butterfly lost behind the blossom mass may as well not be there.
+const bfPool = blossoms.filter(b =>
+  b.p.x > -7.6 && b.p.x < 6.4 && b.p.y > -2.6 && b.p.y < 3.6 && b.p.z > 0.1);
+
+// the perch: the blossom nearest the centre of frame that is also turned
+// toward the lens, so the open wings are square to the viewer
+const PERCH = (() => {
+  const TAN = Math.tan(THREE.MathUtils.degToRad(22.5));
+  const face = new THREE.Vector3(), zA = new THREE.Vector3(0, 0, 1);
+  let best = null, bestScore = 1e9;
+  for (const b of bfPool) {
+    if (b.p.z < 0.3) continue;
+    face.copy(zA).applyQuaternion(b.q);
+    if (face.z < 0.2) continue;
+    const h = TAN * (14 - b.p.z);
+    const nx = b.p.x / (h * (16 / 9)), ny = (b.p.y - 1.0) / h;
+    // A perched butterfly is only worth showing if it is not buried. Flowers
+    // NEARER the lens are what actually hide it, so those count far more than
+    // simple crowding.
+    let crowd = 0;
+    for (const o of bfPool) {
+      if (o === b) continue;
+      const d2 = o.p.distanceToSquared(b.p);
+      if (d2 < 0.085) crowd += 0.6;
+      if (d2 < 0.55 && o.p.z > b.p.z + 0.06) crowd += 1.6;
+    }
+    const score = nx * nx * 2.6 + ny * ny * 1.8 + crowd * 0.020;
+    if (score < bestScore) { bestScore = score; best = b; }
+  }
+  return best || bfPool[0] || null;
+})();
+const PERCH_FACE = PERCH
+  ? new THREE.Vector3(0, 0, 1).applyQuaternion(PERCH.q)
+  : new THREE.Vector3(0, 0, 1);
+
+const BF = {
+  pos: new THREE.Vector3(-6.5, 2.2, 2.6),
+  vel: new THREE.Vector3(1.4, 0, 0),
+  acc: new THREE.Vector3(),
+  tgt: new THREE.Vector3(),
+  mode: 'cruise',
+  timer: 4.5,          // land early enough that it is seen to happen
+  settle: 0,
+  bank: 0,
+  flap: 0,
+};
+
+function bfPickTarget() {
+  if (!bfPool.length) { BF.tgt.set(0, 0, 2); return; }
+  const b = bfPool[Math.floor(rng() * bfPool.length)];
+  BF.tgt.copy(b.p).add(new THREE.Vector3(rand(-0.25, 0.25), rand(0.30, 0.70), rand(0.45, 0.95)));
+}
+bfPickTarget();
+
+// soft walls: nudge back rather than clamp, so the path never kinks
+// pulled in on the right and at the bottom so a wing this size never
+// wanders across the standing copy
+const BF_BOX = { x0: -8.0, x1: 4.6, y0: -2.0, y1: 4.2, z0: 0.0, z1: 4.6 };
+function bfContain(out) {
+  const k = 2.6, m = 0.9;
+  if (BF.pos.x < BF_BOX.x0 + m) out.x += k * (BF_BOX.x0 + m - BF.pos.x);
+  if (BF.pos.x > BF_BOX.x1 - m) out.x -= k * (BF.pos.x - BF_BOX.x1 + m);
+  if (BF.pos.y < BF_BOX.y0 + m) out.y += k * (BF_BOX.y0 + m - BF.pos.y);
+  if (BF.pos.y > BF_BOX.y1 - m) out.y -= k * (BF.pos.y - BF_BOX.y1 + m);
+  if (BF.pos.z < BF_BOX.z0 + m) out.z += k * (BF_BOX.z0 + m - BF.pos.z);
+  if (BF.pos.z > BF_BOX.z1 - m) out.z -= k * (BF.pos.z - BF_BOX.z1 + m);
+}
+
+// Display pose: dorsal surface square to the camera, head up. This is the
+// whole point of the landing — a perched butterfly seen edge-on shows nothing.
+const bfLandQ = new THREE.Quaternion();
+{
+  const landAt = PERCH ? PERCH.p.clone().addScaledVector(PERCH_FACE, 0.16).addScaledVector(UP, 0.20) : new THREE.Vector3();
+  const dorsal = new THREE.Vector3().subVectors(camera.position, landAt).normalize();
+  const fwd = new THREE.Vector3(0, 1, 0).addScaledVector(dorsal, -dorsal.y).normalize();
+  const right = new THREE.Vector3().crossVectors(dorsal, fwd).normalize();
+  bfLandQ.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, dorsal, fwd));
+  // a few degrees off square, so it reads as an insect and not a decal
+  bfLandQ.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.10));
+  bfLandQ.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.14));
+}
+
+const bfTmp = new THREE.Vector3(), bfPrevVel = new THREE.Vector3(), bfLand = new THREE.Vector3();
+const bfRight = new THREE.Vector3(), bfUp = new THREE.Vector3(), bfFwd = new THREE.Vector3();
+const bfBasis = new THREE.Matrix4();
+const bfFlightQ = new THREE.Quaternion(), bfQTmp = new THREE.Quaternion();
+const AX_X = new THREE.Vector3(1, 0, 0), AX_Z = new THREE.Vector3(0, 0, 1);
+
+function updateButterfly(dt, t) {
+  // ---- where the perch is right now (it sways with the branch) ----
+  if (PERCH) flowerPoint(bfLand, PERCH, t).addScaledVector(PERCH_FACE, 0.16).addScaledVector(UP, 0.20);
+  else bfLand.set(0, 0, 2);
+
+  // ---- mode machine ----
+  BF.timer -= dt;
+  if (BF.mode === 'cruise') {
+    if (BF.timer <= 0) { BF.mode = 'approach'; BF.timer = 14; }
+  } else if (BF.mode === 'approach') {
+    if (BF.pos.distanceTo(bfLand) < 0.18 || BF.timer <= 0) { BF.mode = 'landed'; BF.timer = rand(7.5, 10.5); }
+  } else if (BF.mode === 'landed') {
+    if (BF.timer <= 0) { BF.mode = 'takeoff'; BF.timer = 2.4; }
+  } else if (BF.mode === 'takeoff') {
+    if (BF.timer <= 0) { BF.mode = 'cruise'; BF.timer = rand(5.5, 9.0); bfPickTarget(); }
+  }
+  const landing = BF.mode === 'landed';
+  BF.settle += ((landing ? 1 : 0) - BF.settle) * Math.min(1, dt * (landing ? 3.4 : 4.5));
+
+  // ---- wingbeat: quick asymmetric stroke in flight, slow display at rest ----
+  const beat = THREE.MathUtils.lerp(8.6 + Math.sin(t * 0.7) * 0.9, 0.34, BF.settle);
+  BF.flap += dt * beat * Math.PI * 2;
+  const raw = Math.sin(BF.flap);
+  const shaped = Math.sign(raw) * Math.pow(Math.abs(raw), 0.72);
+  const flyPhi  = 20 + 48 * shaped;
+  const restPhi = 15 + 7 * shaped;                // open in a shallow V, barely breathing
+  const phi = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(flyPhi, restPhi, BF.settle));
+  const flapVel = Math.cos(BF.flap) * beat;
+
+  wingR1.rotation.z = phi;  wingL1.rotation.z = -phi;
+  wingR2.rotation.z = phi * 0.95 - 0.03;                        // hindwing lags a little
+  wingL2.rotation.z = -(phi * 0.95 - 0.03);
+  wingBend.fore.value = -flapVel * 0.010;
+  wingBend.hind.value = -flapVel * 0.013;
+
+  // ---- steering ----
+  const goal = (BF.mode === 'approach') ? bfLand : BF.tgt;
+  bfTmp.copy(goal).sub(BF.pos);
+  const dist = bfTmp.length();
+  const speed = Math.min(2.3, 0.35 + dist * 1.5);
+  const desired = bfTmp.normalize().multiplyScalar(speed);
+
+  // erratic drift: butterflies do not fly straight lines. Fade it out on
+  // final approach or it can circle the flower forever without touching it.
+  const wander = BF.mode === 'approach' ? Math.min(1, dist * 0.55) : 1;
+  desired.x += (Math.sin(t * 3.1) + 0.6 * Math.sin(t * 7.7 + 1.1)) * 0.42 * wander;
+  desired.y += (Math.sin(t * 1.9 + 1.7) + 0.55 * Math.sin(t * 4.6)) * 1.15 * wander;
+  desired.z += Math.sin(t * 2.7 + 3.4) * 0.40 * wander;
+  if (BF.mode === 'takeoff') { desired.y += 1.6; desired.z += 0.8; }
+  bfContain(desired);
+
+  bfPrevVel.copy(BF.vel);
+  BF.vel.lerp(desired, 1 - Math.pow(0.03, dt));
+  BF.acc.copy(BF.vel).sub(bfPrevVel).divideScalar(Math.max(dt, 1e-4));
+  BF.pos.addScaledVector(BF.vel, dt);
+  if (BF.settle > 0.001) {
+    BF.pos.lerp(bfLand, Math.min(1, dt * 6.0 * BF.settle));
+    BF.vel.multiplyScalar(1 - Math.min(1, dt * 6.0 * BF.settle));
+  }
+
+  // ---- orientation ----
+  bfFwd.copy(BF.vel);
+  if (bfFwd.lengthSq() < 1e-6) bfFwd.set(0, 0, 1);
+  bfFwd.normalize();
+  bfRight.crossVectors(bfFwd, UP);
+  if (bfRight.lengthSq() < 1e-6) bfRight.set(1, 0, 0);
+  bfRight.normalize();
+  bfUp.crossVectors(bfRight, bfFwd).normalize();
+
+  const lateral = bfRight.dot(BF.acc);
+  BF.bank += (THREE.MathUtils.clamp(-lateral * 0.40, -1.15, 1.15) - BF.bank) * Math.min(1, dt * 5.0);
+
+  bfBasis.makeBasis(bfRight, bfUp, bfFwd);
+  bfFlightQ.setFromRotationMatrix(bfBasis);
+  bfQTmp.setFromAxisAngle(AX_Z, BF.bank + Math.sin(t * 0.83) * 0.30 + Math.sin(BF.flap) * 0.05);
+  bfFlightQ.multiply(bfQTmp);
+  bfQTmp.setFromAxisAngle(AX_X, Math.sin(BF.flap) * 0.10 - 0.06);
+  bfFlightQ.multiply(bfQTmp);
+
+  butterfly.quaternion.copy(bfFlightQ).slerp(bfLandQ, BF.settle);
+  butterfly.position.copy(BF.pos);
+  butterfly.position.y += Math.sin(BF.flap - 0.9) * 0.030 * (1 - BF.settle);
+}
+
+/* ---------- cursor ----------
+ * Unproject onto the plane the crown sits in, rather than raycasting the
+ * main limb. Hitting the limb meant the blossom only stirred when the
+ * pointer was over the trunk itself; this way anything near the pointer
+ * moves — twigs, flowers, the moss on the bough. Depth is weighted down in
+ * the shaders so the pointer acts on a soft column through the canopy.     */
+const raycaster = new THREE.Raycaster();
+const crownPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+const ndc = new THREE.Vector2(10, 10);
+const targetMouse = new THREE.Vector3(9999, 9999, 9999);
+
+addEventListener('pointermove', (e) => {
+  ndc.x =  (e.clientX / innerWidth) * 2 - 1;
+  ndc.y = -(e.clientY / innerHeight) * 2 + 1;
+}, { passive: true });
+addEventListener('pointerleave', () => ndc.set(10, 10));
+
+function updateMouseWorld() {
+  if (ndc.x > 2) { targetMouse.set(9999, 9999, 9999); return; }
+  raycaster.setFromCamera(ndc, camera);
+  if (!raycaster.ray.intersectPlane(crownPlane, targetMouse)) targetMouse.set(9999, 9999, 9999);
+}
+
+// ---------- loop ----------
+const stillAir = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clock = new THREE.Clock();
+
+function tick() {
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (!stillAir) uTime.value += dt;
+
+  updateButterfly(stillAir ? 0.0001 : dt, uTime.value);
+  updateMouseWorld();
+  const m = uMouse.value;
+  if (targetMouse.x > 999 || m.x > 999) m.copy(targetMouse);
+  else m.lerp(targetMouse, 1 - Math.pow(0.0001, dt));
+
+  renderer.render(scene, camera);
+}
+tick();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

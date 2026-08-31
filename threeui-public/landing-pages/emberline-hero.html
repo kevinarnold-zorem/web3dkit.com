@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23000'/%3E%3Cpath d='M16 4c1.2 6.4 5.6 9.4 5.6 14.2A5.7 5.7 0 0 1 16 24a5.7 5.7 0 0 1-5.6-5.8C10.4 13.4 14.8 10.4 16 4z' fill='%234d8dff'/%3E%3C/svg%3E">
+<meta name="description" content="Ignite shards, compiles and schedules every stage of your training run, so no card in the cluster ever sits idle.">
+<meta name="color-scheme" content="dark">
+<title>Emberline — Every GPU, fully saturated</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pad: clamp(20px, 5.94vw, 114px);
+    --r-btn: clamp(8px, 0.55vw, 11px);
+    --r-panel: clamp(10px, 0.73vw, 14px);
+    --r-card: clamp(12px, 0.94vw, 18px);
+    --panel: rgba(12,15,22,.34);
+    --glass: blur(34px) saturate(155%);
+    --edge: rgba(255,255,255,.11);
+    --ink: #fff;
+    --dim: rgba(255,255,255,.66);
+    --dim2: rgba(255,255,255,.74);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#000;}
+  body{
+    font-family:"Inter Tight","Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    overflow-x:hidden;
+  }
+  .hero{
+    position:relative;
+    min-height:100svh; min-height:100vh;
+    display:grid;
+    grid-template-rows:auto 1fr auto;
+    grid-template-columns:minmax(0,1fr);
+    isolation:isolate; overflow:hidden;
+    background:
+      radial-gradient(54% 46% at 50% 30%, rgba(40,110,255,.16) 0%, rgba(20,70,255,.05) 44%, rgba(0,0,0,0) 74%),
+      #000;
+  }
+  #gl{position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; opacity:0; transition:opacity 1.4s ease;}
+  #gl.on{opacity:1}
+  /* copy sits left, cards sit low — scrim is weighted the same way */
+  .scrim{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:
+      linear-gradient(97deg, rgba(0,0,0,.50) 0%, rgba(0,0,0,.42) 22%, rgba(0,0,0,.21) 41%, rgba(0,0,0,.04) 55%, rgba(0,0,0,0) 66%),
+      linear-gradient(to top, rgba(0,0,0,.60) 0%, rgba(0,0,0,.30) 14%, rgba(0,0,0,0) 34%),
+      linear-gradient(to bottom, rgba(0,0,0,.55) 0%, rgba(0,0,0,.14) 8%, rgba(0,0,0,0) 16%);
+  }
+  .vign{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:radial-gradient(128% 100% at 50% 42%, rgba(0,0,0,0) 52%, rgba(0,0,0,.52) 100%);
+  }
+
+  /* gradient edges — one masked ring per surface, radius inherited */
+  .pillnav, .navcta, .eyebrow, .stat{position:relative; border:0;}
+  .pillnav::before, .navcta::before, .eyebrow::before, .stat::before{
+    content:""; position:absolute; inset:0; border-radius:inherit; padding:1px;
+    background:linear-gradient(145deg,
+      rgba(255,255,255,.36) 0%,
+      rgba(130,180,255,.30) 38%,
+      rgba(255,255,255,.06) 72%,
+      rgba(255,255,255,.14) 100%);
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    pointer-events:none;
+  }
+  .navcta::before{
+    background:linear-gradient(145deg,
+      rgba(255,255,255,.52) 0%,
+      rgba(150,195,255,.40) 42%,
+      rgba(255,255,255,.10) 78%,
+      rgba(255,255,255,.20) 100%);
+  }
+
+  /* ---------- floating pill nav ---------- */
+  .navbar{
+    position:relative; z-index:4;
+    display:grid; grid-template-columns:1fr auto; align-items:center;
+    gap:clamp(12px,1.5vw,28px);
+    padding:clamp(14px,1.55vw,30px) var(--pad) 0;
+  }
+  .pillnav{
+    display:flex; align-items:center;
+    height:clamp(52px,4.27vw,82px);
+    padding:0 clamp(5px,0.36vw,7px) 0 clamp(18px,2.1vw,40px);
+    gap:clamp(14px,1.35vw,26px);
+    border-radius:var(--r-card);
+    background:var(--panel);
+    backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
+    max-width:100%; justify-self:end;
+  }
+  .brand{
+    display:flex; align-items:center; gap:clamp(7px,0.63vw,12px);
+    justify-self:start;
+    color:#fff; text-decoration:none;
+    font-size:clamp(17px,1.45vw,28px); font-weight:600; letter-spacing:-.02em;
+    white-space:nowrap;
+  }
+  .brand svg{width:1.05em; height:1.05em; display:block; fill:currentColor;}
+  .pillnav .links{display:flex; align-items:center; gap:clamp(14px,1.9vw,36px);}
+  .pillnav .links a{
+    color:var(--dim2); text-decoration:none;
+    font-size:clamp(13px,1.3vw,25px); font-weight:400; letter-spacing:-.006em;
+    white-space:nowrap; transition:color .25s ease;
+  }
+  .pillnav .links a:hover{color:#fff}
+  .navcta{
+    display:inline-flex; align-items:center; justify-content:center;
+    height:calc(100% - clamp(10px,0.72vw,14px));
+    padding-inline:clamp(14px,1.6vw,30px);
+    border-radius:var(--r-btn);
+    background:rgba(255,255,255,.12);
+    color:#fff; text-decoration:none; white-space:nowrap;
+    font-size:clamp(13px,1.3vw,25px); font-weight:500; letter-spacing:-.006em;
+    transition:background .25s ease, border-color .25s ease;
+  }
+  .navcta:hover{background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.30)}
+
+  /* ---------- left copy column ---------- */
+  .copy{
+    position:relative; z-index:3;
+    align-self:end;                       /* copy bottoms out where the stat cards begin */
+    padding:0 var(--pad) clamp(0px,0.6vh,8px);
+    max-width:min(100%, calc(var(--pad) + 54vw));
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:clamp(8px,0.63vw,12px);
+    height:clamp(34px,2.92vw,56px);
+    padding-inline:clamp(14px,1.25vw,24px);
+    border-radius:var(--r-panel);
+    background:var(--panel);
+    backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
+    font-size:clamp(12px,1.15vw,22px); font-weight:400; letter-spacing:-.004em;
+    color:rgba(255,255,255,.88); white-space:nowrap;
+  }
+  .eyebrow::after{
+    content:""; order:-1; width:.42em; height:.42em; border-radius:50%;
+    border:1.5px solid rgba(255,255,255,.62); flex:none;
+  }
+  h1{
+    margin:clamp(16px,1.9vw,36px) 0 0;
+    font-weight:300;
+    font-size:clamp(38px,4.22vw,81px);
+    line-height:1.045;
+    letter-spacing:-.024em;
+  }
+  .lede{
+    margin:clamp(16px,1.85vw,36px) 0 0;
+    max-width:31em;
+    font-size:clamp(15px,1.25vw,24px);
+    line-height:1.56; font-weight:400; letter-spacing:-.004em;
+    color:var(--dim);
+  }
+  .cta{
+    position:relative; overflow:hidden;
+    display:inline-flex; align-items:center; gap:clamp(10px,0.94vw,18px);
+    margin-top:clamp(24px,3.05vw,58px);
+    height:clamp(52px,3.85vw,74px);
+    padding:clamp(5px,0.42vw,8px);
+    padding-right:clamp(22px,1.67vw,32px);
+    border-radius:var(--r-btn);
+    background:#fff; color:#171717; text-decoration:none;
+    font-size:clamp(14px,1.3vw,25px); font-weight:500; letter-spacing:-.008em;
+    transition:transform .3s cubic-bezier(.2,.7,.3,1), box-shadow .3s ease;
+    box-shadow:0 0 0 0 rgba(90,160,255,0);
+  }
+  .cta .ico{
+    position:relative; overflow:hidden;
+    height:100%; aspect-ratio:1; border-radius:calc(var(--r-btn) - 3px);
+    background:#101216; color:#fff; flex:none;
+    transition:background .38s ease;
+  }
+  .cta .arw{
+    position:absolute; inset:0; display:grid; place-items:center;
+    transition:transform .46s cubic-bezier(.22,.75,.28,1);
+  }
+  .cta .arw.b{transform:translateX(-135%)}
+  .cta .arw svg{width:44%; height:44%; display:block; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round;}
+  .cta .lbl{display:inline-block; transition:transform .46s cubic-bezier(.22,.75,.28,1);}
+  .cta:hover, .cta:focus-visible{transform:translateY(-2px); box-shadow:0 18px 46px -14px rgba(90,160,255,.72)}
+  .cta:hover .ico, .cta:focus-visible .ico{background:#2f6bff}
+  .cta:hover .arw.a, .cta:focus-visible .arw.a{transform:translateX(135%)}
+  .cta:hover .arw.b, .cta:focus-visible .arw.b{transform:translateX(0)}
+  .cta:hover .lbl, .cta:focus-visible .lbl{transform:translateX(3px)}
+  .cta:active{transform:translateY(0)}
+
+  /* ---------- bottom row ---------- */
+  .foot{
+    position:relative; z-index:3;
+    display:flex; flex-direction:column; gap:clamp(18px,1.9vw,34px);
+    padding:0 var(--pad) clamp(20px,3.9vh,44px);
+  }
+  .footrow{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:clamp(16px,2vw,40px);
+  }
+  .clients{
+    display:flex; align-items:center; gap:clamp(14px,1.9vw,36px);
+    padding-top:clamp(14px,1.35vw,26px);
+    background-image:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.20) 16%, rgba(130,180,255,.16) 52%, rgba(255,255,255,.05) 84%, rgba(255,255,255,0) 100%);
+    background-size:100% 1px; background-repeat:no-repeat; background-position:left top;
+    flex-wrap:wrap;
+  }
+  .clabel{
+    font-size:12px; letter-spacing:.075em; text-transform:uppercase;
+    color:rgba(255,255,255,.40); white-space:nowrap;
+  }
+  .crow{display:flex; align-items:center; gap:clamp(20px,2.6vw,50px); flex-wrap:wrap;}
+  .crow .mark{display:flex; align-items:center; gap:7px; color:rgba(255,255,255,.56); white-space:nowrap;}
+  .crow .mark svg{width:18px; height:18px; fill:currentColor; flex:none; display:block;}
+  .crow .mark span{font-size:15px; font-weight:600; letter-spacing:-.012em; line-height:1;}
+  .crow .mark.caps span{text-transform:uppercase; font-size:13px; font-weight:700; letter-spacing:.075em;}
+  .crow .mark.serif span{font-family:Georgia,"Times New Roman",serif; font-weight:400; font-size:16px; letter-spacing:.05em;}
+  .crow .mark.italic span{font-style:italic; font-weight:700; letter-spacing:-.02em;}
+  .proof{
+    display:inline-flex; align-items:center; gap:clamp(12px,1.25vw,24px);
+    font-size:clamp(12px,1.15vw,22px); letter-spacing:-.004em; color:rgba(255,255,255,.88);
+    white-space:nowrap;
+  }
+  .faces{display:flex; align-items:center;}
+  .faces img{
+    width:clamp(34px,2.71vw,52px); height:clamp(34px,2.71vw,52px);
+    border-radius:50%; object-fit:cover; display:block;
+    margin-left:clamp(-14px,-0.83vw,-8px);
+    border:2px solid rgba(16,18,24,.92);
+    background:#1a1d24;
+  }
+  .faces img:first-child{margin-left:0}
+  .stats{display:flex; gap:clamp(8px,1.1vw,21px); flex:none;}
+  .stat{
+    width:clamp(98px,11.72vw,225px);
+    height:clamp(122px,11.6vw,223px);
+    border-radius:var(--r-card);
+    background:var(--panel);
+    backdrop-filter:var(--glass); -webkit-backdrop-filter:var(--glass);
+    padding:clamp(12px,1.25vw,24px);
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .stat b{font-size:clamp(24px,3.02vw,58px); font-weight:400; letter-spacing:-.032em; line-height:1;}
+  .stat span{font-size:clamp(11px,0.99vw,19px); line-height:1.36; color:rgba(255,255,255,.62); letter-spacing:-.004em;}
+
+  /* ---------- intro ---------- */
+  .rise{opacity:0; transform:translateY(14px); animation:rise .9s cubic-bezier(.16,.84,.32,1) forwards;}
+  .rise.d1{animation-delay:.10s} .rise.d2{animation-delay:.18s} .rise.d3{animation-delay:.26s}
+  .rise.d4{animation-delay:.34s} .rise.d5{animation-delay:.05s} .rise.d6{animation-delay:.42s}
+  @keyframes rise{to{opacity:1; transform:none}}
+
+  a:focus-visible, .cta:focus-visible, .navcta:focus-visible{
+    outline:2px solid rgba(120,180,255,.95); outline-offset:3px; border-radius:var(--r-btn);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .rise{animation:none; opacity:1; transform:none}
+    .cta, .cta .arw, .cta .lbl{transition:none !important}
+    #gl{transition:none}
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1080px){
+    .stat{height:auto; min-height:clamp(104px,13vw,150px);}
+  }
+  @media (max-width:900px){
+    .pillnav .links{display:none}
+    .navbar{grid-template-columns:auto auto; justify-content:space-between;}
+    .pillnav{padding-left:clamp(5px,0.36vw,7px);}
+    .footrow{flex-direction:column; align-items:stretch; gap:14px;}
+    .proof{width:100%; justify-content:space-between;}
+    .stats{gap:clamp(8px,1.2vw,14px);}
+    .stat{flex:1; width:auto; height:auto; min-height:clamp(96px,14vw,132px);}
+    .copy{max-width:100%}
+    .lede{max-width:36em}
+  }
+  @media (max-height:760px){
+    .copy{align-self:center;}
+  }
+  @media (max-width:760px){
+    :root{--pad:22px}
+    .hero{background:radial-gradient(70% 34% at 50% 26%, rgba(40,110,255,.16) 0%, rgba(0,0,0,0) 72%), #000;}
+    .scrim{background:
+      linear-gradient(to top, rgba(0,0,0,.86) 0%, rgba(0,0,0,.72) 22%, rgba(0,0,0,.44) 40%, rgba(0,0,0,.10) 56%, rgba(0,0,0,0) 70%),
+      linear-gradient(to bottom, rgba(0,0,0,.66) 0%, rgba(0,0,0,.20) 9%, rgba(0,0,0,0) 18%);}
+    .vign{background:radial-gradient(120% 82% at 50% 40%, rgba(0,0,0,0) 48%, rgba(0,0,0,.55) 100%);}
+    h1{font-size:clamp(32px,8.6vw,44px); line-height:1.08;}
+    .lede{font-size:15px; line-height:1.5;}
+    .copy{padding-bottom:clamp(18px,3vh,32px);}
+    .footrow{gap:12px;}
+    .proof{width:100%; justify-content:space-between; font-size:13px;}
+    .clients{gap:12px; padding-top:12px;}
+    .clabel{font-size:10px}
+    .crow{gap:18px}
+    .crow .mark span{font-size:13px}
+    .crow .mark.caps span{font-size:11px}
+    .crow .mark.serif span{font-size:14px}
+    .crow .mark svg{width:15px;height:15px}
+    .stats{gap:8px;}
+    .stat{flex:1; width:auto; min-height:96px; padding:12px;}
+    .stat b{font-size:24px}
+    .stat span{font-size:11px}
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="scrim"></div>
+  <div class="vign"></div>
+
+  <div class="navbar">
+    <a class="brand rise d5" href="#">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.4c.9 4.8 4.2 7 4.2 10.6A4.25 4.25 0 0 1 12 16.3a4.25 4.25 0 0 1-4.2-4.3C7.8 8.4 11.1 6.2 12 1.4z"/><path d="M12 17.6c2.6 0 4.8 1.1 4.8 2.5S14.6 22.6 12 22.6s-4.8-1.1-4.8-2.5 2.2-2.5 4.8-2.5z" opacity=".55"/></svg>
+      Emberline
+    </a>
+    <nav class="pillnav rise d5">
+      <div class="links">
+        <a href="#">Docs</a>
+        <a href="#">Benchmarks</a>
+        <a href="#">Pricing</a>
+        <a href="#">Blog</a>
+      </div>
+      <a class="navcta" href="#">Start free</a>
+    </nav>
+  </div>
+
+  <div class="copy">
+    <span class="eyebrow rise d1">Now shipping Ignite 2.4</span>
+    <h1 class="rise d2">Every GPU,<br>fully saturated</h1>
+    <p class="lede rise d3">Ignite shards, compiles and schedules every stage of your training run, so no card in the cluster ever sits idle.</p>
+    <a class="cta rise d4" href="#">
+      <span class="ico" aria-hidden="true">
+        <span class="arw a"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></span>
+        <span class="arw b"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></span>
+      </span>
+      <span class="lbl">Book a walkthrough</span>
+    </a>
+  </div>
+
+  <div class="foot rise d6">
+    <div class="footrow">
+    <div class="proof">
+      Trusted by research teams since 2019
+      <span class="faces"><img src="data:image/jpeg;base64,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" alt="" width="112" height="112" loading="lazy" decoding="async"><img src="data:image/jpeg;base64,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" alt="" width="112" height="112" loading="lazy" decoding="async"><img src="data:image/jpeg;base64,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" alt="" width="112" height="112" loading="lazy" decoding="async"></span>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>9.4&times;</b><span>Faster pre&#8209;training</span></div>
+      <div class="stat"><b>94%</b><span>Sustained GPU use</span></div>
+      <div class="stat"><b>4,096</b><span>GPUs per run</span></div>
+    </div>
+    </div>
+    <div class="clients">
+      <span class="clabel">Running Ignite in production</span>
+      <div class="crow" id="crow"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* an animated `transform` leaves an identity matrix behind, and any transform
+   forms a backdrop root — which would blind backdrop-filter on the glass panels.
+   Strip the class once the intro has played so transform computes back to none. */
+(function(){
+  document.querySelectorAll('.rise').forEach(el=>{
+    el.addEventListener('animationend', () => el.classList.remove('rise'), {once:true});
+  });
+})();
+
+/* ------------------------------------------------------------------
+   Client marks — placeholder wordmarks
+------------------------------------------------------------------ */
+(function(){
+  const I = {
+    wind:   '<rect x="2" y="5.4" width="20" height="2.7" rx="1.35"/><rect x="2" y="10.6" width="13.5" height="2.7" rx="1.35" opacity=".72"/><rect x="2" y="15.8" width="17" height="2.7" rx="1.35" opacity=".46"/>',
+    rhomb:  '<path d="M12 1.6 18 8l-6 6.4L6 8z"/><path d="M12 11.6 18 18l-6 4.4L6 18z" opacity=".55"/>',
+    star:   '<g><rect x="10.9" y="1" width="2.2" height="22" rx="1.1"/><rect x="10.9" y="1" width="2.2" height="22" rx="1.1" transform="rotate(45 12 12)"/><rect x="10.9" y="1" width="2.2" height="22" rx="1.1" transform="rotate(90 12 12)"/><rect x="10.9" y="1" width="2.2" height="22" rx="1.1" transform="rotate(135 12 12)"/></g>',
+    slash:  '<circle cx="12" cy="12" r="9.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5.6 18.4 18.4 5.6" stroke="currentColor" stroke-width="2"/>',
+    hex:    '<path d="M12 1.5 21.5 7v10L12 22.5 2.5 17V7z" fill="none" stroke="currentColor" stroke-width="2.1"/><circle cx="12" cy="12" r="3.1"/>',
+    arcs:   '<path d="M12 2a10 10 0 0 1 0 20" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 6.6a5.4 5.4 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="1.9"/>',
+  };
+  const marks = [
+    ['Northwind', I.wind,  ''],
+    ['Veloce',    I.rhomb, 'caps'],
+    ['Quantly',   I.star,  ''],
+    ['Halcyon',   '',      'serif'],
+    ['Ardent',    I.slash, ''],
+    ['Novacore',  I.hex,   'caps'],
+    ['Kestrel',   I.arcs,  ''],
+  ];
+  document.getElementById('crow').innerHTML = marks.map(([n,i,c]) =>
+    `<div class="mark ${c}">`+(i?`<svg viewBox="0 0 24 24" aria-hidden="true">${i}</svg>`:'')+`<span>${n}</span></div>`
+  ).join('');
+})();
+</script>
+
+<script src="https://unpkg.com/three@0.147.0/build/three.min.js"></script>
+
+<script>
+/* ------------------------------------------------------------------
+   Vortex line field
+------------------------------------------------------------------ */
+(function(){
+  const canvas = document.getElementById('gl');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:false, alpha:false, powerPreference:'high-performance'});
+  renderer.setClearColor(0x000000, 1);
+  renderer.outputEncoding = THREE.LinearEncoding;
+  renderer.toneMapping = THREE.NoToneMapping;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(48, 1, 0.05, 800);
+
+  /* ---------------- tunables ---------------- */
+  const P = {
+    curves:520, samples:190,
+    r0:0.16, layers:5, jit:0.25,
+    V:5.0, b:1.47, A:0.640, shell:0.35, clampI:5.0, dimLo:0.40, knee:6.5, flat:0.20, cap:0.38,
+    crownR:5.00, crownPow:1.35, crownInner:0.32,
+    Vd:10.8, trunkB:1.90, capDn:0.12, trunkTurb:0.50,
+    rootStart:3.4, rootR:3.20, rootPow:1.55,
+    twist:1.40, twistL:0.12, rot:0.055,
+    t1:0.34, t2:0.13, t3:0.18, t3r:0.050,
+    f1:0.300, f2:0.620, f3:0.110, tw:0.9, twBase:0.80,
+    inten:0.55, dens:0.36, densK:2.10, fog:0.030, gainP:8.0, gainA:2.60, gainB:0.030,
+    beadI:0.60, webI:0.09, starI:1.05, starRot:0.018, starLeft:2.10,
+    camX:0.0, camY:0.0, camZ:7.0, tgtX:0.0, tgtY:-1.65, tgtZ:0.0, fov:50,
+    bloomS:1.00, bloomR:1.00, bloomT:0.22, vig:0.54,
+    orbAz:0.86, orbEl:0.40,
+  };
+  if(Math.min(window.innerWidth, window.innerHeight) < 760 || window.innerWidth < 900) P.curves = 380;
+
+  const U = {
+    uTime:{value:0},
+    uR0:{value:P.r0}, uTwist:{value:P.twist}, uRot:{value:P.rot}, uTwistL:{value:P.twistL},
+    uGeoA:{value:new THREE.Vector3(P.curves,P.layers,P.jit)},
+    uGeoB:{value:new THREE.Vector3(P.V,P.b,P.A)},
+    uGeoC:{value:new THREE.Vector3(P.shell,P.clampI,0)},
+    uGeoD:{value:new THREE.Vector3(P.Vd,P.trunkB,P.capDn)},
+    uGeoE:{value:new THREE.Vector2(P.trunkTurb,P.crownInner)},
+    uGeoF:{value:new THREE.Vector2(P.crownR,P.crownPow)},
+    uRoot:{value:new THREE.Vector3(P.rootStart,P.rootR,P.rootPow)},
+    uAsym:{value:new THREE.Vector2(P.dimLo,P.knee)},
+    uAsym2:{value:new THREE.Vector2(P.flat,P.cap)},
+    uT:{value:new THREE.Vector4(P.t1,P.t2,P.t3,P.t3r)},
+    uF:{value:new THREE.Vector4(P.f1,P.f2,P.f3,P.tw)},
+    uTw2:{value:new THREE.Vector2(P.twBase,0)},
+    uInt:{value:P.inten}, uDens:{value:new THREE.Vector3(P.dens,P.densK,P.fog)},
+    uGain:{value:new THREE.Vector3(P.gainP,P.gainA,P.gainB)},
+  };
+
+  const COMMON = `
+  #define TAU 6.28318530718
+  uniform float uTime;
+  uniform float uR0, uTwist, uRot, uTwistL;
+  uniform vec3  uGeoA;  // curves, layers, jitter
+  uniform vec3  uGeoB;  // V, b, A
+  uniform vec3  uGeoC;  // shell, clampI, -
+  uniform vec3  uGeoD;  // Vdown, trunkB, capDown
+  uniform vec2  uGeoE;  // trunk turbulence damping, -
+  uniform vec2  uGeoF;  // crown radius, crown spread exponent
+  uniform vec3  uRoot;  // root start depth, root radius, root spread exponent
+  uniform vec2  uAsym;  // lowGain, knee
+  uniform vec2  uAsym2; // flat, cap
+  uniform vec4  uT, uF;
+  uniform vec2  uTw2; // base turbulence weight at axis, -
+  uniform float uInt;
+  uniform vec3  uDens, uGain;
+
+  vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+  vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+  vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+  vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+  float snoise(vec3 v){
+    const vec2 C=vec2(1.0/6.0,1.0/3.0); const vec4 D=vec4(0.0,0.5,1.0,2.0);
+    vec3 i=floor(v+dot(v,C.yyy)); vec3 x0=v-i+dot(i,C.xxx);
+    vec3 g=step(x0.yzx,x0.xyz); vec3 l=1.0-g; vec3 i1=min(g.xyz,l.zxy); vec3 i2=max(g.xyz,l.zxy);
+    vec3 x1=x0-i1+C.xxx; vec3 x2=x0-i2+C.yyy; vec3 x3=x0-D.yyy;
+    i=mod289(i);
+    vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+    float n_=0.142857142857; vec3 ns=n_*D.wyz-D.xzx;
+    vec4 j=p-49.0*floor(p*ns.z*ns.z);
+    vec4 x_=floor(j*ns.z); vec4 y_=floor(j-7.0*x_);
+    vec4 x=x_*ns.x+ns.yyyy; vec4 y=y_*ns.x+ns.yyyy; vec4 h=1.0-abs(x)-abs(y);
+    vec4 b0=vec4(x.xy,y.xy); vec4 b1=vec4(x.zw,y.zw);
+    vec4 s0=floor(b0)*2.0+1.0; vec4 s1=floor(b1)*2.0+1.0; vec4 sh=-step(h,vec4(0.0));
+    vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy; vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+    vec3 p0=vec3(a0.xy,h.x); vec3 p1=vec3(a0.zw,h.y); vec3 p2=vec3(a1.xy,h.z); vec3 p3=vec3(a1.zw,h.w);
+    vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+    p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+    vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0); m=m*m;
+    return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+  }
+  float sinh_(float x){ return 0.5*(exp(x)-exp(-x)); }
+  float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
+
+  vec3 turbulence(vec3 p, float R){
+    float t = uTime;
+    float w = uTw2.x + (1.0-uTw2.x)*R/(R+uF.w);
+    vec3 q1 = p*uF.x + vec3(0.0, -t*0.052, 4.7);
+    vec3 d1 = vec3(snoise(q1), snoise(q1+vec3(31.4,17.2,9.1)), snoise(q1+vec3(-13.7,45.3,22.8)));
+    vec3 q2 = p*uF.y + vec3(t*0.062, 0.0, -2.3);
+    vec3 d2 = vec3(snoise(q2), snoise(q2+vec3(7.7,3.3,21.9)), snoise(q2+vec3(19.1,-8.4,5.5)));
+    vec3 q3 = p*uF.z + vec3(-1.9, -t*0.038, 0.6);
+    vec3 d3 = vec3(snoise(q3), snoise(q3+vec3(51.4,-7.2,3.1)), snoise(q3+vec3(3.7,15.3,-42.8)));
+    return (d1*uT.x + d2*uT.y)*w + d3*(uT.z + R*uT.w);
+  }
+
+  float cosh_(float x){ return 0.5*(exp(x)+exp(-x)); }
+  float tanh_(float x){ float e=exp(2.0*x); return (e-1.0)/(e+1.0); }
+
+  // catenoid "trumpet" of revolution, one curve per meridian, twisted like a vortex
+  vec3 curvePos(float ci, float u, out float baseR, out float vOut){
+    float fi    = ci*uGeoA.x;                    // curve index
+    float NL    = uGeoA.y;                       // nested shells
+    float layer = floor(mod(fi, NL));
+    float ring  = floor(fi/NL);
+    float nRing = uGeoA.x/NL;
+    float lz    = layer/max(NL-1.0,1.0);
+    float h1    = hash11(fi*1.37+3.1);
+    float sp    = TAU/nRing;
+    float th0   = (ring+0.5)*sp + (layer+0.5)*sp/NL + (h1-0.5)*sp*uGeoA.z;
+
+    float shell = uGeoC.x;
+    float s  = u*2.0-1.0;
+    float Vv = (s < 0.0) ? uGeoD.x : uGeoB.x;          // trunk runs deeper than the canopy
+    float v  = Vv*s;
+    float bb = uGeoB.y*((v < 0.0) ? uGeoD.y : 1.0);    // trunk holds its radius far longer
+    float r0 = uR0*exp(shell*lz);
+    float tn = v/max(Vv,0.001);
+    float cr = uGeoF.x*(uGeoE.y + (1.0-uGeoE.y)*lz);      // inner shells make a shorter, tighter crown
+    float R;
+    if (v > 0.0) {
+      R = r0 + cr*pow(tn, uGeoF.y);
+    } else {
+      // trunk taper, then roots splaying out over the last stretch
+      float rt = clamp((-v - uRoot.x)/max(0.001, Vv - uRoot.x), 0.0, 1.0);
+      R = r0*cosh_(v/bb) + uRoot.y*(uGeoE.y + (1.0-uGeoE.y)*lz)*pow(rt, uRoot.z);
+    }
+    float cp = (v > 0.0) ? uAsym2.y : uGeoD.z;         // branches arch over; roots barely spread
+    float y  = uGeoB.z*(1.0-uAsym2.x*lz)*(v - cp*Vv*tn*tn*tn);
+    float th = th0 + uTwist*tanh_(v/bb) + uTwistL*v + uTime*uRot;
+    vec3 p = vec3(R*cos(th), y, R*sin(th));
+    baseR = R; vOut = v;
+    p += turbulence(p, R)*mix(uGeoE.x, 1.0, smoothstep(-1.4, 1.6, v));
+    return p;
+  }
+  `;
+
+  /* ---------------- lines ---------------- */
+  const N = P.curves, M = P.samples;
+  const posArr = new Float32Array(N*M*3);
+  const aCi = new Float32Array(N*M), aU = new Float32Array(N*M);
+  const idx = new Uint32Array(N*(M-1)*2);
+  let ii=0;
+  for(let i=0;i<N;i++){
+    const ci=(i+0.5)/N;
+    for(let j=0;j<M;j++){ const k=i*M+j; aCi[k]=ci; aU[k]=j/(M-1); }
+    for(let j=0;j<M-1;j++){ idx[ii++]=i*M+j; idx[ii++]=i*M+j+1; }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(posArr,3));
+  geo.setAttribute('aCi', new THREE.BufferAttribute(aCi,1));
+  geo.setAttribute('aU', new THREE.BufferAttribute(aU,1));
+  geo.setIndex(new THREE.BufferAttribute(idx,1));
+  geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,0,0), 600);
+
+  const lineMat = new THREE.ShaderMaterial({
+    uniforms:U, transparent:true, depthTest:false, depthWrite:false,
+    blending:THREE.AdditiveBlending,
+    vertexShader: COMMON + `
+      attribute float aCi; attribute float aU;
+      varying vec3 vCol;
+      void main(){
+        float g1=hash11(aCi*913.7+3.3), g2=hash11(aCi*47.11+77.7), g3=hash11(aCi*221.9+13.1);
+        float u = mix(0.006+0.055*g2, 0.994-0.055*g3, aU);
+        float R, vv; vec3 p = curvePos(aCi,u,R,vv);
+        vec4 mv = modelViewMatrix*vec4(p,1.0);
+        gl_Position = projectionMatrix*mv;
+        float dens = 1.0/(uDens.y + R*uDens.x);
+        float gain = uGain.z + uGain.y*pow(g1, uGain.x);
+        float breathe = 0.34 + 1.5*pow(0.5+0.5*sin(uTime*0.22+g2*TAU), 3.0);
+        float edge = smoothstep(0.0,0.05,aU)*smoothstep(1.0,0.95,aU);
+        float dist = length(mv.xyz);
+        float asym = mix(uAsym.x, 1.0, smoothstep(-uAsym.y, uAsym.y, vv));
+        float I = (0.16+3.3*dens)*gain*breathe*edge*exp(-dist*uDens.z)*uInt*asym;
+        I = uGeoC.y*I/(uGeoC.y+I);
+        vCol = mix(vec3(0.050,0.170,1.0), vec3(0.90,0.94,1.0), clamp(I*0.30,0.0,1.0))*I;
+      }`,
+    fragmentShader:`varying vec3 vCol; void main(){ gl_FragColor=vec4(vCol,1.0);} `
+  });
+  const lines = new THREE.LineSegments(geo, lineMat);
+  lines.frustumCulled=false; scene.add(lines);
+
+  /* ---------------- beads ---------------- */
+  const NB=900;
+  const bgeo = new THREE.BufferGeometry();
+  {
+    const bp=new Float32Array(NB*3), bc=new Float32Array(NB), bu=new Float32Array(NB);
+    for(let i=0;i<NB;i++){ bc[i]=Math.random(); bu[i]=Math.random(); }
+    bgeo.setAttribute('position', new THREE.BufferAttribute(bp,3));
+    bgeo.setAttribute('aCi', new THREE.BufferAttribute(bc,1));
+    bgeo.setAttribute('aU', new THREE.BufferAttribute(bu,1));
+    bgeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,0,0), 600);
+  }
+  const beadU = Object.assign({}, U, {uPx:{value:1}, uBeadI:{value:P.beadI}});
+  const beadMat = new THREE.ShaderMaterial({
+    uniforms:beadU, transparent:true, depthTest:false, depthWrite:false,
+    blending:THREE.AdditiveBlending,
+    vertexShader: COMMON + `
+      attribute float aCi; attribute float aU;
+      uniform float uPx, uBeadI;
+      varying vec3 vCol;
+      void main(){
+        float g1=hash11(aCi*913.7+3.3);
+        float sp = 0.050+0.090*hash11(aCi*7.7+aU*13.1);
+        float u = fract(aU + uTime*sp);
+        float R, vv; vec3 p = curvePos(aCi, mix(0.06,0.94,u), R, vv);
+        vec4 mv = modelViewMatrix*vec4(p,1.0);
+        gl_Position = projectionMatrix*mv;
+        float dist=length(mv.xyz);
+        gl_PointSize = uPx*(1.5+26.0/dist);
+        float dens = 1.0/(0.55+R*1.35);
+        float gain = 0.10+1.5*pow(g1,3.0);
+        float fade = smoothstep(0.0,0.10,u)*smoothstep(1.0,0.90,u);
+        float asym = mix(uAsym.x, 1.0, smoothstep(-uAsym.y, uAsym.y, vv));
+        float Ib = (0.25+2.6*dens)*gain*fade*exp(-dist*0.030)*uBeadI*asym;
+        Ib = 4.0*Ib/(4.0+Ib);
+        vCol = mix(vec3(0.07,0.22,1.0), vec3(0.90,0.95,1.0), clamp(Ib*0.35,0.0,1.0))*Ib;
+      }`,
+    fragmentShader:`
+      varying vec3 vCol;
+      void main(){ vec2 d=gl_PointCoord-0.5; gl_FragColor=vec4(vCol*exp(-dot(d,d)*14.0),1.0); }`
+  });
+  const beads=new THREE.Points(bgeo,beadMat); beads.frustumCulled=false; scene.add(beads);
+
+  /* ---------------- constellation web ---------------- */
+  const NW=520;
+  const wgeo=new THREE.BufferGeometry();
+  {
+    const wp=new Float32Array(NW*2*3), wc=new Float32Array(NW*2), wu=new Float32Array(NW*2);
+    for(let i=0;i<NW;i++){
+      const ci=Math.random(), u=0.22+Math.random()*0.56;
+      wc[i*2]=ci; wu[i*2]=u;
+      wc[i*2+1]=ci+(Math.random()*2-1)*0.004;
+      wu[i*2+1]=u+(Math.random()*2-1)*0.016;
+    }
+    wgeo.setAttribute('position', new THREE.BufferAttribute(wp,3));
+    wgeo.setAttribute('aCi', new THREE.BufferAttribute(wc,1));
+    wgeo.setAttribute('aU', new THREE.BufferAttribute(wu,1));
+    wgeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,0,0), 600);
+  }
+  const webU = Object.assign({}, U, {uWebI:{value:P.webI}});
+  const webMat=new THREE.ShaderMaterial({
+    uniforms:webU, transparent:true, depthTest:false, depthWrite:false,
+    blending:THREE.AdditiveBlending,
+    vertexShader: COMMON + `
+      attribute float aCi; attribute float aU;
+      uniform float uWebI;
+      varying vec3 vCol;
+      void main(){
+        float R, vv; vec3 p=curvePos(aCi, clamp(aU,0.0,1.0), R, vv);
+        vec4 mv=modelViewMatrix*vec4(p,1.0);
+        gl_Position=projectionMatrix*mv;
+        float dist=length(mv.xyz);
+        vCol=vec3(0.10,0.30,1.0)*(uWebI*exp(-dist*0.05)/(1.0+R*0.35));
+      }`,
+    fragmentShader:`varying vec3 vCol; void main(){ gl_FragColor=vec4(vCol,1.0);} `
+  });
+  const web=new THREE.LineSegments(wgeo,webMat); web.frustumCulled=false; scene.add(web);
+
+  /* ---------------- starfield ---------------- */
+  const NS = 6800;
+  const starGeo = new THREE.BufferGeometry();
+  {
+    const sp=new Float32Array(NS*3), sd=new Float32Array(NS);
+    for(let i=0;i<NS;i++){
+      const u = Math.random()*2-1, th = Math.random()*Math.PI*2;
+      const rr = 40 + Math.pow(Math.random(),0.5)*140;
+      const s2 = Math.sqrt(Math.max(0,1-u*u));
+      sp[i*3]   = Math.cos(th)*s2*rr;
+      sp[i*3+1] = u*rr*0.88;
+      sp[i*3+2] = Math.sin(th)*s2*rr;
+      sd[i] = Math.random();
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(sp,3));
+    starGeo.setAttribute('aSeed', new THREE.BufferAttribute(sd,1));
+    starGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,0,0), 200);
+  }
+  const starU = {uTime:U.uTime, uPx:{value:1}, uStarI:{value:P.starI}, uStarLeft:{value:P.starLeft}};
+  const starMat = new THREE.ShaderMaterial({
+    uniforms: starU,
+    transparent:true, depthTest:false, depthWrite:false,
+    blending:THREE.AdditiveBlending,
+    vertexShader:`
+      attribute float aSeed;
+      uniform float uTime, uPx, uStarI, uStarLeft;
+      varying vec3 vCol;
+      void main(){
+        vec4 mv = modelViewMatrix*vec4(position,1.0);
+        vec4 cp = projectionMatrix*mv;
+        gl_Position = cp;
+        float h  = aSeed;
+        float h2 = fract(h*31.7), h3 = fract(h*97.13);
+        float mag = 0.22 + 0.78*pow(h3, 1.75);
+        float tw  = 0.45 + 0.55*sin(uTime*(0.35+1.9*h2) + h*41.7);
+        // the copy scrim dims the left edge; pay it back so both sides read evenly
+        float ndcx = cp.x/max(abs(cp.w), 0.0001);
+        float lift = 1.0 + uStarLeft*smoothstep(0.40, -0.90, ndcx);
+        gl_PointSize = uPx*(1.15 + 1.85*mag)*(1.0 + 0.18*(lift-1.0));
+        vCol = mix(vec3(0.40,0.70,1.0), vec3(0.92,0.96,1.0), h2*h2) * (uStarI*mag*tw*lift);
+      }`,
+    fragmentShader:`
+      varying vec3 vCol;
+      void main(){ vec2 d=gl_PointCoord-0.5; gl_FragColor=vec4(vCol*exp(-dot(d,d)*11.0),1.0); }`
+  });
+  const stars = new THREE.Points(starGeo, starMat);
+  stars.frustumCulled = false;
+  scene.add(stars);
+
+  /* ---------------- post: scene target + custom bloom ---------------- */
+  const RTP = {minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter,
+               format:THREE.RGBAFormat, type:THREE.HalfFloatType,
+               depthBuffer:false, stencilBuffer:false, wrapS:THREE.ClampToEdgeWrapping, wrapT:THREE.ClampToEdgeWrapping};
+  const LEVELS = 6;
+  let rtScene=null, mips=[], SW=0, SH=0, camZEff=P.camZ, tgtYEff=P.tgtY;
+  let orbR=1, orbAz0=0, orbEl0=0;   // spherical frame of the resting camera
+
+  const VERT = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`;
+  const mkMat = (frag, uni, blend) => new THREE.ShaderMaterial({
+    uniforms:uni, vertexShader:VERT, fragmentShader:frag,
+    depthTest:false, depthWrite:false,
+    blending: blend||THREE.NoBlending, transparent: !!blend
+  });
+
+  const uBright = {tSrc:{value:null}, uTexel:{value:new THREE.Vector2()}, uPar:{value:new THREE.Vector3(P.bloomT,0.55,2.6)}};
+  const matBright = mkMat(`
+    uniform sampler2D tSrc; uniform vec2 uTexel; uniform vec3 uPar; varying vec2 vUv;
+    void main(){
+      vec2 t=uTexel;
+      vec3 c = texture2D(tSrc,vUv+vec2(-t.x,-t.y)).rgb + texture2D(tSrc,vUv+vec2(t.x,-t.y)).rgb
+             + texture2D(tSrc,vUv+vec2(-t.x, t.y)).rgb + texture2D(tSrc,vUv+vec2(t.x, t.y)).rgb;
+      c *= 0.25;
+      c = min(c, vec3(uPar.z));
+      float l = max(c.r, max(c.g, c.b));
+      gl_FragColor = vec4(c*smoothstep(uPar.x, uPar.x+uPar.y, l), 1.0);
+    }`, uBright);
+
+  const uDown = {tSrc:{value:null}, uTexel:{value:new THREE.Vector2()}};
+  const matDown = mkMat(`
+    uniform sampler2D tSrc; uniform vec2 uTexel; varying vec2 vUv;
+    vec3 S(vec2 o){ return texture2D(tSrc, vUv+o*uTexel).rgb; }
+    void main(){
+      vec3 a=S(vec2(-2.,2.)), b=S(vec2(0.,2.)), c=S(vec2(2.,2.));
+      vec3 d=S(vec2(-2.,0.)), e=S(vec2(0.,0.)), f=S(vec2(2.,0.));
+      vec3 g=S(vec2(-2.,-2.)),h=S(vec2(0.,-2.)),i=S(vec2(2.,-2.));
+      vec3 j=S(vec2(-1.,1.)), k=S(vec2(1.,1.)), l=S(vec2(-1.,-1.)), m=S(vec2(1.,-1.));
+      gl_FragColor = vec4(e*0.125 + (a+c+g+i)*0.03125 + (b+d+f+h)*0.0625 + (j+k+l+m)*0.125, 1.0);
+    }`, uDown);
+
+  const uUp = {tSrc:{value:null}, uTexel:{value:new THREE.Vector2()}, uScale:{value:1.0}};
+  const matUp = mkMat(`
+    uniform sampler2D tSrc; uniform vec2 uTexel; uniform float uScale; varying vec2 vUv;
+    vec3 S(vec2 o){ return texture2D(tSrc, vUv+o*uTexel*uScale).rgb; }
+    void main(){
+      vec3 r = S(vec2(-1.,1.)) + S(vec2(0.,1.))*2.0 + S(vec2(1.,1.))
+             + S(vec2(-1.,0.))*2.0 + S(vec2(0.,0.))*4.0 + S(vec2(1.,0.))*2.0
+             + S(vec2(-1.,-1.)) + S(vec2(0.,-1.))*2.0 + S(vec2(1.,-1.));
+      gl_FragColor = vec4(r/16.0, 1.0);
+    }`, uUp, THREE.AdditiveBlending);
+
+  const uComp = {tScene:{value:null}, tBloom:{value:null}, uStrength:{value:P.bloomS}, uVig:{value:P.vig}};
+  const matComp = mkMat(`
+    uniform sampler2D tScene; uniform sampler2D tBloom; uniform float uStrength, uVig;
+    varying vec2 vUv;
+    vec3 toSRGB(vec3 c){ return mix(c*12.92, 1.055*pow(max(c,vec3(0.0)),vec3(1.0/2.4))-0.055, step(vec3(0.0031308),c)); }
+    void main(){
+      vec3 c = texture2D(tScene,vUv).rgb + texture2D(tBloom,vUv).rgb*uStrength;
+      vec2 q = vUv-0.5; q.x*=1.16;
+      c *= 1.0 - uVig*smoothstep(0.30, 0.92, length(q));
+      c = toSRGB(clamp(c,0.0,1.0));
+      float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);
+      c += (n-0.5)/255.0*1.6;
+      gl_FragColor = vec4(c,1.0);
+    }`, uComp);
+
+  const quadCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  const quadScene = new THREE.Scene();
+  const quadMesh = new THREE.Mesh(new THREE.PlaneGeometry(2,2), matComp);
+  quadMesh.frustumCulled=false; quadScene.add(quadMesh);
+  function blit(mat, target, clear){
+    quadMesh.material = mat;
+    renderer.setRenderTarget(target||null);
+    if(clear) renderer.clear(true,false,false);
+    renderer.render(quadScene, quadCam);
+  }
+
+  function build(){
+    const w = canvas.clientWidth||window.innerWidth, h = canvas.clientHeight||window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio||1, 2);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(w,h,false);
+    renderer.autoClear = false;
+    const asp = w/h, REF_ASP = 1.334;
+    camZEff = P.camZ * (asp < REF_ASP ? Math.pow(REF_ASP/asp, 0.70) : 1);
+    tgtYEff = P.tgtY * (asp < REF_ASP ? Math.min(1.9, Math.pow(REF_ASP/asp, 0.55)) : 1);
+    camera.aspect=asp; camera.fov=P.fov; camera.updateProjectionMatrix();
+    camera.clearViewOffset();
+    baseOrbit();
+    beadU.uPx.value = dpr; starU.uPx.value = dpr;
+    SW = Math.max(2, Math.round(w*dpr)); SH = Math.max(2, Math.round(h*dpr));
+    if(rtScene) rtScene.dispose();
+    mips.forEach(m=>m.dispose());
+    rtScene = new THREE.WebGLRenderTarget(SW,SH,RTP);
+    mips = [];
+    let mw=SW, mh=SH;
+    for(let i=0;i<LEVELS;i++){
+      mw = Math.max(2, Math.floor(mw/2)); mh = Math.max(2, Math.floor(mh/2));
+      mips.push(new THREE.WebGLRenderTarget(mw,mh,RTP));
+    }
+  }
+  build();
+  let rz; window.addEventListener('resize', ()=>{ clearTimeout(rz); rz=setTimeout(build,140); });
+
+  function renderFrame(){
+    renderer.setRenderTarget(rtScene);
+    renderer.clear(true,true,false);
+    renderer.render(scene, camera);
+
+    uBright.tSrc.value = rtScene.texture;
+    uBright.uTexel.value.set(1/SW, 1/SH);
+    uBright.uPar.value.set(P.bloomT, 0.55, 2.6);
+    blit(matBright, mips[0], true);
+
+    for(let i=1;i<LEVELS;i++){
+      uDown.tSrc.value = mips[i-1].texture;
+      uDown.uTexel.value.set(1/mips[i-1].width, 1/mips[i-1].height);
+      blit(matDown, mips[i], true);
+    }
+    for(let i=LEVELS-1;i>0;i--){
+      uUp.tSrc.value = mips[i].texture;
+      uUp.uTexel.value.set(1/mips[i].width, 1/mips[i].height);
+      uUp.uScale.value = 0.6 + P.bloomR*1.6;
+      blit(matUp, mips[i-1], false);
+    }
+    uComp.tScene.value = rtScene.texture;
+    uComp.tBloom.value = mips[0].texture;
+    uComp.uStrength.value = P.bloomS;
+    uComp.uVig.value = P.vig;
+    blit(matComp, null, true);
+  }
+
+  const t0=performance.now();
+  const hero = document.querySelector('.hero');
+  function baseOrbit(){
+    const dx=P.camX-P.tgtX, dy=P.camY-tgtYEff, dz=camZEff-P.tgtZ;
+    orbR = Math.max(0.001, Math.hypot(dx,dy,dz));
+    orbEl0 = Math.asin(dy/orbR);
+    orbAz0 = Math.atan2(dx,dz);
+  }
+  let mx=0,my=0,tx=0,ty=0,hov=0,hovT=0;
+  hero.addEventListener('pointermove', e=>{
+    if(e.pointerType==='touch') return;
+    const r=hero.getBoundingClientRect();
+    tx=(e.clientX-r.left)/r.width-0.5;
+    ty=(e.clientY-r.top)/r.height-0.5;
+    hovT=1;
+  });
+  hero.addEventListener('pointerleave', ()=>{ hovT=0; });
+
+  let visible = true, onScreen = true;
+  document.addEventListener('visibilitychange', ()=>{ visible = !document.hidden; });
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(es=>{ onScreen = es[0].isIntersecting; }, {threshold:0}).observe(canvas);
+  }
+  function frame(){
+    requestAnimationFrame(frame);
+    if(!visible || !onScreen) return;
+    const t=(performance.now()-t0)/1000;
+    U.uTime.value = reduce ? 6.0 : t;
+    mx+=(tx-mx)*0.055; my+=(ty-my)*0.055; hov+=(hovT-hov)*0.045;
+    const az = orbAz0 + P.orbAz*mx*hov;
+    const el = orbEl0 - P.orbEl*my*hov;
+    const ce = Math.cos(el);
+    camera.position.set(P.tgtX + Math.sin(az)*orbR*ce,
+                        tgtYEff + Math.sin(el)*orbR,
+                        P.tgtZ + Math.cos(az)*orbR*ce);
+    camera.lookAt(P.tgtX,tgtYEff,P.tgtZ);
+    stars.rotation.y = 0.17*Math.sin(U.uTime.value*P.starRot*2.6);
+    renderFrame();
+  }
+  requestAnimationFrame(()=>canvas.classList.add('on'));
+  frame();
+
+})();
+</script>
+</body>
+</html>

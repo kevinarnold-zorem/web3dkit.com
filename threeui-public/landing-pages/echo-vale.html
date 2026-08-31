@@ -1,0 +1,2734 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head><script id="aura-preview-performance-controller">
+(function() {
+if (window.__auraPreviewPerformanceController) return;
+const nativeRequestAnimationFrame = window.requestAnimationFrame
+? window.requestAnimationFrame.bind(window)
+: function(callback) { return window.setTimeout(function() { callback(Date.now()); }, 16); };
+const nativeCancelAnimationFrame = window.cancelAnimationFrame
+? window.cancelAnimationFrame.bind(window)
+: window.clearTimeout.bind(window);
+const nativeSetInterval = window.setInterval.bind(window);
+let paused = false;
+let nextFrameId = 1;
+const frameRecords = new Map();
+const pausedFrameCallbacks = new Map();
+const style = document.createElement('style');
+style.id = 'aura-preview-performance-style';
+style.textContent = [
+'html[data-aura-preview-paused="true"] *,',
+'html[data-aura-preview-paused="true"] *::before,',
+'html[data-aura-preview-paused="true"] *::after {',
+'  animation-play-state: paused !important;',
+'  transition-duration: 0s !important;',
+'  scroll-behavior: auto !important;',
+'}'
+].join('\n');
+document.head.appendChild(style);
+window.requestAnimationFrame = function(callback) {
+const frameId = nextFrameId++;
+if (paused) {
+pausedFrameCallbacks.set(frameId, callback);
+frameRecords.set(frameId, { paused: true });
+return frameId;
+}
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+return frameId;
+};
+window.cancelAnimationFrame = function(frameId) {
+const record = frameRecords.get(frameId);
+pausedFrameCallbacks.delete(frameId);
+if (record && typeof record.nativeFrameId !== 'undefined') {
+nativeCancelAnimationFrame(record.nativeFrameId);
+}
+frameRecords.delete(frameId);
+};
+window.setInterval = function(callback, delay) {
+const args = Array.prototype.slice.call(arguments, 2);
+return nativeSetInterval(function() {
+if (paused) return;
+callback.apply(this, args);
+}, delay);
+};
+const flushPausedFrames = function() {
+const callbacks = Array.from(pausedFrameCallbacks.entries());
+pausedFrameCallbacks.clear();
+callbacks.forEach(function(entry) {
+const frameId = entry[0];
+const callback = entry[1];
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+});
+};
+const setPaused = function(nextPaused) {
+const shouldPause = Boolean(nextPaused);
+if (paused === shouldPause) return;
+paused = shouldPause;
+document.documentElement.toggleAttribute('data-aura-preview-paused', paused);
+if (!paused) {
+flushPausedFrames();
+}
+};
+window.__auraPreviewPerformanceController = {
+setPaused: setPaused,
+get paused() {
+return paused;
+}
+};
+window.addEventListener('message', function(event) {
+if (event.source !== window.parent) return;
+if (!event.data || event.data.type !== 'aura-preview-performance-mode') return;
+setPaused(event.data.paused);
+});
+})();
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#070908" />
+<meta
+name="description"
+content="Echo Vale — an immersive field journey through monumental landscapes, quiet rituals, and elemental architecture."
+/>
+<title>Echo Vale — Follow the signal beneath the stone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link
+href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&amp;family=Unbounded:wght@400;500;600&amp;display=swap"
+rel="stylesheet"
+/>
+<style id="tailwind-build">
+/*! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com — purged utility build */
+.sr-only {
+position: absolute;
+width: 1px;
+height: 1px;
+padding: 0;
+margin: -1px;
+overflow: hidden;
+clip: rect(0, 0, 0, 0);
+white-space: nowrap;
+border-width: 0
+}
+.scroll-smooth {
+scroll-behavior: smooth
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+--ink: #070908;
+--ink-2: #0d1110;
+--bone: #e9ede6;
+--mist: #a9b5b2;
+--line: rgba(233, 237, 230, .16);
+--ember: #e44b3c;
+--ease-out: cubic-bezier(.16, 1, .3, 1);
+--ease-in-out: cubic-bezier(.65, 0, .35, 1);
+--nav-h: 5.05rem;
+}
+* {
+box-sizing: border-box;
+}
+html {
+background: var(--ink);
+}
+body {
+margin: 0;
+color: var(--bone);
+background: var(--ink);
+font-family: 'Manrope', sans-serif;
+font-weight: 400;
+overflow-x: clip;
+cursor: none;
+-webkit-font-smoothing: antialiased;
+}
+body.menu-open {
+overflow: hidden;
+}
+::selection {
+color: var(--ink);
+background: var(--ember);
+}
+a,
+button,
+input {
+cursor: none;
+}
+img {
+display: block;
+max-width: 100%;
+}
+button,
+input {
+font: inherit;
+}
+button {
+color: inherit;
+}
+.display {
+font-family: 'Unbounded', sans-serif;
+letter-spacing: -.055em;
+}
+.micro {
+font-size: .64rem;
+font-weight: 600;
+letter-spacing: .18em;
+text-transform: uppercase;
+}
+.hairline {
+border-color: var(--line);
+}
+.shell {
+width: min(100% - 48px, 1420px);
+margin-inline: auto;
+}
+.section-pad {
+padding-block: clamp(6rem, 11vw, 11rem);
+}
+.eyebrow {
+display: flex;
+align-items: center;
+gap: .8rem;
+color: rgba(233, 237, 230, .6);
+}
+.eyebrow::before {
+content: '';
+width: 2.4rem;
+height: 1px;
+background: var(--ember);
+}
+.noise {
+position: fixed;
+inset: 0;
+z-index: 90;
+opacity: .045;
+pointer-events: none;
+background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E");
+mix-blend-mode: soft-light;
+}
+.loader {
+position: fixed;
+inset: 0;
+z-index: 200;
+display: grid;
+place-items: center;
+background: var(--ink);
+transition: opacity .7s var(--ease-out), visibility .7s;
+}
+.loader.is-gone {
+opacity: 0;
+visibility: hidden;
+}
+.loader-inner {
+width: min(72vw, 760px);
+}
+.loader-top {
+display: flex;
+align-items: baseline;
+justify-content: space-between;
+margin-bottom: 1rem;
+}
+.loader-count {
+font: 500 clamp(3rem, 11vw, 8rem)/.8 'Unbounded', sans-serif;
+letter-spacing: -.08em;
+}
+.loader-track {
+height: 1px;
+background: rgba(233, 237, 230, .18);
+overflow: hidden;
+}
+.loader-bar {
+width: 0;
+height: 100%;
+background: var(--ember);
+transition: width .12s linear;
+}
+.cursor-dot,
+.cursor-ring {
+position: fixed;
+left: 0;
+top: 0;
+pointer-events: none;
+z-index: 250;
+border-radius: 50%;
+}
+.cursor-dot {
+width: 5px;
+height: 5px;
+background: var(--bone);
+transform: translate(-50%, -50%);
+}
+.cursor-ring {
+width: 42px;
+height: 42px;
+border: 1px solid rgba(233, 237, 230, .48);
+transform: translate(-50%, -50%);
+transition: width .25s, height .25s, background .25s, border-color .25s;
+}
+.cursor-ring.is-hover {
+width: 70px;
+height: 70px;
+background: rgba(228, 75, 60, .14);
+border-color: var(--ember);
+}
+.site-nav {
+position: fixed;
+z-index: 100;
+top: 0;
+left: 0;
+width: 100%;
+padding: 1.25rem 0;
+border-bottom: 1px solid rgba(233, 237, 230, .13);
+transition: background .45s, border-color .45s, padding .45s;
+}
+.site-nav.is-scrolled {
+padding: .8rem 0;
+background: rgba(7, 9, 8, .78);
+border-bottom: 1px solid var(--line);
+backdrop-filter: blur(16px);
+}
+.nav-inner {
+display: flex;
+align-items: center;
+justify-content: space-between;
+}
+.brand {
+display: inline-flex;
+align-items: center;
+gap: .75rem;
+text-decoration: none;
+color: var(--bone);
+}
+.brand-mark {
+width: 35px;
+height: 35px;
+border: 1px solid rgba(233, 237, 230, .45);
+border-radius: 50%;
+display: grid;
+place-items: center;
+position: relative;
+}
+.brand-mark::before,
+.brand-mark::after {
+content: '';
+position: absolute;
+background: var(--ember);
+}
+.brand-mark::before {
+width: 12px;
+height: 1px;
+}
+.brand-mark::after {
+width: 1px;
+height: 12px;
+}
+.nav-links {
+display: flex;
+align-items: center;
+gap: clamp(1.3rem, 2.8vw, 3.4rem);
+}
+.nav-links a {
+color: rgba(233, 237, 230, .72);
+text-decoration: none;
+font-size: .61rem;
+letter-spacing: .16em;
+text-transform: uppercase;
+transition: color .25s;
+}
+.nav-links a:hover {
+color: var(--bone);
+}
+.nav-cta {
+display: inline-flex;
+align-items: center;
+gap: .75rem;
+border: 1px solid var(--line);
+border-radius: 100px;
+padding: .72rem 1rem;
+background: rgba(7, 9, 8, .25);
+}
+.nav-cta i {
+width: 6px;
+height: 6px;
+border-radius: 50%;
+background: var(--ember);
+box-shadow: 0 0 18px var(--ember);
+}
+.menu-toggle {
+display: none;
+width: 42px;
+height: 42px;
+border: 1px solid var(--line);
+border-radius: 50%;
+background: transparent;
+}
+.hero-scroll {
+height: 100svh;
+min-height: 620px;
+position: relative;
+background: #0a0d0c;
+}
+.hero-stage {
+position: relative;
+height: 100%;
+overflow: hidden;
+}
+#webgl {
+position: absolute;
+inset: 0;
+width: 100%;
+height: 100%;
+z-index: 3;
+opacity: .32;
+pointer-events: none;
+}
+.hero-shell {
+position: absolute;
+inset: 0;
+z-index: 2;
+overflow: hidden;
+background: #111715;
+}
+.hero-media {
+position: absolute;
+inset: 0;
+overflow: hidden;
+}
+.hero-media img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+object-position: center 52%;
+}
+.hero-media::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(90deg, rgba(4, 7, 6, .9) 0%, rgba(4, 7, 6, .62) 38%, rgba(4, 7, 6, .14) 68%, rgba(4, 7, 6, .44) 100%), linear-gradient(180deg, rgba(4, 7, 6, .85) 0%, rgba(4, 7, 6, 0) 22%), linear-gradient(0deg, rgba(4, 7, 6, .86) 0%, rgba(4, 7, 6, .22) 32%, rgba(4, 7, 6, 0) 52%);
+}
+.hero-gridlines {
+position: absolute;
+inset: 0;
+opacity: .16;
+background-image: linear-gradient(90deg, transparent calc(25% - 1px), rgba(255, 255, 255, .15) 25%, transparent calc(25% + 1px)), linear-gradient(90deg, transparent calc(75% - 1px), rgba(255, 255, 255, .15) 75%, transparent calc(75% + 1px));
+}
+.hero-content {
+position: absolute;
+inset: 0;
+z-index: 5;
+padding: calc(var(--nav-h) + clamp(.9rem, 2.4vh, 1.9rem)) clamp(1.4rem, 4.2vw, 4rem) clamp(1.4rem, 3.2vh, 2.6rem);
+display: grid;
+grid-template-rows: minmax(0, 1fr) auto;
+gap: clamp(1rem, 2.4vh, 2rem);
+}
+.hero-main {
+display: grid;
+grid-template-columns: minmax(0, 1fr);
+align-items: center;
+padding-bottom: calc(clamp(3rem, 7vh, 4rem) + max(0px, 620px - 100svh));
+}
+.hero-copy {
+width: min(54rem, 100%);
+}
+.hero-copy h1 {
+margin: 1.4rem 0 1.15rem;
+max-width: 780px;
+font: 500 clamp(2.7rem, 5.75vw, 6.7rem)/.88 'Unbounded', sans-serif;
+letter-spacing: -.07em;
+text-transform: uppercase;
+}
+.hero-copy p {
+color: rgba(233, 237, 230, .72);
+max-width: 31rem;
+font-size: clamp(.8rem, 1vw, 1rem);
+line-height: 1.7;
+}
+.hero-foot {
+margin-top: clamp(.7rem, 1.6vh, 1.2rem);
+display: grid;
+grid-template-columns: repeat(4, minmax(0, 1fr));
+gap: clamp(.8rem, 1.7vw, 1.7rem);
+max-width: 46rem;
+}
+.hero-foot-item {
+border-top: 1px solid rgba(233, 237, 230, .32);
+padding-top: .85rem;
+display: grid;
+gap: .4rem;
+}
+.hero-foot-item b {
+font: 400 1.15rem 'Unbounded', sans-serif;
+}
+.hero-foot-item span {
+color: rgba(233, 237, 230, .62);
+font-size: .65rem;
+line-height: 1.5;
+}
+.hero-bottom {
+position: absolute;
+right: clamp(1.4rem, 4.2vw, 4rem);
+bottom: calc(clamp(1.4rem, 3.2vh, 2.6rem) + max(0px, 620px - 100svh));
+width: min(46%, 42rem);
+display: grid;
+grid-template-columns: minmax(0, 1fr);
+align-items: end;
+gap: .75rem;
+}
+.hero-peek {
+display: grid;
+grid-template-columns: repeat(3, minmax(0, 1fr));
+gap: 8px;
+}
+.hero-peek figure {
+margin: 0;
+aspect-ratio: 1.45;
+position: relative;
+overflow: hidden;
+border: 1px solid var(--line);
+}
+.hero-peek img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+transition: transform .7s var(--ease-out);
+}
+.hero-peek figure:hover img {
+transform: scale(1.07);
+}
+.hero-peek figcaption {
+position: absolute;
+inset: auto 0 0;
+padding: .65rem .75rem;
+background: linear-gradient(transparent, rgba(0, 0, 0, .82));
+font-size: .62rem;
+letter-spacing: .15em;
+text-transform: uppercase;
+}
+.scroll-cue {
+justify-self: end;
+align-self: end;
+grid-row: 1;
+display: flex;
+align-items: center;
+gap: .7rem;
+color: rgba(233, 237, 230, .58);
+}
+.scroll-cue i {
+display: block;
+width: 40px;
+height: 40px;
+border: 1px solid var(--line);
+border-radius: 50%;
+position: relative;
+}
+.scroll-cue i::after {
+content: '↓';
+position: absolute;
+inset: 0;
+display: grid;
+place-items: center;
+animation: nudge 1.7s ease-in-out infinite;
+}
+@keyframes nudge {
+0%,
+100% {
+transform: translateY(-2px)
+}
+50% {
+transform: translateY(3px)
+}
+}
+.intro {
+min-height: 90vh;
+display: grid;
+align-items: center;
+border-top: 1px solid var(--line);
+}
+.intro-grid {
+display: grid;
+grid-template-columns: 1fr 3fr;
+gap: clamp(2rem, 8vw, 10rem);
+align-items: start;
+}
+.intro h2 {
+margin: 0;
+max-width: 1120px;
+font: 500 clamp(3rem, 7.2vw, 8rem)/.98 'Unbounded', sans-serif;
+letter-spacing: -.07em;
+text-transform: uppercase;
+}
+.intro h2 em {
+color: var(--ember);
+font-style: normal;
+}
+.intro-note {
+margin-top: 3rem;
+margin-left: auto;
+max-width: 34rem;
+color: rgba(233, 237, 230, .62);
+line-height: 1.8;
+}
+.features {
+border-top: 1px solid var(--line);
+background: #090c0b;
+}
+.section-head {
+display: flex;
+align-items: flex-end;
+justify-content: space-between;
+gap: 2rem;
+margin-bottom: clamp(3rem, 7vw, 6rem);
+}
+.section-head h2 {
+margin: .9rem 0 0;
+font: 500 clamp(2.4rem, 5vw, 5.7rem)/.94 'Unbounded', sans-serif;
+letter-spacing: -.065em;
+text-transform: uppercase;
+}
+.section-head p {
+max-width: 28rem;
+color: rgba(233, 237, 230, .58);
+line-height: 1.7;
+}
+.feature-grid {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+border-top: 1px solid var(--line);
+border-left: 1px solid var(--line);
+}
+.feature-card {
+min-height: 430px;
+padding: 2rem;
+border-right: 1px solid var(--line);
+border-bottom: 1px solid var(--line);
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+transition: background .4s;
+}
+.feature-card:hover {
+background: rgba(233, 237, 230, .035);
+}
+.feature-symbol {
+width: 96px;
+height: 96px;
+position: relative;
+display: grid;
+place-items: center;
+}
+.feature-symbol::before {
+content: '';
+position: absolute;
+inset: 0;
+border: 1px solid var(--line);
+border-radius: 50%;
+}
+.feature-symbol::after {
+content: '';
+width: 34px;
+height: 34px;
+border: 1px solid var(--ember);
+transform: rotate(45deg);
+}
+.feature-card:nth-child(2) .feature-symbol::after {
+border-radius: 50%;
+transform: none;
+box-shadow: 0 0 25px rgba(228, 75, 60, .35);
+}
+.feature-card:nth-child(3) .feature-symbol::after {
+width: 1px;
+height: 54px;
+transform: rotate(32deg);
+background: var(--ember);
+border: 0;
+}
+.feature-card h3 {
+font: 500 1.35rem/1.2 'Unbounded', sans-serif;
+letter-spacing: -.04em;
+text-transform: uppercase;
+}
+.feature-card p {
+color: rgba(233, 237, 230, .55);
+font-size: .85rem;
+line-height: 1.75;
+}
+.showcase {
+background: #dfe4dd;
+color: #111513;
+}
+.showcase-layout {
+display: grid;
+grid-template-columns: 1.35fr .65fr;
+gap: clamp(3rem, 7vw, 8rem);
+}
+.showcase-visual {
+position: sticky;
+top: 7rem;
+height: calc(100vh - 9rem);
+overflow: hidden;
+}
+.showcase-visual img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+.showcase-visual::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(0deg, rgba(0, 0, 0, .44), transparent 42%);
+}
+.visual-label {
+position: absolute;
+z-index: 2;
+inset: auto 1.4rem 1.4rem;
+display: flex;
+justify-content: space-between;
+color: #fff;
+}
+.showcase-copy {
+padding-block: 14vh;
+}
+.show-step {
+min-height: 76vh;
+display: flex;
+flex-direction: column;
+justify-content: center;
+border-top: 1px solid rgba(17, 21, 19, .22);
+}
+.show-step:first-child {
+border-top: 0;
+}
+.show-step h3 {
+margin: 1rem 0 1.4rem;
+font: 500 clamp(2.1rem, 3.7vw, 4.6rem)/1 'Unbounded', sans-serif;
+letter-spacing: -.06em;
+text-transform: uppercase;
+}
+.show-step p {
+max-width: 30rem;
+color: rgba(17, 21, 19, .63);
+line-height: 1.85;
+}
+.show-step .step-no {
+color: #b53b31;
+font: 500 .7rem 'Unbounded', sans-serif;
+letter-spacing: .2em;
+}
+.gallery-scroll {
+height: 360vh;
+position: relative;
+background: #080a09;
+}
+.gallery-sticky {
+position: sticky;
+top: 0;
+height: 100vh;
+overflow: hidden;
+display: flex;
+flex-direction: column;
+justify-content: center;
+}
+.gallery-head {
+padding: 0 3vw 2rem;
+display: flex;
+justify-content: space-between;
+align-items: end;
+}
+.gallery-head h2 {
+margin: 0;
+font: 500 clamp(3rem, 6vw, 7rem)/.88 'Unbounded', sans-serif;
+letter-spacing: -.07em;
+text-transform: uppercase;
+}
+.gallery-track {
+display: flex;
+align-items: stretch;
+gap: 1.25rem;
+padding: 0 3vw;
+width: max-content;
+will-change: transform;
+}
+.gallery-card {
+width: min(38vw, 560px);
+height: 67vh;
+position: relative;
+overflow: hidden;
+background: #141817;
+border: 1px solid var(--line);
+perspective: 800px;
+}
+.gallery-card:nth-child(even) {
+margin-top: 4vh;
+}
+.gallery-card img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+transition: transform .8s var(--ease-out), filter .6s;
+}
+.gallery-card:hover img {
+transform: scale(1.06);
+filter: saturate(1.12);
+}
+.gallery-card::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(0deg, rgba(0, 0, 0, .78), transparent 45%);
+}
+.gallery-meta {
+position: absolute;
+z-index: 2;
+inset: auto 1.35rem 1.25rem;
+display: flex;
+justify-content: space-between;
+align-items: end;
+}
+.gallery-meta h3 {
+margin: .35rem 0 0;
+font: 500 1.3rem 'Unbounded', sans-serif;
+letter-spacing: -.04em;
+text-transform: uppercase;
+}
+.gallery-meta .arrow {
+font-size: 1.8rem;
+}
+.gallery-progress {
+width: 180px;
+height: 1px;
+background: rgba(233, 237, 230, .18);
+margin-bottom: .6rem;
+}
+.gallery-progress i {
+display: block;
+width: 0;
+height: 100%;
+background: var(--ember);
+}
+.timeline {
+background: #0d1110;
+border-top: 1px solid var(--line);
+}
+.timeline-grid {
+margin-top: 5rem;
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+}
+.timeline-item {
+border-top: 1px solid var(--line);
+padding: 1.7rem 2rem 1rem 0;
+position: relative;
+}
+.timeline-item::before {
+content: '';
+position: absolute;
+top: -5px;
+left: 0;
+width: 9px;
+height: 9px;
+border-radius: 50%;
+background: var(--ember);
+box-shadow: 0 0 24px rgba(228, 75, 60, .7);
+}
+.timeline-item h3 {
+margin: 3rem 0 1rem;
+font: 500 1.05rem 'Unbounded', sans-serif;
+text-transform: uppercase;
+}
+.timeline-item p {
+color: rgba(233, 237, 230, .5);
+font-size: .8rem;
+line-height: 1.7;
+}
+.pricing {
+background: #dfe4dd;
+color: #101412;
+}
+.pricing .section-head p {
+color: rgba(16, 20, 18, .6);
+}
+.price-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 1rem;
+}
+.price-card {
+min-height: 590px;
+border: 1px solid rgba(16, 20, 18, .22);
+padding: clamp(1.6rem, 3vw, 3rem);
+display: flex;
+flex-direction: column;
+position: relative;
+overflow: hidden;
+transition: transform .5s var(--ease-out);
+}
+.price-card:hover {
+transform: translateY(-9px);
+}
+.price-card.featured {
+background: #101412;
+color: var(--bone);
+}
+.price-card.featured::before {
+content: '';
+position: absolute;
+width: 350px;
+height: 350px;
+border-radius: 50%;
+background: var(--ember);
+filter: blur(95px);
+opacity: .19;
+right: -130px;
+top: -180px;
+}
+.price-top {
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+.price-card h3 {
+margin: 4rem 0 1rem;
+font: 500 clamp(2rem, 3vw, 3.3rem) 'Unbounded', sans-serif;
+letter-spacing: -.06em;
+text-transform: uppercase;
+}
+.price {
+font: 500 clamp(3.8rem, 6vw, 7.2rem)/1 'Unbounded', sans-serif;
+letter-spacing: -.08em;
+}
+.price small {
+font: 400 .75rem 'Manrope', sans-serif;
+letter-spacing: .08em;
+}
+.price-list {
+list-style: none;
+padding: 0;
+margin: auto 0 2.5rem;
+}
+.price-list li {
+padding: .85rem 0;
+border-top: 1px solid currentColor;
+border-color: rgba(127, 127, 127, .24);
+display: flex;
+justify-content: space-between;
+font-size: .82rem;
+}
+.action {
+display: inline-flex;
+justify-content: center;
+align-items: center;
+gap: 1rem;
+min-height: 54px;
+padding: 0 1.4rem;
+border: 1px solid currentColor;
+text-decoration: none;
+color: inherit;
+text-transform: uppercase;
+font-size: .67rem;
+font-weight: 600;
+letter-spacing: .16em;
+position: relative;
+overflow: hidden;
+}
+.action::before {
+content: '';
+position: absolute;
+inset: 0;
+background: var(--ember);
+transform: translateY(101%);
+transition: transform .45s var(--ease-out);
+z-index: 0;
+}
+.action span,
+.action svg {
+position: relative;
+z-index: 1;
+}
+.action:hover::before {
+transform: translateY(0);
+}
+.testimonials {
+background: #070908;
+}
+.quotes {
+display: grid;
+grid-template-columns: 1.2fr .8fr .8fr;
+gap: 1rem;
+}
+.quote {
+min-height: 440px;
+border: 1px solid var(--line);
+padding: 2rem;
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+}
+.quote blockquote {
+margin: 0;
+font-size: clamp(1.15rem, 2vw, 2rem);
+line-height: 1.35;
+letter-spacing: -.03em;
+}
+.quote:first-child blockquote {
+font: 400 clamp(1.7rem, 3.2vw, 3.6rem)/1.2 'Unbounded', sans-serif;
+letter-spacing: -.055em;
+}
+.quote-person {
+display: flex;
+justify-content: space-between;
+align-items: end;
+border-top: 1px solid var(--line);
+padding-top: 1.2rem;
+color: rgba(233, 237, 230, .6);
+}
+.quote-person b {
+display: block;
+color: var(--bone);
+font-size: .75rem;
+text-transform: uppercase;
+letter-spacing: .12em;
+}
+.faq {
+background: #0d1110;
+}
+.faq-layout {
+display: grid;
+grid-template-columns: .75fr 1.25fr;
+gap: clamp(3rem, 8vw, 10rem);
+}
+.faq-title {
+position: sticky;
+top: 8rem;
+align-self: start;
+}
+.faq-title h2 {
+margin: .9rem 0 1.4rem;
+font: 500 clamp(3rem, 5vw, 5.8rem)/.92 'Unbounded', sans-serif;
+letter-spacing: -.07em;
+text-transform: uppercase;
+}
+.faq-list {
+border-top: 1px solid var(--line);
+}
+.faq-item {
+border-bottom: 1px solid var(--line);
+}
+.faq-question {
+width: 100%;
+border: 0;
+background: transparent;
+text-align: left;
+padding: 1.6rem 0;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 2rem;
+}
+.faq-question span:first-child {
+font: 500 clamp(.9rem, 1.25vw, 1.15rem) 'Unbounded', sans-serif;
+text-transform: uppercase;
+letter-spacing: -.03em;
+}
+.faq-plus {
+width: 32px;
+height: 32px;
+border: 1px solid var(--line);
+border-radius: 50%;
+display: grid;
+place-items: center;
+flex: 0 0 auto;
+transition: transform .4s, background .4s;
+}
+.faq-item.open .faq-plus {
+transform: rotate(45deg);
+background: var(--ember);
+border-color: var(--ember);
+}
+.faq-answer {
+display: grid;
+grid-template-rows: 0fr;
+transition: grid-template-rows .55s var(--ease-out);
+}
+.faq-answer>div {
+overflow: hidden;
+}
+.faq-answer p {
+margin: 0;
+padding: 0 3rem 1.7rem 0;
+max-width: 44rem;
+color: rgba(233, 237, 230, .56);
+line-height: 1.8;
+}
+.faq-item.open .faq-answer {
+grid-template-rows: 1fr;
+}
+.cta {
+min-height: 92vh;
+position: relative;
+overflow: hidden;
+display: grid;
+place-items: center;
+text-align: center;
+}
+.cta-media {
+position: absolute;
+inset: 0;
+}
+.cta-media img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+transform: scale(1.05);
+}
+.cta-media::after {
+content: '';
+position: absolute;
+inset: 0;
+background: rgba(4, 7, 6, .58);
+backdrop-filter: saturate(.78);
+}
+.cta-content {
+position: relative;
+z-index: 2;
+width: min(92%, 1120px);
+}
+.cta h2 {
+margin: 1.2rem auto 2rem;
+font: 500 clamp(3.1rem, 8.2vw, 9.6rem)/.86 'Unbounded', sans-serif;
+letter-spacing: -.08em;
+text-transform: uppercase;
+}
+.cta h2 span {
+color: var(--ember);
+}
+.cta-form {
+width: min(100%, 650px);
+margin: auto;
+display: flex;
+border-bottom: 1px solid rgba(233, 237, 230, .5);
+}
+.cta-form input {
+width: 100%;
+padding: 1rem 0;
+background: transparent;
+color: var(--bone);
+border: 0;
+outline: 0;
+}
+.cta-form button {
+border: 0;
+background: transparent;
+font-size: .7rem;
+letter-spacing: .16em;
+text-transform: uppercase;
+white-space: nowrap;
+}
+.form-note {
+min-height: 1.2em;
+margin-top: 1rem;
+color: rgba(233, 237, 230, .6);
+font-size: .72rem;
+}
+footer {
+border-top: 1px solid var(--line);
+padding: 4rem 0 2rem;
+background: #050706;
+}
+.footer-grid {
+display: grid;
+grid-template-columns: 1.4fr repeat(3, .6fr);
+gap: 2rem;
+}
+.footer-brand p {
+max-width: 25rem;
+color: rgba(233, 237, 230, .5);
+line-height: 1.7;
+font-size: .8rem;
+margin-top: 1.5rem;
+}
+.footer-col h4 {
+color: rgba(233, 237, 230, .4);
+margin: 0 0 1rem;
+}
+.footer-col a {
+display: block;
+color: var(--bone);
+text-decoration: none;
+margin: .65rem 0;
+font-size: .79rem;
+}
+.footer-bottom {
+display: flex;
+justify-content: space-between;
+gap: 1rem;
+margin-top: 5rem;
+padding-top: 1.5rem;
+border-top: 1px solid var(--line);
+color: rgba(233, 237, 230, .38);
+}
+.reveal {
+opacity: 0;
+transform: translateY(48px);
+transition: opacity .9s var(--ease-out), transform .9s var(--ease-out);
+}
+.reveal.in-view {
+opacity: 1;
+transform: none;
+}
+.reveal.delay-1 {
+transition-delay: .12s;
+}
+.reveal.delay-2 {
+transition-delay: .22s;
+}
+/* Static capture mode preserves the complete art direction without screenshot tiling artifacts from sticky scenes. */
+body.mockup-mode .site-nav {
+position: absolute;
+}
+body.mockup-mode .hero-scroll {
+height: 100vh;
+}
+body.mockup-mode .cursor-dot,
+body.mockup-mode .cursor-ring,
+body.recording-mode .cursor-dot,
+body.recording-mode .cursor-ring,
+body.mockup-mode .noise {
+display: none;
+}
+html:has(body.mockup-mode) {
+scrollbar-width: none;
+}
+body.mockup-mode::-webkit-scrollbar {
+display: none;
+}
+body.mockup-mode .showcase-visual {
+position: relative;
+top: 0;
+height: 78vh;
+}
+body.mockup-mode .gallery-scroll {
+height: auto;
+}
+body.mockup-mode .gallery-sticky {
+position: relative;
+height: auto;
+padding: 8rem 0;
+}
+body.mockup-mode .gallery-track {
+width: 100%;
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+transform: none !important;
+}
+body.mockup-mode .gallery-card {
+width: 100%;
+height: 58vh;
+margin-top: 0;
+}
+body.mockup-mode .reveal {
+opacity: 1;
+transform: none;
+}
+@media (max-width: 900px) {
+body,
+a,
+button,
+input {
+cursor: auto;
+}
+.cursor-dot,
+.cursor-ring {
+display: none;
+}
+.shell {
+width: min(100% - 28px, 1420px);
+}
+.nav-links {
+position: fixed;
+inset: 0;
+background: rgba(7, 9, 8, .97);
+flex-direction: column;
+justify-content: center;
+gap: 2rem;
+opacity: 0;
+visibility: hidden;
+transform: translateY(-12px);
+transition: .4s;
+}
+.nav-links.open {
+opacity: 1;
+visibility: visible;
+transform: none;
+}
+.nav-links a {
+font: 500 1.5rem 'Unbounded', sans-serif;
+letter-spacing: -.04em;
+}
+.menu-toggle {
+display: grid;
+place-items: center;
+position: relative;
+z-index: 2;
+}
+:root {
+--nav-h: 5.15rem;
+}
+.hero-scroll {
+min-height: 560px;
+}
+.hero-content {
+padding: calc(var(--nav-h) + .9rem) 1.2rem 1.2rem;
+gap: 1rem;
+}
+.hero-main {
+grid-template-columns: minmax(0, 1fr);
+padding-bottom: clamp(7rem, 18vh, 9rem);
+}
+.hero-copy {
+width: 100%;
+}
+.hero-copy h1 {
+font-size: clamp(2.55rem, 10vw, 5.5rem);
+}
+.hero-copy p {
+max-width: 26rem;
+}
+.hero-foot {
+margin-top: .8rem;
+grid-template-columns: 1fr 1fr;
+gap: .7rem;
+}
+.hero-foot-item:nth-child(n+3) {
+display: none;
+}
+.hero-bottom {
+display: none;
+}
+.scroll-cue {
+justify-self: start;
+}
+.intro-grid {
+grid-template-columns: 1fr;
+}
+.feature-grid {
+grid-template-columns: 1fr;
+}
+.feature-card {
+min-height: 350px;
+}
+.showcase-layout {
+grid-template-columns: 1fr;
+}
+.showcase-visual {
+position: relative;
+top: 0;
+height: 70vh;
+}
+.show-step {
+min-height: auto;
+padding: 5rem 0;
+}
+.gallery-card {
+width: 76vw;
+}
+.timeline-grid {
+grid-template-columns: 1fr 1fr;
+gap: 2rem 0;
+}
+.price-grid,
+.quotes,
+.faq-layout {
+grid-template-columns: 1fr;
+}
+.quote {
+min-height: 330px;
+}
+.faq-title {
+position: relative;
+top: 0;
+}
+.footer-grid {
+grid-template-columns: 1fr 1fr;
+}
+}
+@media (max-width: 580px) {
+.section-head {
+align-items: start;
+flex-direction: column;
+}
+.hero-foot {
+grid-template-columns: 1fr 1fr;
+gap: .55rem;
+}
+.gallery-head {
+align-items: start;
+flex-direction: column;
+gap: 1.5rem;
+}
+.timeline-grid,
+.footer-grid {
+grid-template-columns: 1fr;
+}
+.price-card {
+min-height: 520px;
+}
+.footer-bottom {
+flex-direction: column;
+}
+}
+@media (prefers-reduced-motion: reduce) {
+html {
+scroll-behavior: auto;
+}
+*,
+*::before,
+*::after {
+animation-duration: .001ms !important;
+animation-iteration-count: 1 !important;
+transition-duration: .001ms !important;
+}
+.hero-scroll {
+height: 100vh;
+}
+.hero-stage {
+position: relative;
+}
+.gallery-scroll {
+height: auto;
+}
+.gallery-sticky {
+position: relative;
+height: auto;
+padding: 6rem 0;
+}
+.gallery-track {
+width: 100%;
+display: grid;
+grid-template-columns: 1fr 1fr;
+transform: none !important;
+}
+.gallery-card {
+width: 100%;
+height: 60vh;
+}
+}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@keyframes breathe-1 {
+0%, 100% { transform: rotate(45deg) scale(1); }
+50% { transform: rotate(45deg) scale(1.15); }
+}
+@keyframes breathe-2 {
+0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(228, 75, 60, .35); }
+50% { transform: scale(1.15); box-shadow: 0 0 45px rgba(228, 75, 60, .6); }
+}
+@keyframes breathe-3 {
+0%, 100% { transform: rotate(32deg) scaleY(1); }
+50% { transform: rotate(32deg) scaleY(1.3); }
+}
+.feature-card:nth-child(1) .feature-symbol::after {
+animation: breathe-1 5s ease-in-out infinite;
+}
+.feature-card:nth-child(2) .feature-symbol::after {
+animation: breathe-2 5s ease-in-out infinite 1.6s;
+}
+.feature-card:nth-child(3) .feature-symbol::after {
+animation: breathe-3 5s ease-in-out infinite 3.2s;
+}
+</style>
+<style>
+.feature-symbol::after { display: none !important; }
+@keyframes breathe-img { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+</style>
+<script>document.documentElement.classList.add('hero-intro-pending');</script>
+<style id="hero-intro-choreography">
+/* The loader hands off to one restrained hero sequence. Each element keeps its
+   authored resting state; these classes only provide the entrance state and
+   are removed once the choreography is complete. */
+html.hero-intro-pending :is(
+  .hero-media > img:first-child,
+  #webgl,
+  .hero-gridlines,
+  .site-nav .brand,
+  .site-nav .nav-links > *,
+  .hero-copy > .eyebrow,
+  .hero-copy > h1,
+  .hero-copy > p,
+  .hero-foot-item,
+  .scroll-cue,
+  .hero-peek figure
+),
+html.hero-intro-running :is(
+  .hero-media > img:first-child,
+  #webgl,
+  .hero-gridlines,
+  .site-nav .brand,
+  .site-nav .nav-links > *,
+  .hero-copy > .eyebrow,
+  .hero-copy > h1,
+  .hero-copy > p,
+  .hero-foot-item,
+  .scroll-cue,
+  .hero-peek figure
+) {
+  transform-origin: var(--intro-origin, 50% 50%);
+  transition-property: opacity, transform, filter;
+  transition-duration: var(--intro-duration, .82s);
+  transition-delay: var(--intro-delay, 0s);
+  transition-timing-function: var(--ease-out);
+  will-change: opacity, transform, filter;
+}
+html.hero-intro-pending :is(
+  .hero-media > img:first-child,
+  #webgl,
+  .hero-gridlines,
+  .site-nav .brand,
+  .site-nav .nav-links > *,
+  .hero-copy > .eyebrow,
+  .hero-copy > h1,
+  .hero-copy > p,
+  .hero-foot-item,
+  .scroll-cue,
+  .hero-peek figure
+) {
+  opacity: 0 !important;
+  filter: blur(var(--intro-blur, 8px));
+  transform: translate3d(var(--intro-x, 0), var(--intro-y, 18px), 0) scale(var(--intro-scale, 1)) !important;
+}
+.hero-media > img:first-child { --intro-duration: 1.45s; --intro-blur: 12px; --intro-scale: 1.045; }
+.hero-gridlines { --intro-delay: .12s; --intro-duration: 1.1s; --intro-blur: 4px; }
+#webgl { --intro-delay: .2s; --intro-duration: 1.2s; --intro-blur: 5px; }
+.site-nav .brand { --intro-delay: .18s; --intro-y: -14px; --intro-blur: 6px; }
+.site-nav .nav-links > :nth-child(1) { --intro-delay: .22s; --intro-y: -12px; --intro-blur: 5px; }
+.site-nav .nav-links > :nth-child(2) { --intro-delay: .28s; --intro-y: -12px; --intro-blur: 5px; }
+.site-nav .nav-links > :nth-child(3) { --intro-delay: .34s; --intro-y: -12px; --intro-blur: 5px; }
+.site-nav .nav-links > :nth-child(4) { --intro-delay: .4s; --intro-y: -12px; --intro-blur: 5px; }
+.site-nav .nav-links > :nth-child(5) { --intro-delay: .46s; --intro-y: -12px; --intro-blur: 5px; }
+.hero-copy > .eyebrow { --intro-delay: .46s; --intro-x: -24px; --intro-y: 0; --intro-blur: 8px; }
+.hero-copy > h1 { --intro-delay: .52s; --intro-duration: 1s; --intro-y: 36px; --intro-blur: 13px; }
+.hero-copy > p { --intro-delay: .64s; --intro-duration: .9s; --intro-y: 24px; --intro-blur: 9px; }
+.hero-foot-item:nth-child(1) { --intro-delay: .72s; --intro-y: 22px; --intro-blur: 7px; }
+.hero-foot-item:nth-child(2) { --intro-delay: .79s; --intro-y: 22px; --intro-blur: 7px; }
+.hero-foot-item:nth-child(3) { --intro-delay: .86s; --intro-y: 22px; --intro-blur: 7px; }
+.hero-foot-item:nth-child(4) { --intro-delay: .93s; --intro-y: 22px; --intro-blur: 7px; }
+.scroll-cue { --intro-delay: .9s; --intro-x: -20px; --intro-y: 0; --intro-blur: 6px; }
+.hero-peek figure:nth-child(1) { --intro-delay: .94s; --intro-y: 26px; --intro-blur: 8px; }
+.hero-peek figure:nth-child(2) { --intro-delay: 1.01s; --intro-y: 26px; --intro-blur: 8px; }
+.hero-peek figure:nth-child(3) { --intro-delay: 1.08s; --intro-y: 26px; --intro-blur: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  html.hero-intro-pending :is(
+    .hero-media > img:first-child,
+    #webgl,
+    .hero-gridlines,
+    .site-nav .brand,
+    .site-nav .nav-links > *,
+    .hero-copy > .eyebrow,
+    .hero-copy > h1,
+    .hero-copy > p,
+    .hero-foot-item,
+    .scroll-cue,
+    .hero-peek figure
+  ) {
+    opacity: revert !important;
+    filter: none;
+    transform: none !important;
+  }
+}
+</style></head>
+
+  <body class="">
+    <div class="loader" aria-hidden="true">
+      <div class="loader-inner">
+        <div class="loader-top">
+          <span class="micro">Entering Echo Vale</span>
+          <span class="loader-count">00</span>
+        </div>
+        <div class="loader-track">
+          <div class="loader-bar"></div>
+        </div>
+      </div>
+    </div>
+    <div class="noise" aria-hidden="true"></div>
+    <div class="cursor-dot" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
+
+    <nav class="site-nav" aria-label="Primary navigation">
+      <div class="shell nav-inner">
+        <a class="brand interactive" href="#top" aria-label="Echo Vale home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="micro">Echo Vale</span>
+        </a>
+        <div class="nav-links" id="navLinks">
+          <a class="interactive" href="#method">Method</a>
+          <a class="interactive" href="#places">Places</a>
+          <a class="interactive" href="#journey">Journey</a>
+          <a class="interactive" href="#passes">Passes</a>
+          <a class="nav-cta interactive" href="#reserve">
+            <i></i>
+            Reserve a passage
+          </a>
+        </div>
+        <button
+          class="menu-toggle interactive"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="navLinks"
+        >
+          <span>＋</span>
+        </button>
+      </div>
+    </nav>
+
+    <header class="hero-scroll" id="top">
+      <div class="hero-stage">
+        <div class="hero-shell">
+          <div class="hero-media">
+            <img
+              src="echo-vale-assets/cloud-house-hero-1280.webp"
+              srcset="echo-vale-assets/cloud-house-hero-1280.webp 1280w, echo-vale-assets/cloud-house-hero-1600.webp 1600w, echo-vale-assets/cloud-house-hero-2400.webp 2400w"
+              sizes="100vw"
+              width="2400"
+              height="1797"
+              fetchpriority="high"
+              alt="The Cloud House pavilion overlooking a misty forest"
+            />
+            <img
+              class="hero-media-transition"
+              src="echo-vale-assets/cloud-house-project-1280.webp"
+              srcset="echo-vale-assets/cloud-house-project-480.webp 480w, echo-vale-assets/cloud-house-project-1280.webp 1280w, echo-vale-assets/cloud-house-project-1600.webp 1600w, echo-vale-assets/cloud-house-project-2400.webp 2400w"
+              sizes="100vw"
+              width="2400"
+              height="1797"
+              decoding="async"
+              alt=""
+              aria-hidden="true"
+            />
+          </div>
+          <canvas id="webgl" aria-hidden="true"></canvas>
+          <div class="hero-gridlines" aria-hidden="true"></div>
+          <div class="hero-content">
+            <div class="hero-main">
+              <div class="hero-copy">
+                <span class="eyebrow micro">Field / Breath — Cloud House</span>
+                <h1>Rise into the cloud.</h1>
+                <p>
+                  Ascend before sunrise to a quiet pavilion suspended above the
+                  forest, where mist, weather and open space set the rhythm of
+                  the day.
+                </p>
+                <div class="hero-foot">
+                  <div class="hero-foot-item">
+                    <b>A</b>
+                    <span>Arrival through the rain-cut basalt corridor.</span>
+                  </div>
+                  <div class="hero-foot-item">
+                    <b>B</b>
+                    <span>Stillness practice beneath the circular light.</span>
+                  </div>
+                  <div class="hero-foot-item">
+                    <b>C</b>
+                    <span>Night crossing along the lantern path.</span>
+                  </div>
+                  <div class="hero-foot-item">
+                    <b>D</b>
+                    <span>Dawn tea above a valley of cloud.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="hero-bottom">
+              <div class="scroll-cue">
+                <span class="micro">Scroll to enter</span>
+                <i></i>
+              </div>
+              <div class="hero-peek" aria-label="Featured places">
+                <figure class="active interactive">
+                  <img
+                    src="echo-vale-assets/cloud-house-project-480.webp"
+                    srcset="echo-vale-assets/cloud-house-project-480.webp 480w, echo-vale-assets/cloud-house-project-1280.webp 1280w, echo-vale-assets/cloud-house-project-1600.webp 1600w, echo-vale-assets/cloud-house-project-2400.webp 2400w"
+                    sizes="(max-width: 680px) 30vw, (max-width: 1600px) 16vw, 220px"
+                    width="480"
+                    height="360"
+                    alt="Forest pavilion"
+                  />
+                  <figcaption>Cloud House</figcaption>
+                </figure>
+                <figure class="interactive">
+                  <img
+                    src="echo-vale-assets/ember-room-project-480.webp"
+                    srcset="echo-vale-assets/ember-room-project-480.webp 480w, echo-vale-assets/ember-room-project-1280.webp 1280w, echo-vale-assets/ember-room-project-1600.webp 1600w, echo-vale-assets/ember-room-project-2400.webp 2400w"
+                    sizes="(max-width: 680px) 30vw, (max-width: 1600px) 16vw, 220px"
+                    width="480"
+                    height="360"
+                    alt="Dark stone chamber"
+                  />
+                  <figcaption>Ember Room</figcaption>
+                </figure>
+                <figure class="interactive">
+                  <img
+                    src="echo-vale-assets/north-descent-project-480.webp"
+                    srcset="echo-vale-assets/north-descent-project-480.webp 480w, echo-vale-assets/north-descent-project-1280.webp 1280w, echo-vale-assets/north-descent-project-1600.webp 1600w, echo-vale-assets/north-descent-project-2400.webp 2400w"
+                    sizes="(max-width: 680px) 30vw, (max-width: 1600px) 16vw, 220px"
+                    width="480"
+                    height="360"
+                    alt="Basalt valley path"
+                  />
+                  <figcaption>North Descent</figcaption>
+                </figure>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro section-pad">
+        <div class="shell">
+          <div class="intro-grid">
+            <span class="micro eyebrow reveal">The invitation</span>
+            <div>
+              <h2 class="reveal">
+                Some places are found. Others
+                <em>find you.</em>
+              </h2>
+              <p class="intro-note reveal delay-1">
+                Echo Vale is a four-night expedition into living architecture.
+                Each passage pairs a monumental landscape with a small, tactile
+                ritual—walking at blue hour, listening beneath stone, sharing
+                warmth after rain.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="features section-pad" id="method">
+        <div class="shell">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow micro reveal">How the vale moves</span>
+              <h2 class="reveal">
+                Designed around
+                <br />
+                human rhythm.
+              </h2>
+            </div>
+            <p class="reveal delay-1">
+              No crowded checklist. No frantic transfers. Each day holds one
+              elemental encounter and enough open space for the landscape to
+              finish the sentence.
+            </p>
+          </div>
+          <div class="feature-grid">
+            <article class="feature-card reveal tilt-card">
+              <div class="feature-symbol">
+                <img
+                  src="echo-vale-assets/slow-passage-icon.webp"
+                  width="320"
+                  height="213"
+                  loading="lazy"
+                  decoding="async"
+                  alt="Stylized Vinyl Record with Glass Music Note"
+                  class="w-28 h-28 object-contain relative z-10"
+                  style="animation: breathe-img 5s ease-in-out infinite;"
+                />
+              </div>
+              <div>
+                <span class="micro">Tempo / Slow</span>
+                <h3>Unhurried passage</h3>
+                <p>
+                  Long transitions, quiet mornings and generous pauses replace
+                  the mechanics of ordinary itineraries.
+                </p>
+              </div>
+            </article>
+            <article class="feature-card reveal delay-1 tilt-card">
+              <div class="feature-symbol">
+                <img
+                  src="echo-vale-assets/elemental-immersion-icon.webp"
+                  width="320"
+                  height="213"
+                  loading="lazy"
+                  decoding="async"
+                  alt="3D Metallic Fluid Icon on Black Background"
+                  class="w-28 h-28 object-contain relative z-10"
+                  style="animation: breathe-img 5s ease-in-out infinite 1.6s;"
+                />
+              </div>
+              <div>
+                <span class="micro">Sense / Deep</span>
+                <h3>Elemental immersion</h3>
+                <p>
+                  Rain, stone, warmth and altitude become the interface. Every
+                  detail asks you to notice more with less.
+                </p>
+              </div>
+            </article>
+            <article class="feature-card reveal delay-2 tilt-card">
+              <div class="feature-symbol">
+                <img
+                  src="echo-vale-assets/private-scale-icon.webp"
+                  width="320"
+                  height="213"
+                  loading="lazy"
+                  decoding="async"
+                  alt="3D Digital Key and Speech Bubble Icon"
+                  class="w-28 h-28 object-contain relative z-10"
+                  style="animation: breathe-img 5s ease-in-out infinite 3.2s;"
+                />
+              </div>
+              <div>
+                <span class="micro">Group / Small</span>
+                <h3>Private scale</h3>
+                <p>
+                  Only fourteen passages open each season, guided by a compact
+                  team of hosts, makers and field naturalists.
+                </p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="showcase section-pad" id="places">
+        <div class="shell showcase-layout">
+          <figure class="showcase-visual reveal">
+            <img
+              src="echo-vale-assets/cloud-house-showcase-800.webp"
+              srcset="echo-vale-assets/cloud-house-showcase-800.webp 800w, echo-vale-assets/cloud-house-showcase-1600.webp 1600w, echo-vale-assets/cloud-house-showcase-2000.webp 2000w"
+              sizes="(max-width: 900px) calc(100vw - 48px), 62vw"
+              width="2000"
+              height="1497"
+              loading="lazy"
+              decoding="async"
+              alt="The Cloud House pavilion above a foggy forest"
+            />
+            <figcaption class="visual-label">
+              <span class="micro">Cloud House / East Ridge</span>
+              <span class="micro">1,440 M</span>
+            </figcaption>
+          </figure>
+          <div class="showcase-copy">
+            <article class="show-step reveal">
+              <span class="step-no">PHASE A / ARRIVE</span>
+              <h3>Leave the loud world below.</h3>
+              <p>
+                The ascent begins before sunrise. A silent electric transfer
+                gives way to a short ridge walk, where the first architecture
+                appears only when the mist allows it.
+              </p>
+            </article>
+            <article class="show-step reveal">
+              <span class="step-no">PHASE B / LISTEN</span>
+              <h3>Let weather set the pace.</h3>
+              <p>
+                When rain arrives, the itinerary opens. Sound moves across
+                stone, water collects in the floor channels, and the pavilion
+                becomes an instrument.
+              </p>
+            </article>
+            <article class="show-step reveal">
+              <span class="step-no">PHASE C / RETURN</span>
+              <h3>Carry less back with you.</h3>
+              <p>
+                The final morning is deliberately unfinished: tea, a blank page,
+                and a path that descends through the trees without a guide.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="gallery-scroll" id="journey">
+        <div class="gallery-sticky">
+          <div class="gallery-head">
+            <div>
+              <span class="eyebrow micro">The living atlas</span>
+              <h2>
+                Four fields.
+                <br />
+                One pulse.
+              </h2>
+            </div>
+            <div>
+              <div class="gallery-progress"><i></i></div>
+              <span class="micro">Drag through the terrain</span>
+            </div>
+          </div>
+          <div class="gallery-track">
+            <article class="gallery-card interactive">
+              <img
+                src="echo-vale-assets/red-threshold-gallery-800.webp"
+                srcset="echo-vale-assets/red-threshold-gallery-800.webp 800w, echo-vale-assets/red-threshold-gallery-1600.webp 1600w"
+                sizes="(max-width: 760px) calc(100vw - 48px), min(38vw, 560px)"
+                width="1600"
+                height="1198"
+                loading="lazy"
+                decoding="async"
+                alt="The monumental Echo Portal"
+              />
+              <div class="gallery-meta">
+                <div>
+                  <span class="micro">Field / Aperture</span>
+                  <h3>The Red Threshold</h3>
+                </div>
+                <span class="arrow">↗</span>
+              </div>
+            </article>
+            <article class="gallery-card interactive">
+              <img
+                src="echo-vale-assets/cloud-house-gallery-800.webp"
+                srcset="echo-vale-assets/cloud-house-gallery-800.webp 800w, echo-vale-assets/cloud-house-gallery-1600.webp 1600w"
+                sizes="(max-width: 760px) calc(100vw - 48px), min(38vw, 560px)"
+                width="1600"
+                height="1198"
+                loading="lazy"
+                decoding="async"
+                alt="Pavilion above a mist forest"
+              />
+              <div class="gallery-meta">
+                <div>
+                  <span class="micro">Field / Breath</span>
+                  <h3>Cloud House</h3>
+                </div>
+                <span class="arrow">↗</span>
+              </div>
+            </article>
+            <article class="gallery-card interactive">
+              <img
+                src="echo-vale-assets/ember-room-gallery-800.webp"
+                srcset="echo-vale-assets/ember-room-gallery-800.webp 800w, echo-vale-assets/ember-room-gallery-1600.webp 1600w"
+                sizes="(max-width: 760px) calc(100vw - 48px), min(38vw, 560px)"
+                width="1600"
+                height="1198"
+                loading="lazy"
+                decoding="async"
+                alt="Bronze disc inside a stone chamber"
+              />
+              <div class="gallery-meta">
+                <div>
+                  <span class="micro">Field / Warmth</span>
+                  <h3>Ember Room</h3>
+                </div>
+                <span class="arrow">↗</span>
+              </div>
+            </article>
+            <article class="gallery-card interactive">
+              <img
+                src="echo-vale-assets/north-descent-gallery-800.webp"
+                srcset="echo-vale-assets/north-descent-gallery-800.webp 800w, echo-vale-assets/north-descent-gallery-1600.webp 1600w"
+                sizes="(max-width: 760px) calc(100vw - 48px), min(38vw, 560px)"
+                width="1600"
+                height="1198"
+                loading="lazy"
+                decoding="async"
+                alt="A wet path through basalt cliffs"
+              />
+              <div class="gallery-meta">
+                <div>
+                  <span class="micro">Field / Distance</span>
+                  <h3>North Descent</h3>
+                </div>
+                <span class="arrow">↗</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="timeline section-pad">
+        <div class="shell">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow micro reveal">The passage</span>
+              <h2 class="reveal">
+                A measured
+                <br />
+                sequence.
+              </h2>
+            </div>
+            <p class="reveal">
+              Four nights, three climates, one uninterrupted arc from arrival to
+              return.
+            </p>
+          </div>
+          <div class="timeline-grid">
+            <article class="timeline-item reveal">
+              <span class="micro">Dusk / Vale</span>
+              <h3>Cross the threshold</h3>
+              <p>
+                A rain walk, warm stone, and a first meal served beneath the
+                glowing aperture.
+              </p>
+            </article>
+            <article class="timeline-item reveal delay-1">
+              <span class="micro">Dawn / Ridge</span>
+              <h3>Rise into cloud</h3>
+              <p>
+                Quiet ascent to Cloud House, followed by a day held open to the
+                weather.
+              </p>
+            </article>
+            <article class="timeline-item reveal delay-2">
+              <span class="micro">Night / Chamber</span>
+              <h3>Gather the ember</h3>
+              <p>
+                A tactile fire ritual and a listening session inside the
+                volcanic room.
+              </p>
+            </article>
+            <article class="timeline-item reveal">
+              <span class="micro">Morning / North</span>
+              <h3>Walk yourself home</h3>
+              <p>
+                A solo descent, breakfast in the field, and an unhurried
+                departure.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="pricing section-pad" id="passes">
+        <div class="shell">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow micro reveal">Choose your passage</span>
+              <h2 class="reveal">
+                Space to
+                <br />
+                go deeper.
+              </h2>
+            </div>
+            <p class="reveal">
+              Every pass funds local trail restoration and includes all in-field
+              movement, meals, stays and equipment.
+            </p>
+          </div>
+          <div class="price-grid">
+            <article class="price-card reveal">
+              <div class="price-top">
+                <span class="micro">Solo field pass</span>
+                <span class="micro">8 places / season</span>
+              </div>
+              <h3>The Wanderer</h3>
+              <div class="price">
+                $680
+                <small>/ PERSON</small>
+              </div>
+              <ul class="price-list">
+                <li>
+                  <span>Four nights in a private stone room</span>
+                  <span>Included</span>
+                </li>
+                <li>
+                  <span>All field meals and guided passages</span>
+                  <span>Included</span>
+                </li>
+                <li>
+                  <span>Hand-bound route journal</span>
+                  <span>Included</span>
+                </li>
+                <li>
+                  <span>Private transfer from the lowlands</span>
+                  <span>Optional</span>
+                </li>
+              </ul>
+              <a class="action magnetic interactive" href="#reserve">
+                <span>Request a solo pass</span>
+                <span>↗</span>
+              </a>
+            </article>
+            <article class="price-card featured reveal delay-1">
+              <div class="price-top">
+                <span class="micro">Private pair pass</span>
+                <span class="micro">6 places / season</span>
+              </div>
+              <h3>The Alignment</h3>
+              <div class="price">
+                $1,280
+                <small>/ PAIR</small>
+              </div>
+              <ul class="price-list">
+                <li>
+                  <span>Four nights in a double horizon room</span>
+                  <span>Included</span>
+                </li>
+                <li>
+                  <span>Private host throughout the passage</span>
+                  <span>Included</span>
+                </li>
+                <li>
+                  <span>After-hours Ember Room access</span>
+                  <span>Included</span>
+                </li>
+                <li>
+                  <span>Door-to-vale ground transfer</span>
+                  <span>Included</span>
+                </li>
+              </ul>
+              <a class="action magnetic interactive" href="#reserve">
+                <span>Request a pair pass</span>
+                <span>↗</span>
+              </a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="testimonials section-pad">
+        <div class="shell">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow micro reveal">Field impressions</span>
+              <h2 class="reveal">What remained.</h2>
+            </div>
+          </div>
+          <div class="quotes">
+            <article class="quote reveal">
+              <blockquote>
+                “It felt less like a trip and more like someone turned the
+                volume of the world down.”
+              </blockquote>
+              <div class="quote-person">
+                <div>
+                  <b>Mara V.</b>
+                  <span>Spatial designer / Antwerp</span>
+                </div>
+                <span class="micro">Autumn field</span>
+              </div>
+            </article>
+            <article class="quote reveal delay-1">
+              <blockquote>
+                “Every transition had purpose. Even the silence felt designed,
+                but never staged.”
+              </blockquote>
+              <div class="quote-person">
+                <div>
+                  <b>Kenji R.</b>
+                  <span>Chef / Melbourne</span>
+                </div>
+                <span class="micro">Winter field</span>
+              </div>
+            </article>
+            <article class="quote reveal delay-2">
+              <blockquote>
+                “I arrived wanting photographs. I left with three, and somehow
+                that was enough.”
+              </blockquote>
+              <div class="quote-person">
+                <div>
+                  <b>Soline A.</b>
+                  <span>Editor / Montréal</span>
+                </div>
+                <span class="micro">Spring field</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="faq section-pad">
+        <div class="shell faq-layout">
+          <div class="faq-title">
+            <span class="eyebrow micro reveal">Before you enter</span>
+            <h2 class="reveal">
+              Clear
+              <br />
+              answers.
+            </h2>
+            <p class="reveal">
+              Need something more specific? Write to
+              <a href="mailto:field@echovale.example" style="color:var(--bone)">
+                field@echovale.example
+              </a>
+              .
+            </p>
+          </div>
+          <div class="faq-list reveal">
+            <article class="faq-item open">
+              <button class="faq-question interactive" aria-expanded="true">
+                <span>How physically demanding is the passage?</span>
+                <span class="faq-plus">＋</span>
+              </button>
+              <div class="faq-answer">
+                <div>
+                  <p>
+                    The route includes up to eight kilometers of walking in a
+                    day, with moderate elevation and uneven wet stone. A steady
+                    everyday fitness level is enough; our hosts adapt the rhythm
+                    to the group.
+                  </p>
+                </div>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question interactive" aria-expanded="false">
+                <span>What happens when the weather changes?</span>
+                <span class="faq-plus">＋</span>
+              </button>
+              <div class="faq-answer">
+                <div>
+                  <p>
+                    Weather is part of the experience, not an interruption. Each
+                    field has sheltered and open modes, and the sequence flexes
+                    around rain, cloud and visibility.
+                  </p>
+                </div>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question interactive" aria-expanded="false">
+                <span>Can dietary needs be accommodated?</span>
+                <span class="faq-plus">＋</span>
+              </button>
+              <div class="faq-answer">
+                <div>
+                  <p>
+                    Yes. The menu is plant-forward and can support most
+                    allergies and preferences with advance notice. We will
+                    confirm every requirement before arrival.
+                  </p>
+                </div>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question interactive" aria-expanded="false">
+                <span>Is the vale suitable for solo travelers?</span>
+                <span class="faq-plus">＋</span>
+              </button>
+              <div class="faq-answer">
+                <div>
+                  <p>
+                    Very much so. Solo passes include a private room and a
+                    balance of shared and independent time. Most seasonal groups
+                    include several guests arriving alone.
+                  </p>
+                </div>
+              </div>
+            </article>
+            <article class="faq-item">
+              <button class="faq-question interactive" aria-expanded="false">
+                <span>What should I bring?</span>
+                <span class="faq-plus">＋</span>
+              </button>
+              <div class="faq-answer">
+                <div>
+                  <p>
+                    Layered clothing, broken-in walking shoes and curiosity.
+                    Technical outerwear, field packs, lamps and all ritual
+                    materials are waiting in your room.
+                  </p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta" id="reserve">
+        <div class="cta-media">
+          <img
+            src="echo-vale-assets/threshold-cta-1280.webp"
+            srcset="echo-vale-assets/threshold-cta-1280.webp 1280w, echo-vale-assets/threshold-cta-1600.webp 1600w, echo-vale-assets/threshold-cta-2400.webp 2400w"
+            sizes="100vw"
+            width="2400"
+            height="1797"
+            loading="lazy"
+            decoding="async"
+            alt="A distant red light beyond a basalt passage"
+          />
+        </div>
+        <div class="cta-content">
+          <span class="micro">Next seasonal passage / October</span>
+          <h2>
+            Meet us at
+            <br />
+            the
+            <span>threshold.</span>
+          </h2>
+          <form class="cta-form">
+            <label class="sr-only" for="email">Email address</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Your email address"
+              required=""
+            />
+            <button class="interactive" type="submit">
+              Request the field notes ↗
+            </button>
+          </form>
+          <p class="form-note" aria-live="polite">
+            One quiet letter each month. No noise.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="shell">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a class="brand" href="#top">
+              <span class="brand-mark"></span>
+              <span class="micro">Echo Vale</span>
+            </a>
+            <p>
+              An original field journey through elemental architecture, remote
+              landscapes and the restorative force of moving slowly.
+            </p>
+          </div>
+          <div class="footer-col">
+            <h4 class="micro">Explore</h4>
+            <a href="#method">Method</a>
+            <a href="#places">Places</a>
+            <a href="#journey">Journey</a>
+          </div>
+          <div class="footer-col">
+            <h4 class="micro">Connect</h4>
+            <a href="#reserve">Field notes</a>
+            <a href="mailto:field@echovale.example">Email</a>
+            <a href="#passes">Passes</a>
+          </div>
+          <div class="footer-col">
+            <h4 class="micro">Coordinates</h4>
+            <a href="#">Northern ridge</a>
+            <a href="#">Seasonal access</a>
+            <a href="#">Low-impact travel</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span class="micro">© 2026 Echo Vale Field Company</span>
+          <span class="micro">Built for stillness / Designed to move</span>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      (() => {
+        const clamp = (n, min = 0, max = 1) => Math.min(max, Math.max(min, n));
+        const range = (n, start, end) => clamp((n - start) / (end - start));
+        const ease = n => 1 - Math.pow(1 - n, 4);
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const pageParams = new URLSearchParams(location.search);
+        const mockupMode = pageParams.get('mockup') === '1';
+        const recordingMode = pageParams.get('recording') === '1';
+        document.body.classList.toggle('mockup-mode', mockupMode);
+        document.body.classList.toggle('recording-mode', recordingMode);
+
+        const introRoot = document.documentElement;
+        let introCleanupTimer;
+        const startHeroIntro = () => {
+          introRoot.classList.remove('hero-intro-pending');
+          if (reduced || mockupMode) return;
+          introRoot.classList.add('hero-intro-running');
+          clearTimeout(introCleanupTimer);
+          introCleanupTimer = setTimeout(() => introRoot.classList.remove('hero-intro-running'), 2500);
+        };
+        if (reduced || mockupMode) startHeroIntro();
+
+        // Deliberate, short loading cue.
+        const loader = document.querySelector('.loader');
+        const loaderCount = document.querySelector('.loader-count');
+        const loaderBar = document.querySelector('.loader-bar');
+        let loaded = 0;
+        const loadingTimer = setInterval(() => {
+          loaded = Math.min(100, loaded + Math.ceil((100 - loaded) * .16));
+          loaderCount.textContent = String(loaded).padStart(2, '0');
+          loaderBar.style.width = loaded + '%';
+          if (loaded >= 100) {
+            clearInterval(loadingTimer);
+            setTimeout(() => {
+              loader.classList.add('is-gone');
+              requestAnimationFrame(startHeroIntro);
+            }, 180);
+          }
+        }, 45);
+
+        // Navigation and mobile menu.
+        const nav = document.querySelector('.site-nav');
+        const menuToggle = document.querySelector('.menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        menuToggle.addEventListener('click', () => {
+          const open = !navLinks.classList.contains('open');
+          navLinks.classList.toggle('open', open);
+          document.body.classList.toggle('menu-open', open);
+          menuToggle.setAttribute('aria-expanded', String(open));
+          menuToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        });
+        navLinks.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+          navLinks.classList.remove('open'); document.body.classList.remove('menu-open'); menuToggle.setAttribute('aria-expanded', 'false');
+        }));
+
+        // Cursor with inertial ring.
+        const dot = document.querySelector('.cursor-dot');
+        const ring = document.querySelector('.cursor-ring');
+        let pointerX = innerWidth / 2, pointerY = innerHeight / 2, ringX = pointerX, ringY = pointerY;
+        window.addEventListener('pointermove', e => { pointerX = e.clientX; pointerY = e.clientY; dot.style.transform = `translate(${pointerX}px,${pointerY}px) translate(-50%,-50%)`; });
+        document.querySelectorAll('.interactive,a,button').forEach(el => {
+          el.addEventListener('mouseenter', () => ring.classList.add('is-hover'));
+          el.addEventListener('mouseleave', () => ring.classList.remove('is-hover'));
+        });
+        function cursorLoop() { ringX += (pointerX - ringX) * .14; ringY += (pointerY - ringY) * .14; ring.style.transform = `translate(${ringX}px,${ringY}px) translate(-50%,-50%)`; requestAnimationFrame(cursorLoop); }
+        if (!reduced && innerWidth > 900) cursorLoop();
+
+        // Reveal choreography.
+        const revealObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+          if (entry.isIntersecting) { entry.target.classList.add('in-view'); revealObserver.unobserve(entry.target); }
+        }), { threshold: .15 });
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // The hero is one full-bleed frame, so scroll only carries it away.
+        const hero = document.querySelector('.hero-scroll');
+        const gallerySection = document.querySelector('.gallery-scroll');
+        const galleryTrack = document.querySelector('.gallery-track');
+        const galleryProgress = document.querySelector('.gallery-progress i');
+        let heroProgress = 0, ticking = false;
+
+        function updateScrollScenes() {
+          ticking = false;
+          nav.classList.toggle('is-scrolled', scrollY > 40);
+          if (!reduced && !mockupMode) {
+            const hr = hero.getBoundingClientRect();
+            heroProgress = clamp(-hr.top / Math.max(1, hr.height));
+
+            const gr = gallerySection.getBoundingClientRect();
+            const gp = clamp(-gr.top / Math.max(1, gr.height - innerHeight));
+            const trackTravel = Math.max(0, galleryTrack.scrollWidth - innerWidth + innerWidth*.06);
+            galleryTrack.style.transform = `translate3d(${-trackTravel*gp}px,0,0)`;
+            galleryProgress.style.width = `${gp*100}%`;
+          }
+        }
+        function requestScrollUpdate() { if (!ticking) { requestAnimationFrame(updateScrollScenes); ticking = true; } }
+        addEventListener('scroll', requestScrollUpdate, { passive:true });
+        addEventListener('resize', requestScrollUpdate);
+        updateScrollScenes();
+
+        // Gentle 3D parallax on feature cards.
+        if (!reduced) document.querySelectorAll('.tilt-card').forEach(card => {
+          card.addEventListener('pointermove', e => {
+            const r = card.getBoundingClientRect(); const x = (e.clientX-r.left)/r.width-.5; const y = (e.clientY-r.top)/r.height-.5;
+            card.style.transform = `perspective(800px) rotateX(${-y*5}deg) rotateY(${x*6}deg) translateZ(8px)`;
+          });
+          card.addEventListener('pointerleave', () => card.style.transform = '');
+        });
+
+        // Magnetic calls to action.
+        if (!reduced) document.querySelectorAll('.magnetic').forEach(btn => {
+          btn.addEventListener('pointermove', e => { const r=btn.getBoundingClientRect(); btn.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.12}px,${(e.clientY-r.top-r.height/2)*.2}px)`; });
+          btn.addEventListener('pointerleave', () => btn.style.transform='');
+        });
+
+        // Accessible FAQ accordion.
+        document.querySelectorAll('.faq-question').forEach(btn => btn.addEventListener('click', () => {
+          const item = btn.closest('.faq-item'); const opening = !item.classList.contains('open');
+          document.querySelectorAll('.faq-item').forEach(other => { other.classList.remove('open'); other.querySelector('button').setAttribute('aria-expanded','false'); });
+          if (opening) { item.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+        }));
+
+        // Local-only form acknowledgement.
+        const form = document.querySelector('.cta-form');
+        form.addEventListener('submit', e => {
+          e.preventDefault();
+          const note = document.querySelector('.form-note');
+          note.textContent = 'Your coordinates are noted. The field letter will find you.';
+          form.reset();
+        });
+
+        // Three.js depth field: restrained points that react to pointer and scroll camera movement.
+        if (!reduced && !mockupMode && window.THREE) {
+          try {
+            const canvas = document.getElementById('webgl');
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:false, powerPreference:'high-performance' });
+            renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, .1, 100);
+            camera.position.z = 6;
+            const geometry = new THREE.BufferGeometry();
+            const count = 620; const positions = new Float32Array(count*3);
+            for (let i=0;i<count;i++) { positions[i*3]=(Math.random()-.5)*14; positions[i*3+1]=(Math.random()-.5)*8; positions[i*3+2]=(Math.random()-.5)*7; }
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
+            const material = new THREE.PointsMaterial({ color:0xe44b3c, size:.018, transparent:true, opacity:.52, blending:THREE.AdditiveBlending, depthWrite:false });
+            const points = new THREE.Points(geometry,material); scene.add(points);
+            const resize = () => { renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); };
+            addEventListener('resize',resize); resize();
+            const clock = new THREE.Clock();
+            (function render(){ const t=clock.getElapsedTime(); points.rotation.y=t*.018 + heroProgress*.18; points.rotation.x=Math.sin(t*.12)*.025; camera.position.x+=( ((pointerX/innerWidth)-.5)*.35-camera.position.x)*.025; camera.position.y+=( -((pointerY/innerHeight)-.5)*.22-camera.position.y)*.025; camera.position.z=6-heroProgress*.75; renderer.render(scene,camera); requestAnimationFrame(render); })();
+          } catch (error) { document.getElementById('webgl').hidden = true; }
+        }
+      })();
+    </script>
+
+    <style>
+      .hero-media>img{position:absolute;inset:0}.hero-media>img:first-child{z-index:0}.hero-media img.hero-media-transition{z-index:1;opacity:0;pointer-events:none;transform:scale(1.06);transition:opacity .85s var(--ease-in-out),transform 1.1s var(--ease-out);will-change:opacity,transform}.hero-media img.hero-media-transition.is-visible{opacity:1}.hero-media::after{z-index:2}.hero-peek figure{opacity:.62;cursor:pointer;transition:opacity .35s var(--ease-out),border-color .35s var(--ease-out),box-shadow .35s var(--ease-out),transform .35s var(--ease-out)}.hero-peek figure:hover{opacity:.9}.hero-peek figure.active{opacity:1;border-color:var(--ember);box-shadow:0 0 0 1px rgba(228,75,60,.28),0 16px 42px rgba(0,0,0,.32);transform:translateY(-4px)}.hero-peek figure:focus-visible{outline:2px solid var(--ember);outline-offset:3px}.hero-copy .project-copy-fade{animation:project-copy-fade .65s var(--ease-out)}@keyframes project-copy-fade{from{opacity:.18}to{opacity:1}}@media(max-width:900px){.hero-peek{grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}.hero-peek figcaption{padding:.5rem;font-size:.52rem}}
+    </style>
+    <script>
+      (() => {
+        const responsiveSource = name => ({
+          src: `echo-vale-assets/${name}-1280.webp`,
+          srcset: [480, 1280, 1600, 2400]
+            .map(width => `echo-vale-assets/${name}-${width}.webp ${width}w`)
+            .join(', '),
+        });
+        const projects = [
+          {
+            title: 'Rise into the cloud.',
+            subtitle: 'Field / Breath — Cloud House',
+            description: 'Ascend before sunrise to a quiet pavilion suspended above the forest, where mist, weather and open space set the rhythm of the day.',
+            ...responsiveSource('cloud-house-project'),
+            alt: 'The Cloud House pavilion overlooking a misty forest',
+          },
+          {
+            title: 'Gather around the ember.',
+            subtitle: 'Field / Warmth — Ember Room',
+            description: 'Enter a volcanic chamber shaped by warmth and shadow, where a glowing bronze disc turns stillness into a tactile evening ritual.',
+            ...responsiveSource('ember-room-project'),
+            alt: 'The Ember Room inside a dark stone chamber',
+          },
+          {
+            title: 'Follow the path home.',
+            subtitle: 'Field / Distance — North Descent',
+            description: 'Move through rain-cut basalt at an unhurried pace, following the northern path as it opens from monumental stone into the quiet lowlands.',
+            ...responsiveSource('north-descent-project'),
+            alt: 'The North Descent path through a basalt valley',
+          },
+        ];
+        const media = document.querySelector('.hero-media');
+        const base = media.querySelector('img:not(.hero-media-transition)');
+        const incoming = media.querySelector('.hero-media-transition');
+        const thumbs = [...document.querySelectorAll('.hero-peek figure')];
+        const subtitle = document.querySelector('.hero-copy .eyebrow');
+        const title = document.querySelector('.hero-copy h1');
+        const description = document.querySelector('.hero-copy p');
+        let current = 0;
+        let timer;
+
+        const setProjectImage = (image, project) => {
+          image.srcset = project.srcset;
+          image.sizes = '100vw';
+          image.src = project.src;
+        };
+        const animateCopy = element => {
+          element.classList.remove('project-copy-fade');
+          void element.offsetWidth;
+          element.classList.add('project-copy-fade');
+        };
+
+        function selectProject(index) {
+          if (index === current) return;
+          const previous = current;
+          const project = projects[index];
+          current = index;
+          clearTimeout(timer);
+
+          if (incoming.classList.contains('is-visible')) {
+            setProjectImage(base, projects[previous]);
+            base.alt = projects[previous].alt;
+            incoming.style.transition = 'none';
+            incoming.classList.remove('is-visible');
+            void incoming.offsetWidth;
+          }
+
+          setProjectImage(incoming, project);
+          incoming.style.transition = 'none';
+          incoming.style.transform = (base.style.transform || 'scale(1.02)') + ' scale(1.035)';
+          void incoming.offsetWidth;
+          incoming.style.transition = '';
+          requestAnimationFrame(() => {
+            incoming.classList.add('is-visible');
+            incoming.style.transform = base.style.transform || 'scale(1.02)';
+          });
+
+          subtitle.textContent = project.subtitle;
+          title.textContent = project.title;
+          description.textContent = project.description;
+          [subtitle, title, description].forEach(animateCopy);
+          thumbs.forEach((thumb, thumbIndex) => {
+            const active = thumbIndex === index;
+            thumb.classList.toggle('active', active);
+            thumb.setAttribute('aria-pressed', String(active));
+          });
+
+          timer = setTimeout(() => {
+            setProjectImage(base, project);
+            base.alt = project.alt;
+            incoming.style.transition = 'none';
+            incoming.classList.remove('is-visible');
+            incoming.style.transform = 'scale(1.06)';
+            void incoming.offsetWidth;
+            incoming.style.transition = '';
+          }, 1050);
+        }
+
+        thumbs.forEach((thumb, index) => {
+          thumb.setAttribute('role', 'button');
+          thumb.setAttribute('tabindex', '0');
+          thumb.setAttribute('aria-label', 'Show ' + projects[index].subtitle.replace('Field / ', '').replace(' — ', ': '));
+          thumb.setAttribute('aria-pressed', String(index === 0));
+          thumb.addEventListener('click', () => selectProject(index));
+          thumb.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              selectProject(index);
+            }
+          });
+        });
+      })();
+    </script>
+
+    <style id="echo-text-integration">
+      .echo-title{position:relative;isolation:isolate;contain:layout style;transform-style:preserve-3d}
+      .echo-title-copy,.echo-title-front{display:block;width:100%;transform-origin:50% 55%;backface-visibility:hidden;will-change:transform,opacity,filter,clip-path}
+      .echo-title-copy{position:absolute;inset:0;z-index:1;pointer-events:none;user-select:none}
+      .echo-title-copy *{color:inherit!important}
+      .echo-title-front{position:relative;z-index:2;pointer-events:none;text-shadow:0 .035em 0 rgba(255,255,255,.04)}
+      .echo-title:not(.echo-ready) .echo-title-front{opacity:0;clip-path:inset(0 100% 0 0)}
+      @media (prefers-reduced-motion:reduce){.echo-title-front{opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important}}
+    </style>
+    <script>
+      (()=>{
+      const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const canHover=window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      const selectors=['.hero-copy h1','.intro h2','.features .section-head h2','.gallery-head h2','.timeline .section-head h2','.pricing .section-head h2','.testimonials .section-head h2','.faq-title h2','.cta h2'];
+      const clamp=(v,min,max)=>Math.min(Math.max(v,min),max);
+      const echoes=8,lag=.24,offset=28,fade=.72,maxBlur=3,duration=900;
+      const states=[];
+      let pointerX=innerWidth/2,pointerY=innerHeight/2,frame=null;
+      selectors.forEach(selector=>document.querySelectorAll(selector).forEach(root=>{
+      if(root.dataset.echoTextReady)return;
+      root.dataset.echoTextReady='true';
+      const content=root.innerHTML;
+      root.innerHTML='';
+      root.classList.add('echo-title');
+      const copies=[];
+      if(!reduced){
+      for(let index=echoes;index>=1;index--){
+      const copy=document.createElement('span');
+      copy.className='echo-title-copy';
+      copy.setAttribute('aria-hidden','true');
+      copy.dataset.echoIndex=String(index);
+      copy.innerHTML=content;
+      copy.style.opacity='0';
+      root.appendChild(copy);
+      copies[index]=copy;
+      }
+      }
+      const front=document.createElement('span');
+      front.className='echo-title-front';
+      front.dataset.echoIndex='0';
+      front.innerHTML=content;
+      root.appendChild(front);
+      copies[0]=front;
+      if(reduced){root.classList.add('echo-ready');return}
+      const frontColor=getComputedStyle(root).color;
+      for(let index=1;index<=echoes;index++){
+      const mix=Math.min(66,16+index*5);
+      copies[index].style.color=`color-mix(in srgb, var(--ember) ${mix}%, ${frontColor})`;
+      }
+      states.push({root,copies,positions:Array.from({length:echoes+1},(_,index)=>({x:offset*(index+.35),y:0})),started:false,startTime:0,targetX:0,targetY:0,lastTargetX:0,lastTargetY:0,activity:0});
+      }));
+      if(reduced||!states.length)return;
+      const start=state=>{
+      if(state.started)return;
+      state.started=true;
+      state.startTime=performance.now();
+      state.activity=1;
+      state.root.classList.add('echo-ready');
+      requestFrame();
+      };
+      const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
+      if(entry.isIntersecting){
+      const state=states.find(item=>item.root===entry.target);
+      if(state)start(state);
+      observer.unobserve(entry.target);
+      }
+      }),{threshold:.15,rootMargin:'0px 0px -5%'});
+      states.forEach(state=>{
+      if(state.root.getBoundingClientRect().top<innerHeight*.92)start(state);else observer.observe(state.root);
+      });
+      if(canHover){
+      addEventListener('pointermove',event=>{
+      pointerX=event.clientX;pointerY=event.clientY;
+      states.forEach(state=>{
+      if(!state.started)return;
+      const rect=state.root.getBoundingClientRect();
+      const dx=pointerX-(rect.left+rect.width/2),dy=pointerY-(rect.top+rect.height/2);
+      const distance=Math.hypot(dx,dy);
+      const reach=distance?clamp(distance/320,0,1):0;
+      state.targetX=distance?dx/distance*reach*offset:0;
+      state.targetY=distance?dy/distance*reach*offset*.72:0;
+      });
+      requestFrame();
+      },{passive:true});
+      document.addEventListener('pointerleave',()=>{
+      states.forEach(state=>{state.targetX=0;state.targetY=0});
+      requestFrame();
+      });
+      }
+      function requestFrame(){if(frame===null)frame=requestAnimationFrame(render)}
+      function render(now){
+      frame=null;
+      let keepRunning=false;
+      states.forEach(state=>{
+      if(!state.started)return;
+      const progress=clamp((now-state.startTime)/duration,0,1);
+      const eased=1-Math.pow(1-progress,3);
+      const rest=1-eased;
+      const velocity=Math.hypot(state.targetX-state.lastTargetX,state.targetY-state.lastTargetY);
+      state.lastTargetX=state.targetX;state.lastTargetY=state.targetY;
+      let maxSeparation=0;
+      for(let index=0;index<=echoes;index++){
+      const current=state.positions[index],copy=state.copies[index];
+      const entrance=rest*offset*(index+.35);
+      const desiredX=state.targetX+entrance;
+      const desiredY=state.targetY;
+      const lerp=clamp(.34/(1+index*lag*4.2),.018,.36);
+      current.x+=(desiredX-current.x)*lerp;
+      current.y+=(desiredY-current.y)*lerp;
+      const depth=index/echoes;
+      const scale=index===0?.96+.04*eased:1-rest*(.035+depth*.035);
+      copy.style.transform=`translate3d(${current.x.toFixed(3)}px,${current.y.toFixed(3)}px,0) scale(${scale.toFixed(4)})`;
+      if(index===0){
+      copy.style.opacity=String(clamp(eased*1.35,0,1));
+      copy.style.filter=rest>.002?`blur(${(rest*6).toFixed(2)}px)`:'none';
+      copy.style.clipPath=rest>.002?`inset(0 ${(rest*100).toFixed(2)}% 0 0)`:'none';
+      }else{
+      const front=state.positions[0];
+      maxSeparation=Math.max(maxSeparation,Math.hypot(current.x-front.x,current.y-front.y));
+      copy.style.filter=`blur(${(maxBlur*depth+rest*1.8).toFixed(2)}px)`;
+      copy.style.clipPath=rest>.002?`inset(0 ${(rest*22).toFixed(2)}% 0 0)`:'none';
+      }
+      }
+      const separation=clamp(maxSeparation/(offset*2.25),0,1);
+      const targetActivity=clamp(velocity/(offset*.35),0,1);
+      const next=Math.max(rest,separation,targetActivity);
+      state.activity+=(next-state.activity)*.18;
+      for(let index=1;index<=echoes;index++)state.copies[index].style.opacity=String(Math.pow(fade,index)*state.activity);
+      if(progress<1||state.activity>.002||Math.abs(state.targetX)>.01||Math.abs(state.targetY)>.01)keepRunning=true;
+      });
+      if(keepRunning||canHover)requestFrame();
+      }
+      requestFrame();
+      })();
+    </script>
+
+    <style id="hero-project-cards-update">
+      .hero-peek{opacity:1;transform:translate3d(0,0,0);transform-style:preserve-3d}.hero-peek figure::before{content:'';position:absolute;z-index:3;top:.7rem;left:.7rem;width:6px;height:6px;border-radius:50%;background:rgba(233,237,230,.38);box-shadow:0 0 0 4px rgba(7,9,8,.22);transition:background .35s var(--ease-out),box-shadow .35s var(--ease-out),transform .35s var(--ease-out)}.hero-peek figure.active::before{background:var(--ember);box-shadow:0 0 14px rgba(228,75,60,.8);transform:scale(1.12)}
+    </style>
+    <script>
+      (()=>{const hero=document.querySelector('.hero-scroll');const cards=document.querySelector('.hero-peek');if(!hero||!cards)return;const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;const mockup=new URLSearchParams(location.search).get('mockup')==='1';let queued=false;const clamp=value=>Math.min(1,Math.max(0,value));const smooth=value=>value*value*(3-2*value);function update(){queued=false;if(reduced||mockup){cards.style.opacity='1';cards.style.transform='translate3d(0,0,0) scale(1)';cards.style.pointerEvents='auto';return}const rect=hero.getBoundingClientRect();const progress=clamp(-rect.top/Math.max(1,rect.height));const retreat=smooth(clamp((progress-.28)/.54));cards.style.opacity=String(1-retreat);cards.style.transform=`translate3d(0,${(retreat*54).toFixed(2)}px,${(retreat*-140).toFixed(2)}px) scale(${(1-retreat*.06).toFixed(4)})`;cards.style.pointerEvents=retreat>.95?'none':'auto'}function requestUpdate(){if(!queued){queued=true;requestAnimationFrame(update)}}addEventListener('scroll',requestUpdate,{passive:true});addEventListener('resize',requestUpdate);update()})();
+    </script>
+  </body>
+</html>

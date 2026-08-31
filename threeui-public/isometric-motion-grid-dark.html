@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Isometric Motion Grid</title>
+<style>
+  :root{
+    --bg:#08090A;
+    --rule:rgba(226,232,240,.085);
+    --fig:rgba(226,232,240,.26);
+    --title:rgba(240,243,248,.94);
+    --body:rgba(226,232,240,.44);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);
+    color:var(--body);
+    font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    font-feature-settings:"cv05" 1,"ss03" 1;
+  }
+  .wrap{max-width:1680px;margin:0 auto;padding:88px 44px 104px}
+  .grid{position:relative;display:grid;grid-template-columns:repeat(3,1fr)}
+  .rule{
+    position:absolute;top:0;bottom:0;width:1px;
+    background:linear-gradient(to bottom,transparent 0,var(--rule) 26px,var(--rule) 93%,transparent 100%);
+    pointer-events:none;
+  }
+  .fig{padding:30px 46px 74px;position:relative}
+  .fig-id{
+    display:block;
+    font-family:ui-monospace,SFMono-Regular,Menlo,"Roboto Mono",monospace;
+    font-size:12.5px;letter-spacing:.2em;color:var(--fig);
+  }
+  .fig-art{margin:16px 0 44px;aspect-ratio:1094/945}
+  .fig-art svg{display:block;width:100%;height:100%;overflow:visible}
+  .fig h3{
+    font-size:17px;font-weight:600;letter-spacing:-.012em;
+    color:var(--title);margin-bottom:13px;
+  }
+  .fig p{font-size:15.5px;line-height:1.62;max-width:33ch;text-wrap:pretty}
+  @media (max-width:1080px){
+    .grid{grid-template-columns:1fr}
+    .rule{display:none}
+    .fig{padding:26px 0 66px}
+    .wrap{padding:56px 28px 72px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="grid">
+    <i class="rule" style="left:33.3333%"></i>
+    <i class="rule" style="left:66.6667%"></i>
+    <figure class="fig">
+      <span class="fig-id">FIG 0.1</span>
+      <div class="fig-art"></div>
+      <h3>Answer in place</h3>
+      <p>Incoming calls, alerts and confirmations resolve on the same surface the work already lives on.</p>
+    </figure>
+    <figure class="fig">
+      <span class="fig-id">FIG 0.2</span>
+      <div class="fig-art"></div>
+      <h3>Signed on contact</h3>
+      <p>Documents are stamped, verified and sent in a single pass. No round trips, no second window.</p>
+    </figure>
+    <figure class="fig">
+      <span class="fig-id">FIG 0.3</span>
+      <div class="fig-art"></div>
+      <h3>Built for operators</h3>
+      <p>A dense console for the people who run the system, not only the ones who watch it.</p>
+    </figure>
+    <figure class="fig">
+      <span class="fig-id">FIG 0.4</span>
+      <div class="fig-art"></div>
+      <h3>Docked and aligned</h3>
+      <p>Hardware finds its own position and holds it. Charging begins the moment it lands.</p>
+    </figure>
+    <figure class="fig">
+      <span class="fig-id">FIG 0.5</span>
+      <div class="fig-art"></div>
+      <h3>Tuned to the room</h3>
+      <p>Levels, warnings and haptics adjust continuously so the signal stays where you left it.</p>
+    </figure>
+    <figure class="fig">
+      <span class="fig-id">FIG 0.6</span>
+      <div class="fig-art"></div>
+      <h3>Deposits land clean</h3>
+      <p>Value drops into the well, settles and confirms. The receipt arrives before the ripple fades.</p>
+    </figure>
+  </section>
+</div>
+<script>
+/* ---------------------------------------------------------------
+   isometric toolkit
+   world: x -> screen down-right, z -> screen down-left, y -> up
+--------------------------------------------------------------- */
+const SV = 'http://www.w3.org/2000/svg';
+
+/* --- orthographic camera: azimuth + elevation, live -----------
+   at az=45deg / el=35.264deg this is exactly the classic 2:1 isometric
+   the artwork was authored in, so the default view is unchanged.      */
+const S = 1.224745;                       // overall scale
+const AZ0 = Math.PI/4, EL0 = Math.asin(1/Math.sqrt(3));
+let CAM = {az:AZ0, el:EL0};
+let ca = Math.cos(AZ0), sa = Math.sin(AZ0), T = S*Math.sin(EL0), V = S*Math.cos(EL0);
+function setCam(az, el){
+  CAM.az = az; CAM.el = el;
+  ca = Math.cos(az); sa = Math.sin(az);
+  T = S*Math.sin(el); V = S*Math.cos(el);
+}
+const K = Math.cos(Math.PI/6);            // kept: authored constant
+
+const px = (x,z)=> S*(x*ca - z*sa);
+const py = (x,y,z)=> T*(x*sa + z*ca) - V*y;
+const P  = (x,y,z)=> [px(x,z), py(x,y,z)];
+/* screen basis vectors of the world axes */
+const exv = ()=> [S*ca,  T*sa];
+const ezv = ()=> [-S*sa, T*ca];
+
+/* --- monotone remap: every colour collapses to a dark tonal band,
+       every shape keeps a hairline edge (wireframe idiom) --------- */
+const VARS={'var(--white)':'#F4F5F2','var(--ink)':'#17332F','var(--red)':'#E1512E',
+            'var(--dark)':'#163337','var(--green)':'#96B99D','var(--beige)':'#D7D4C9'};
+const EDGE='rgba(226,232,240,0.34)', EDGE2='rgba(226,232,240,0.23)';
+function lumOf(c){
+  c = VARS[c] || c;
+  if (typeof c !== 'string' || c[0] !== '#') return 128;
+  let h = c.slice(1);
+  if (h.length === 3) h = h.split('').map(x=>x+x).join('');
+  return 0.299*parseInt(h.slice(0,2),16) + 0.587*parseInt(h.slice(2,4),16) + 0.114*parseInt(h.slice(4,6),16);
+}
+function mono(tag, a){
+  if (!a) return a;
+  if (a.filter){ a.opacity = 0; a.filter = null; return a; }   // soft shadows are dropped
+  if (tag === 'text'){ a.fill = 'rgba(226,232,240,0.40)'; return a; }
+  const tiny = ['r','rx','width','height'].some(k => a[k] !== undefined && Math.abs(parseFloat(a[k])) < 3);
+  const hadStroke = a.stroke && a.stroke !== 'none';
+  if (a.fill && a.fill !== 'none'){
+    if (String(a.fill).indexOf('url(') === 0){ a.opacity = 0; }
+    else {
+      const v = Math.round(10 + (lumOf(a.fill)/255) * (hadStroke ? 9 : 17));
+      a.fill = `rgb(${v},${v+1},${v+2})`;
+      if (!hadStroke){ a.stroke = EDGE2; a['stroke-width'] = tiny ? 0.022 : 2.2; }
+    }
+  }
+  if (hadStroke){
+    a.stroke = EDGE;
+    const w = parseFloat(a['stroke-width']);
+    if (!isNaN(w)) a['stroke-width'] = w < 1 ? w*0.75 : Math.max(2.0, Math.min(4.0, w*0.6));
+  }
+  return a;
+}
+
+function el(tag, attrs, kids){
+  const n = document.createElementNS(SV, tag);
+  attrs = mono(tag, attrs);
+  if (attrs) for (const k in attrs){
+    if (attrs[k] === null || attrs[k] === undefined) continue;
+    n.setAttribute(k, attrs[k]);
+  }
+  if (kids) (Array.isArray(kids)?kids:[kids]).forEach(c=>c && n.appendChild(c));
+  return n;
+}
+const g = (attrs, kids)=> el('g', attrs, kids);
+
+/* face transform matrices ------------------------------------- */
+// top face at height y : (u,v) -> world(u, y, v)
+const mTop = (y=0)=> {const a=exv(),b=ezv(); return `matrix(${a[0]},${a[1]},${b[0]},${b[1]},0,${-V*y})`;};
+const mFlat = ()=> {const a=exv(),b=ezv(); return `matrix(${a[0]},${a[1]},${b[0]},${b[1]},0,0)`;};
+// left face at z=const : (u,v) -> world(u, -v, z)
+const mLeft = (z)=> {const o=P(0,0,z),a=exv(); return `matrix(${a[0]},${a[1]},0,${V},${o[0]},${o[1]})`;};
+// right face at x=const : (u,v) -> world(x, -v, u)
+const mRight = (x)=> {const o=P(x,0,0),b=ezv(); return `matrix(${b[0]},${b[1]},0,${V},${o[0]},${o[1]})`;};
+
+/* shapes in the XZ plane, returned as arrays of [x,z] ---------- */
+function sRect(x0,z0,x1,z1){ return [[x0,z0],[x1,z0],[x1,z1],[x0,z1]]; }
+function sRRect(x0,z0,x1,z1,r,seg=16){
+  const pts=[], c=[[x1-r,z0+r,-Math.PI/2,0],[x1-r,z1-r,0,Math.PI/2],[x0+r,z1-r,Math.PI/2,Math.PI],[x0+r,z0+r,Math.PI,Math.PI*1.5]];
+  for(const [cx,cz,a0,a1] of c)
+    for(let i=0;i<=seg;i++){const a=a0+(a1-a0)*i/seg; pts.push([cx+Math.cos(a)*r, cz+Math.sin(a)*r]);}
+  return pts;
+}
+function sEllipse(cx,cz,rx,rz,seg=64){
+  const pts=[]; for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2; pts.push([cx+Math.cos(a)*rx, cz+Math.sin(a)*rz]);}
+  return pts;
+}
+const dPath = pts => 'M'+pts.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L')+'Z';
+
+/* project a XZ shape onto screen at height y */
+const proj = (pts,y)=> pts.map(p=>P(p[0],y,p[1]));
+
+/* extruded solid: top polygon + near silhouette split L/R ------ */
+function prism(pts, y, h, o={}){
+  o = Object.assign({top:'var(--white)', left:'var(--green)', right:'var(--green)', stroke:'var(--ink)', sw:3.6, speckle:0}, o);
+  const S = proj(pts, y);
+  const n = S.length;
+  let imin=0, imax=0, iy=0;
+  S.forEach((s,i)=>{ if(s[0]<S[imin][0]||(s[0]===S[imin][0]&&s[1]>S[imin][1])) imin=i;
+                     if(s[0]>S[imax][0]||(s[0]===S[imax][0]&&s[1]>S[imax][1])) imax=i;
+                     if(s[1]>S[iy][1]) iy=i; });
+  const chain=(a,b)=>{const out=[];let i=a;for(let k=0;k<=n;k++){out.push(i); if(i===b)break; i=(i+1)%n;} return out;};
+  let near = chain(imin,imax);
+  if (!near.includes(iy)) near = chain(imax,imin);
+  const cutAt = near.indexOf(iy);
+  const A = near.slice(0, cutAt+1).map(i=>S[i]);
+  const B = near.slice(cutAt).map(i=>S[i]);
+  const band = c => 'M'+c.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L')
+                 + 'L'+c.slice().reverse().map(p=>p[0].toFixed(2)+' '+(p[1]+h).toFixed(2)).join('L')+'Z';
+  // which side is left / right: A starts at leftmost
+  const leftFirst = (A[0][0] <= B[B.length-1][0]);
+  const pL = band(leftFirst?A:B.slice().reverse());
+  const pR = band(leftFirst?B:A.slice().reverse());
+  const kids = [
+    el('path',{d:pL, fill:o.left,  stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'}),
+    el('path',{d:pR, fill:o.right, stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'}),
+    el('path',{d:dPath(S), fill:o.top, stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'})
+  ];
+  if (o.speckle) kids.push(el('path',{d:dPath(S), fill:'url(#speckle)', opacity:o.speckle, stroke:'none'}));
+  return g(null, kids);
+}
+
+/* flat plate lying in the XZ plane (no extrusion) */
+function plate(pts, y, o={}){
+  const S = proj(pts,y);
+  return el('path',{d:dPath(S), fill:o.fill||'var(--white)', stroke:o.stroke===null?null:(o.stroke||'var(--ink)'), 'stroke-width':o.sw||3.6,'stroke-linejoin':'round'});
+}
+
+/* ---------------- shared defs (hidden) ----------------------- */
+const defsSvg = el('svg',{width:0,height:0,style:'position:absolute;left:-9999px'});
+document.body.appendChild(defsSvg);
+
+/* ---------------- animation clock ---------------------------- */
+const TICKS = [[],[],[],[],[],[]];
+let BUILDING = 0;
+const onTick = f => TICKS[BUILDING].push(f);
+const BUILD = [];
+const ease = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+const easeIO = t => 0.5-0.5*Math.cos(Math.PI*Math.min(1,Math.max(0,t)));
+const wrap = (t,p)=> (t%p+p)%p;
+
+/* one svg per figure; viewBox keeps the original world coordinates */
+const CELL = [
+  [629.5, 649.9], [1729.5, 649.9], [2852.5, 697.5],
+  [630, 1626], [1723, 1593], [2851.5, 1588]
+];
+const VIEW = [[633.6,607.5],[1737.25,607.5],[2843.7,607.5],
+              [633.6,1575.15],[1737.25,1575.15],[2843.7,1575.15]];
+const hosts = document.querySelectorAll('.fig-art');
+const cellG = CELL.map(([x,y],i)=>{
+  const svg = el('svg',{viewBox:`${VIEW[i][0]-547} ${VIEW[i][1]-484.5} 1094 969`,
+                        preserveAspectRatio:'xMidYMid meet'});
+  hosts[i].appendChild(svg);
+  const n = g({transform:`translate(${x},${y})`, id:'cell'+(i+1)});
+  svg.appendChild(n); return n;
+});
+
+/* shared: avatar mark — a ring, legible at hairline weight */
+function personGlyph(cx,cz,r,fill){
+  return el('circle',{cx, cy:cz, r:r*0.42, fill:'none', stroke:fill, 'stroke-width':r*0.30});
+}
+
+/* arbitrary 3-D polygon */
+function poly3(pts, o={}){
+  const d = 'M'+pts.map(p=>{const q=P(p[0],p[1],p[2]); return q[0].toFixed(2)+' '+q[1].toFixed(2);}).join('L')+'Z';
+  return el('path',{d, fill:o.fill||'#FFF', stroke:o.stroke===null?null:(o.stroke||'var(--ink)'),
+                    'stroke-width':o.sw||3.6,'stroke-linejoin':'round'});
+}
+/* shared: extruded rounded plate lying on the top plane */
+function pad(x0,z0,x1,z1,r,y,h,o){ return prism(sRRect(x0,z0,x1,z1,r), y, h, o); }
+
+/* ============================================================== *
+ *  CELL 1 — incoming call
+ * ============================================================== */
+BUILD[0] = function(){
+  const root = cellG[0];
+  const BX=246, BZ=239, BH=55;                    // base
+  const PX0=-BX, PX1=154, PZ0=-BZ, PZ1=61, PH=73; // card platform
+  const RX0=-179, RX1=171, RZ0=85, RZ1=171, RH=82;// front bar
+
+  // ground shadow
+  root.appendChild(el('path',{d:dPath(proj(sRect(-BX,-BZ,BX,BZ),0).map(p=>[p[0]+30,p[1]+108])),
+    fill:'#AEB2AA', opacity:.42, filter:'url(#b40)'}));
+
+  root.appendChild(prism(sRect(-BX,-BZ,BX,BZ), 0, BH,
+    {top:'var(--white)', left:'#9BBCA1', right:'#93B79C', speckle:.9}));
+
+  // shadows cast onto the base top
+  root.appendChild(el('path',{d:dPath(proj(sRect(PX0,PZ0,PX1,PZ1),0).map(p=>[p[0]+16,p[1]+40])),
+    fill:'#B4B8AF', opacity:.5, filter:'url(#b24)'}));
+  root.appendChild(el('path',{d:dPath(proj(sRect(RX0,RZ0,RX1,RZ1),0).map(p=>[p[0]+14,p[1]+34])),
+    fill:'#B4B8AF', opacity:.45, filter:'url(#b24)'}));
+
+  // ---- platform + cards -------------------------------------
+  root.appendChild(prism(sRect(PX0,PZ0,PX1,PZ1), PH, PH,
+    {top:'#DFDCD0', left:'#D9D6CA', right:'#D2CEC1', speckle:.7}));
+  // slot on the right face
+  const RFg = g({transform:mRight(PX1)});
+  root.appendChild(RFg);
+  RFg.appendChild(el('rect',{x:-148,y:-45,width:90,height:26,rx:13,fill:'#F6F7F3',stroke:'var(--ink)','stroke-width':3.4}));
+
+  // moving shadow of the floating card, on the platform top
+  root.appendChild(el('g',{class:'c1-cshadow'},
+    el('path',{d:dPath(proj(sRRect(15,-131,165,123,40),PH)), fill:'#7E8279', opacity:.34, filter:'url(#b24)'})));
+
+  const cardsG = g(); root.appendChild(cardsG);
+  [-150,-22,106].forEach((cx)=>{
+    const zc = 13.9, CT = PH+11;
+    cardsG.appendChild(pad(cx-46, -178, cx+46, 52, 24, CT, 11,
+      {top:'#FCFCF9', left:'#EFEFE9', right:'#E6E6E0', speckle:0}));
+    const face = g({transform:mTop(CT)});
+    cardsG.appendChild(face);
+    face.appendChild(el('circle',{cx, cy:zc, r:34, fill:'var(--red)'}));
+    face.appendChild(personGlyph(cx, zc, 34, '#FCFCF9'));
+    [[-16,-146,104],[16,-146,72]].forEach(([dx,z0,len])=>
+      face.appendChild(el('path',{d:dPath(sRRect(cx+dx-5.5, z0, cx+dx+5.5, z0+len, 5.5)), fill:'#E1E1DA'})));
+  });
+
+  // ---- front bar --------------------------------------------
+  root.appendChild(prism(sRect(RX0,RZ0,RX1,RZ1), RH, RH,
+    {top:'#E0DDD1', left:'#D9D6CA', right:'#D0CCBF', speckle:.7}));
+  const BT = RH+13;
+  root.appendChild(pad(-164,104,-62,166,18, BT,13,{top:'var(--dark)',left:'#0F2A28',right:'#0C2320'}));
+  const btnFace = g({transform:mTop(BT)}); root.appendChild(btnFace);
+  btnFace.appendChild(el('path',{d:dPath(sRRect(-155,113,-71,157,13)),fill:'none',stroke:'#41605C','stroke-width':3.2}));
+  btnFace.appendChild(el('path',{d:dPath(sRRect(-140,124,-86,146,11)),fill:'none',stroke:'#C4D0CE','stroke-width':5}));
+
+  root.appendChild(pad(-46,110,178,168,29, BT,13,{top:'var(--red)',left:'#B33A1D',right:'#A2331A'}));
+  const rdy = g({transform:mTop(BT)}); root.appendChild(rdy);
+  rdy.appendChild(el('path',{d:dPath(sRRect(-37,117,169,161,24)),fill:'none',stroke:'#F8EFE9','stroke-width':3.4}));
+  root.appendChild(g({transform:`translate(${px(66,139)},${py(66,BT,139)}) ${mFlat()}`},
+    el('text',{x:0,y:13,'text-anchor':'middle','font-size':40,'font-weight':800,fill:'#FBF7F2','letter-spacing':1.5},
+      document.createTextNode('LAUNCH'))));
+
+  // ---- floating call card -----------------------------------
+  const CARD = g({class:'c1-card'}); root.appendChild(CARD);
+  const cy0 = 332.85, ccx = 65.8, ccz = -30, CW = 298, CD = 157;
+  CARD.appendChild(pad(ccx-CW/2, ccz-CD/2, ccx+CW/2, ccz+CD/2, 44, cy0, 20,
+    {top:'#FBFBF7', left:'#B9CCB5', right:'#E0DDD2'}));
+  const cf = g({transform:mTop(cy0)}); CARD.appendChild(cf);
+  cf.appendChild(el('circle',{cx:ccx-92, cy:ccz-6, r:38, fill:'#5E736A'}));
+  cf.appendChild(personGlyph(ccx-92, ccz-6, 38, '#FBFBF7'));
+  [[-30,-24,86],[-24,4,78],[-18,32,62]].forEach(([dx0,dz,len])=>
+    cf.appendChild(el('path',{d:dPath(sRRect(ccx+dx0, ccz+dz-7, ccx+dx0+len, ccz+dz+7, 7)), fill:'#D7D7D1'})));
+  const bR = g(); cf.appendChild(bR);
+  bR.appendChild(el('circle',{cx:ccx+92, cy:ccz+22, r:29, fill:'#4E635B'}));
+  bR.appendChild(el('circle',{cx:ccx+92, cy:ccz+22, r:11, fill:'none', stroke:'#F4F6F2','stroke-width':5}));
+  bR.appendChild(el('circle',{cx:ccx+92, cy:ccz-40, r:29, fill:'var(--red)'}));
+  bR.appendChild(el('path',{d:`M${ccx+81} ${ccz-40} l22 0`,stroke:'#F9F1EC','stroke-width':6,'stroke-linecap':'round'}));
+
+  // ---- floating toggle --------------------------------------
+  const TOG = g({class:'c1-tog'}); root.appendChild(TOG);
+  const ty0 = 175, tgx=-247, tgw=56, tzc=90, tzl=190;
+  const tz0 = tzc-tzl/2, tz1 = tzc+tzl/2;
+  TOG.appendChild(pad(tgx-tgw/2,tz0,tgx+tgw/2,tz1,28, ty0, 13, {top:'#EDEDE8', left:'#D3D3CD', right:'#CACAC4'}));
+  const tf = g({transform:mTop(ty0)}); TOG.appendChild(tf);
+  tf.appendChild(el('path',{d:dPath(sRRect(tgx-19,tz0+9,tgx+19,tz1-9,19)),fill:'#FBFBF8',stroke:'var(--ink)','stroke-width':3.2}));
+  const tFill = el('path',{fill:'var(--red)'}); tf.appendChild(tFill);
+  const tKnob = el('ellipse',{cx:tgx,cy:tzc,rx:16,ry:16,fill:'#FBFBF8'}); tf.appendChild(tKnob);
+  // ---- motion -----------------------------------------------
+  const cshadow = root.querySelector('.c1-cshadow');
+  onTick(t=>{
+    const p = wrap(t, 4.333);
+    // card bob: rise 0->1.1s, fall ->2.15s, hold
+    let lift = 0;
+    if (p < 1.10) lift = easeIO(p/1.10);
+    else if (p < 2.15) lift = 1-easeIO((p-1.10)/1.05);
+    CARD.setAttribute('transform', `translate(0,${-25*lift})`);
+    cshadow.setAttribute('transform', `translate(${8*lift},${5*lift}) scale(${1+0.07*lift})`);
+    cshadow.setAttribute('opacity', 1-0.35*lift);
+    // toggle float + knob
+    const bob = Math.sin(p/4.333*Math.PI*2)*7;
+    TOG.setAttribute('transform', `translate(0,${bob})`);
+    const k = 0.64 - 0.40*(0.5-0.5*Math.cos(p/4.333*Math.PI*2));
+    const zk = tz0+16 + (tzl-32)*k;
+    tKnob.setAttribute('cy', zk);
+    tFill.setAttribute('d', dPath(sRRect(tgx-15,Math.min(tz1-30,zk),tgx+15,tz1-13,15)));
+  });
+};
+
+
+/* ============================================================== *
+ *  CELL 2 — send / scan
+ * ============================================================== */
+BUILD[1] = function(){
+  const root = cellG[1];
+  const BX=246, BZ=239, BH=55;
+  const PX0=-BX, PX1=BX, PZ0=-160, PZ1=80, PH=68;
+  const RX0=-179, RX1=174, RZ0=85, RZ1=164, RH=77;
+
+  root.appendChild(el('path',{d:dPath(proj(sRect(-BX,-BZ,BX,BZ),0).map(p=>[p[0]+30,p[1]+108])),
+    fill:'#AEB2AA', opacity:.42, filter:'url(#b40)'}));
+  root.appendChild(prism(sRect(-BX,-BZ,BX,BZ), 0, BH,
+    {top:'var(--white)', left:'#9BBCA1', right:'#93B79C', speckle:.9}));
+  root.appendChild(el('path',{d:dPath(proj(sRect(PX0,PZ0,PX1,PZ1),0).map(p=>[p[0]+16,p[1]+42])),
+    fill:'#B4B8AF', opacity:.5, filter:'url(#b24)'}));
+  root.appendChild(prism(sRect(PX0,PZ0,PX1,PZ1), PH, PH,
+    {top:'#F1F1EA', left:'#DAD7CB', right:'#D2CEC2', speckle:.75}));
+  // slot on the right face
+  root.appendChild(g({transform:mRight(PX1)},
+    el('rect',{x:-60,y:-42,width:96,height:26,rx:13,fill:'#F6F7F3',stroke:'var(--ink)','stroke-width':3.4})));
+
+  // document
+  const DT = PH+9;
+  root.appendChild(pad(-215,-130,175,45,30, DT, 9, {top:'#FBFBF7', left:'#EAEAE3', right:'#E2E2DB'}));
+  const doc = g({transform:mTop(DT)}); root.appendChild(doc);
+  [[-176,-96,236],[-176,-58,272],[-176,-20,248],[-176,18,182]].forEach(([x0,z,len])=>
+    doc.appendChild(el('path',{d:dPath(sRRect(x0,z-6.5,x0+len,z+6.5,6.5)),fill:'#DCDCD5'})));
+  const docBar = el('path',{fill:'var(--red)'}); doc.appendChild(docBar);
+  const docLogo = g({opacity:0}); doc.appendChild(docLogo);
+  docLogo.appendChild(el('path',{d:logoPath(-120,-104,32),fill:'#B3C2BE'}));
+
+  // front bar with dark panel
+  root.appendChild(prism(sRect(RX0,RZ0,RX1,RZ1), RH, RH,
+    {top:'#E0DDD1', left:'#D9D6CA', right:'#D0CCBF', speckle:.7}));
+  const BT = RH+9;
+  root.appendChild(pad(RX0+4,RZ0+4,RX1-4,RZ1-4,10, BT, 9, {top:'var(--dark)',left:'#0F2A28',right:'#0C2320'}));
+  const bf = g({transform:mTop(BT)}); root.appendChild(bf);
+  bf.appendChild(el('path',{d:dPath(sRRect(-168,94,-74,156,17)),fill:'none',stroke:'#4E6D69','stroke-width':3.4}));
+  bf.appendChild(el('path',{d:dPath(sRRect(-62,94,32,156,17)),fill:'none',stroke:'#4E6D69','stroke-width':3.4}));
+  bf.appendChild(el('path',{d:dPath(sRRect(-142,116,-100,134,9)),fill:'none',stroke:'#B9C8C5','stroke-width':4.5}));
+  bf.appendChild(el('path',{d:'M'+proj([[-104,134]],0)[0].join(' ')+'l-6 14',stroke:'#B9C8C5','stroke-width':4.5,fill:'none','stroke-linecap':'round'}));
+  bf.appendChild(el('path',{d:dPath(sRRect(-32,112,12,138,13)),fill:'none',stroke:'#B9C8C5','stroke-width':4.5}));
+  bf.appendChild(el('circle',{cx:-10,cy:125,r:8,fill:'none',stroke:'#B9C8C5','stroke-width':4.5}));
+  bf.appendChild(el('path',{d:dPath(sRRect(44,94,138,156,17)),fill:'none',stroke:'#4E6D69','stroke-width':3.4}));
+  bf.appendChild(el('path',{d:dPath(sRRect(66,116,116,126,5)),fill:'none',stroke:'#B9C8C5','stroke-width':4.2}));
+  bf.appendChild(el('path',{d:dPath(sRRect(66,132,100,142,5)),fill:'none',stroke:'#B9C8C5','stroke-width':4.2}));
+
+  // ---- floating scanner --------------------------------------
+  const SX0=-250, SX1=40, SZ0=-130, SZ1=60, SH=35, SY0=216;
+  const scnShadow = el('path',{fill:'#8E9289',opacity:.3,filter:'url(#b24)'});
+  root.insertBefore(scnShadow, root.querySelector('g'));
+  const SCN = g(); root.appendChild(SCN);
+  SCN.appendChild(pad(SX0,SZ0,SX1,SZ1,34, SY0, SH, {top:'#FBFBF7',left:'#DAD7CB',right:'#D0CCBF'}));
+  const sf = g({transform:mTop(SY0)}); SCN.appendChild(sf);
+  sf.appendChild(el('path',{d:dPath(sRRect(SX0+22,SZ0+16,SX0+90,SZ0+80,18)),fill:'#F2F2EC',stroke:'var(--ink)','stroke-width':3.4}));
+  sf.appendChild(el('path',{d:dPath(sRRect(-124,-106,26,44,28)),fill:'#1C3A38',stroke:'var(--ink)','stroke-width':3.4}));
+  sf.appendChild(el('path',{d:logoPath(-50,-30,44),fill:'#EFA394'}));
+
+  function boxSide(x0,z0,x1,z1,ytop,h){
+    const S = proj(sRect(x0,z0,x1,z1), ytop);
+    let imin=0,imax=0,iy=0;
+    S.forEach((q,i)=>{if(q[0]<S[imin][0])imin=i; if(q[0]>S[imax][0])imax=i; if(q[1]>S[iy][1])iy=i;});
+    const n=S.length, chain=(a,b)=>{const o=[];let i=a;for(let k=0;k<=n;k++){o.push(S[i]); if(i===b)break; i=(i+1)%n;} return o;};
+    let near=chain(imin,imax); if(!near.some(q=>q===S[iy])) near=chain(imax,imin);
+    return 'M'+near.map(q=>q[0].toFixed(2)+' '+q[1].toFixed(2)).join('L')
+         + 'L'+near.slice().reverse().map(q=>q[0].toFixed(2)+' '+(q[1]+h).toFixed(2)).join('L')+'Z';
+  }
+
+  onTick(t=>{
+    const p = wrap(t, 4.2);
+    const lift = 0.5-0.5*Math.cos(Math.min(1,p/2.1)*Math.PI*2);
+    const dy = -86*lift;
+    SCN.setAttribute('transform',`translate(0,${dy})`);
+    scnShadow.setAttribute('d', dPath(proj(sRRect(SX0+30,SZ0+20,SX1-10,SZ1-10,34), DT)));
+    scnShadow.setAttribute('opacity', .32-0.20*lift);
+    scnShadow.setAttribute('transform',`translate(${12*lift},${7*lift})`);
+    const on = Math.max(0, Math.min(1,(p-2.25)/0.3)) * (p>3.75? Math.max(0,(4.2-p)/0.45):1);
+    docLogo.setAttribute('opacity', on);
+    docBar.setAttribute('d', dPath(sRRect(30,-150,30+84+64*Math.max(0,Math.min(1,(p-2.3)/0.7)),-126,13)));
+  });
+};
+
+/* small 2x2 matrix mark used in cell 2 */
+function logoPath(cx,cz,s){
+  const q=s*0.34, g2=s*0.10, out=[];
+  for(let i=0;i<2;i++) for(let j=0;j<2;j++){
+    const x=cx-q-g2/2+i*(q+g2), z=cz-q-g2/2+j*(q+g2);
+    out.push(dPath(sRRect(x,z,x+q,z+q,q*0.28)));
+  }
+  return out.join(' ');
+}
+
+/* ============================================================== *
+ *  CELL 3 — console
+ * ============================================================== */
+BUILD[2] = function(){
+  const root = cellG[2];
+  const B=231, BH=55;
+  root.appendChild(prism(sRect(-B,-B,B,B), 0, BH, {top:'var(--white)', left:'#9BBCA1', right:'#93B79C'}));
+
+  const Z0=-85, Z1=178, X0=-150, X1=225, DKY=115, TOPY=298, TX1=25, SX1=150;
+  root.appendChild(prism(sRect(X0,Z0,X1,Z1), DKY, DKY, {top:'#12312F', left:'#DAD7CB', right:'#D2CEC2'}));
+  root.appendChild(poly3([[X0,DKY,Z1],[X0,TOPY,Z1],[TX1,TOPY,Z1],[SX1,DKY,Z1]],{fill:'#DFDCD0'}));
+  root.appendChild(poly3([[X0,TOPY,Z1],[X0,TOPY,Z0],[TX1,TOPY,Z0],[TX1,TOPY,Z1]],{fill:'#FBFBF7'}));
+  root.appendChild(poly3([[TX1,TOPY,Z1],[TX1,TOPY,Z0],[SX1,DKY,Z0],[SX1,DKY,Z1]],{fill:'#FBFBF7'}));
+
+  // screen, drawn on a unit frame spanning the slanted face
+  const pa=P(TX1,TOPY,Z1), pb=P(SX1,DKY,Z1), pc=P(TX1,TOPY,Z0);
+  const sg = g({transform:`matrix(${pb[0]-pa[0]},${pb[1]-pa[1]},${pc[0]-pa[0]},${pc[1]-pa[1]},${pa[0]},${pa[1]})`});
+  root.appendChild(sg);
+  sg.appendChild(el('rect',{x:.13,y:.13,width:.74,height:.62,rx:.06,fill:'#0E2A28',stroke:'#16302E','stroke-width':.02}));
+  const lines=[];
+  [[.24,.21,.46],[.38,.21,.58],[.52,.21,.34]].forEach(([x,y,h])=>{
+    const r=el('rect',{x,y,width:.062,height:h,rx:.031,fill:'#C9CFCB',opacity:0});
+    sg.appendChild(r); lines.push(r);
+  });
+
+  // three keys on the deck, clear of the body
+  const kb = g({transform:mTop(DKY)}); root.appendChild(kb);
+  const keys = [-60,20,100].map((z,i)=>{
+    const k = el('path',{d:dPath(sRRect(165,z,225,z+62,12)),
+                         fill:i===0?'var(--red)':'#12312F',stroke:'#0B211F','stroke-width':2.6});
+    kb.appendChild(k); return k;
+  });
+
+  onTick(t=>{
+    const p = wrap(t, 3.2);
+    lines.forEach((ln,i)=> ln.setAttribute('opacity', p > 0.35 + i*0.5 ? 1 : 0));
+    keys.forEach((k,i)=> k.setAttribute('opacity', wrap(p - i*0.55, 3.2) < 0.28 ? 0.5 : 1));
+  });
+};
+
+/* ============================================================== *
+ *  shared pad for cells 4-6
+ * ============================================================== */
+function bigPad2(root, sx, sz, r, h, o){
+  root.appendChild(el('path',{d:dPath(proj(sRRect(-sx,-sz,sx,sz,r),0).map(q=>[q[0]+22,q[1]+86])),
+    fill:'#B6B6B2', opacity:.38, filter:'url(#b40)'}));
+  root.appendChild(prism(sRRect(-sx,-sz,sx,sz,r), 0, h, o));
+}
+
+/* ============================================================== *
+ *  CELL 4 — charging pad
+ * ============================================================== */
+BUILD[3] = function(){
+  const root = cellG[3];
+  const SXX=263, SZZ=277, R=130, H=46;
+  bigPad2(root, SXX, SZZ, R, H, {top:'#F4F4F0',left:'#FBFBFB',right:'#EFEFEF',speckle:.85});
+  const tf = g({transform:mTop(0)}); root.appendChild(tf);
+  const LANE=[-168,-8,152];
+  LANE.forEach((x,i)=>
+    tf.appendChild(el('path',{d:dPath(sRRect(x-62,-232,x+62,228,62)),fill:'none',stroke:'#DCDCD8','stroke-width':3.4})));
+  // black tray in lane 1
+  const TRAY = g(); root.appendChild(TRAY);
+  TRAY.appendChild(pad(-230,-200,-106,196,62, 22, 22, {top:'#080808',left:'#151515',right:'#0A0A0A'}));
+  // hinged flap
+  const FLAP = g(); root.appendChild(FLAP);
+  const flapG = g(); FLAP.appendChild(flapG);
+  flapG.appendChild(pad(-230,-206,-106,138,62, 22, 24, {top:'#FBFBFB',left:'#EDEDED',right:'#E2E2E2'}));
+  const ffi = g({transform:mTop(22)}); flapG.appendChild(ffi);
+  ffi.appendChild(el('path',{d:dPath(sRRect(-212,-192,-124,-104,44)),fill:'#080808'}));
+  ffi.appendChild(el('path',{d:dPath(sRRect(-212,-64,-124,124,44)),fill:'none',stroke:'#141414','stroke-width':3.2}));
+  
+  
+  // knob
+  const KNOB = g(); root.appendChild(KNOB);
+  KNOB.appendChild(pad(-226,-70,-110,54,58, 44, 20, {top:'#FBFBFB',left:'#E6E6E6',right:'#DADADA'}));
+  const kf = g({transform:mTop(46)}); KNOB.appendChild(kf);
+  kf.appendChild(el('circle',{cx:-168,cy:-8,r:24,fill:'none',stroke:'#141414','stroke-width':6.5}));
+  
+  // check coin
+  const cpp = P(-240.8, 260, 188.8);
+  const ci = g(); root.appendChild(ci);
+  ci.appendChild(el('ellipse',{cx:-13,cy:6,rx:42,ry:50,fill:'#9E9E9E',stroke:'#141414','stroke-width':3.6}));
+  ci.appendChild(el('ellipse',{cx:0,cy:0,rx:42,ry:50,fill:'#FBFBFB',stroke:'#141414','stroke-width':3.6}));
+  ci.appendChild(el('path',{d:'M-15 2 l10 14 l21 -31',fill:'none',stroke:'#141414','stroke-width':7.5,'stroke-linecap':'round','stroke-linejoin':'round'}));
+
+  onTick(t=>{
+    const p = wrap(t, 5.0);
+    const u = 0.5-0.5*Math.cos(p/5.0*Math.PI*2);
+    const dz = -45 + 90*u;
+    const tr = `translate(${px(0,dz)},${py(0,0,dz)})`;
+    TRAY.setAttribute('transform', tr);
+    KNOB.setAttribute('transform', tr);
+    const fc = P(-168, 22, -34);
+    flapG.setAttribute('transform',
+      `${tr} translate(${px(-41.5,69.5)},${py(-41.5,200+14*u,69.5)}) translate(${fc[0]},${fc[1]}) rotate(${-19-5*u}) scale(0.94,1.16) translate(${-fc[0]},${-fc[1]})`);
+    ci.setAttribute('transform', `translate(${cpp[0]},${cpp[1]+Math.sin(p/5*Math.PI*4)*12}) rotate(${Math.sin(p/5*Math.PI*2)*8})`);
+  });
+};
+
+/* ============================================================== *
+ *  CELL 5 — control pad
+ * ============================================================== */
+BUILD[4] = function(){
+  const root = cellG[4];
+  const SXX=285, SZZ=243, R=120, H=40;
+  bigPad2(root, SXX, SZZ, R, H, {top:'#F3F3EF',left:'#FBFBFB',right:'#EFEFEF',speckle:.85});
+  const tf = g({transform:mTop(0)}); root.appendChild(tf);
+  tf.appendChild(el('path',{d:dPath(sRRect(-250,-208,-30,-30,58)),fill:'none',stroke:'#DADAD6','stroke-width':3.4}));
+  tf.appendChild(el('path',{d:dPath(sRRect(-250,-8,-30,170,58)),fill:'none',stroke:'#DADAD6','stroke-width':3.4}));
+  tf.appendChild(el('path',{d:dPath(sRRect(-10,-208,250,-30,58)),fill:'none',stroke:'#DADAD6','stroke-width':3.4}));
+  tf.appendChild(el('path',{d:dPath(sRRect(-10,-8,250,170,58)),fill:'none',stroke:'#DADAD6','stroke-width':3.4}));
+  // two rows of level bars, each fully inside its lane
+  const bars=[[],[]];
+  [-174, 26].forEach((z0,bi)=>{
+    for(let i=0;i<6;i++){
+      const b = el('path',{d:''}); b.__p=[-140, z0+i*22];
+      tf.appendChild(b); bars[bi].push(b);
+    }
+  });
+
+  // dark card sitting inside the lower-right lane, with a disc control on it
+  const CARD = g(); root.appendChild(CARD);
+  CARD.appendChild(pad(10,24,210,206,42, 34, 34, {top:'#080808',left:'#161616',right:'#0A0A0A'}));
+  const BELL = g(); root.appendChild(BELL);
+  BELL.appendChild(pad(58,72,162,176,52, 82, 20, {top:'#FBFBFB',left:'#E8E8E8',right:'#DCDCDC'}));
+  const bf = g({transform:mTop(82)}); BELL.appendChild(bf);
+  bf.appendChild(el('circle',{cx:110,cy:124,r:24,fill:'none',stroke:'#141414','stroke-width':6}));
+
+  // one floating pill, with the pointer clear of it
+  const FL = g(); root.appendChild(FL);
+  const fp = P(-78.6, 300, 94.6);
+  const fi = g({transform:`translate(${fp[0]},${fp[1]}) rotate(-16)`}); FL.appendChild(fi);
+  fi.appendChild(el('path',{d:'M-104 -52 h188 a52 52 0 0 1 0 104 h-188 a52 52 0 0 1 0 -104 z',fill:'#FBFBFB',stroke:'#141414','stroke-width':3.6}));
+  fi.appendChild(el('circle',{cx:-34,cy:0,rx:0,r:34,fill:'#080808'}));
+  fi.appendChild(el('circle',{cx:52,cy:0,r:24,fill:'none',stroke:'#B4B4B0','stroke-width':5}));
+
+  onTick(t=>{
+    const p = wrap(t, 4.6);
+    const u = 0.5-0.5*Math.cos(p/4.6*Math.PI*2);
+    const dx = -22 + 44*u;
+    const tr = `translate(${px(dx,0)},${py(dx,0,0)})`;
+    CARD.setAttribute('transform', tr); BELL.setAttribute('transform', tr);
+    FL.setAttribute('transform',`translate(0,${Math.sin(p/4.6*Math.PI*2)*11})`);
+    bars.forEach((row,bi)=> row.forEach((b,i)=>{
+      const v = 0.28+0.72*(0.5+0.5*Math.sin(p*4.5 - i*0.8 + bi*1.5));
+      const [x,z]=b.__p;
+      b.setAttribute('d', dPath(sRRect(x-34*v,z-6,x+34*v,z+6,6)));
+      b.setAttribute('fill','rgb(10,11,12)');
+      b.setAttribute('stroke',EDGE2); b.setAttribute('stroke-width',2.2);
+    }));
+  });
+};
+
+/* ============================================================== *
+ *  CELL 6 — coin drop
+ * ============================================================== */
+BUILD[5] = function(){
+  const root = cellG[5];
+  const SXX=258, SZZ=298, R=120, H=40;
+  bigPad2(root, SXX, SZZ, R, H, {top:'#F1F1EE',left:'#FBFBFB',right:'#EDEDED',speckle:.85});
+  const tf = g({transform:mTop(0)}); root.appendChild(tf);
+  const rings=[];
+  [[228,'#E6E6E6'],[168,'#D8D8D8'],[114,'#C8C8C8']].forEach(([rr,c])=>{
+    const e = el('path',{d:dPath(sEllipse(0,20,rr,rr)),fill:c});
+    tf.appendChild(e); rings.push(e);
+  });
+  tf.appendChild(el('path',{d:dPath(sEllipse(0,20,98,98)),fill:'#080808'}));
+  // slider strip
+  tf.appendChild(el('path',{d:dPath(sRRect(-214,-262,90,-186,38)),fill:'none',stroke:'#DADAD6','stroke-width':3.4}));
+  const sbars=[];
+  for(let i=0;i<5;i++){
+    const b = el('path',{d:dPath(sRRect(-190+i*40,-248,-179+i*40,-200,6)),fill:'#0B0B0B'});
+    tf.appendChild(b); sbars.push(b);
+  }
+  const sKnob = el('ellipse',{cx:40,cy:-224,rx:21,ry:21,fill:'#FBFBFB',stroke:'#141414','stroke-width':3.4}); tf.appendChild(sKnob);
+  // smiley coin at the right
+  const SM = g(); root.appendChild(SM);
+  SM.appendChild(pad(140,-140,252,-28,56, 22, 20, {top:'#FBFBFB',left:'#E6E6E6',right:'#DADADA'}));
+  const smf = g({transform:mTop(22)}); SM.appendChild(smf);
+  smf.appendChild(el('circle',{cx:196,cy:-84,r:34,fill:'none',stroke:'#141414','stroke-width':3.4}));
+  smf.appendChild(el('circle',{cx:196,cy:-84,r:9,fill:'#141414'}));
+  
+  
+  // check pill at the lower-left
+  const PILL = g(); root.appendChild(PILL);
+  const pp = P(24.25, 40, 359.75);
+  const pi = g({transform:`translate(${pp[0]},${pp[1]}) rotate(-16)`}); PILL.appendChild(pi);
+  pi.appendChild(el('path',{d:'M-96 -50 h192 a50 50 0 0 1 0 100 h-192 a50 50 0 0 1 0 -100 z',fill:'#FBFBFB',stroke:'#141414','stroke-width':3.6}));
+  pi.appendChild(el('circle',{cx:-48,cy:0,r:26,fill:'none',stroke:'#141414','stroke-width':6}));
+  pi.appendChild(el('path',{d:'M28 2 l14 16 l26 -38',fill:'none',stroke:'#141414','stroke-width':6.5,'stroke-linecap':'round','stroke-linejoin':'round'}));
+  pi.appendChild(el('path',{d:'M4 -46 v92',stroke:'#141414','stroke-width':3}));
+  // falling coin
+  const DISC = g(); root.appendChild(DISC);
+  const dp = P(9,0,85);
+  const di = g(); DISC.appendChild(di);
+  di.appendChild(el('ellipse',{cx:14,cy:6,rx:58,ry:78,fill:'#9E9E9E',stroke:'#141414','stroke-width':3.6}));
+  const dfront = el('ellipse',{cx:0,cy:0,rx:60,ry:80,fill:'#FBFBFB',stroke:'#141414','stroke-width':3.6}); di.appendChild(dfront);
+  onTick(t=>{
+    const p = wrap(t, 3.6);
+    const q = p/3.6;
+    const fall = Math.min(1, p/1.5);
+    const y = -300 + 300*fall*fall;
+    di.setAttribute('transform',`translate(${dp[0]+8},${dp[1]+y+16}) rotate(${-14+26*fall})`);
+    const pulse = wrap(p,1.8)/1.8;
+    rings.forEach((e,i)=>{ const s=1+0.05*Math.sin(pulse*Math.PI*2 - i*0.9); e.setAttribute('transform',`translate(${px(0,20)*(1-s)},${py(0,0,20)*(1-s)}) scale(${s})`); });
+    sbars.forEach((b,i)=> b.setAttribute('opacity', i/5 < 0.3+0.6*(0.5-0.5*Math.cos(q*Math.PI*2)) ? 1 : 0.22));
+    sKnob.setAttribute('cy', -224); sKnob.setAttribute('cx', -14 + 92*(0.25+0.65*(0.5-0.5*Math.cos(q*Math.PI*2))));
+  });
+};
+
+/* ---------------- build + orbit ------------------------------ */
+const DEF = {az:AZ0, el:EL0};
+const VIEWS = CELL.map(()=>({az:AZ0, el:EL0, taz:AZ0, tel:EL0, drawn:NaN}));
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function rebuild(i){
+  setCam(VIEWS[i].az, VIEWS[i].el);
+  BUILDING = i; TICKS[i].length = 0;
+  const n = cellG[i];
+  while (n.firstChild) n.removeChild(n.firstChild);
+  BUILD[i]();
+  VIEWS[i].drawn = VIEWS[i].az*1000 + VIEWS[i].el;
+}
+for (let i=0;i<6;i++) rebuild(i);
+
+if (!REDUCED) document.querySelectorAll('.fig').forEach((fig,i)=>{
+  const art = fig.querySelector('.fig-art');
+  fig.addEventListener('pointermove', e=>{
+    if (e.pointerType === 'touch') return;
+    const b = art.getBoundingClientRect();
+    const nx = Math.max(-1, Math.min(1, ((e.clientX - b.left)/b.width  - .5)*2));
+    const ny = Math.max(-1, Math.min(1, ((e.clientY - b.top )/b.height - .5)*2));
+    VIEWS[i].taz = AZ0 - nx*0.30;              // ±17°
+    VIEWS[i].tel = Math.max(0.20, Math.min(1.05, EL0 + ny*0.20));
+  });
+  fig.addEventListener('pointerleave', ()=>{ VIEWS[i].taz = AZ0; VIEWS[i].tel = EL0; });
+});
+
+/* ---------------- run loop ----------------------------------- */
+let t0 = null;
+const FREEZE = new URLSearchParams(location.search).get('p');
+function step(t){
+  for (let i=0;i<6;i++){
+    const v = VIEWS[i];
+    const da = v.taz - v.az, de = v.tel - v.el;
+    if (Math.abs(da) > 1e-4 || Math.abs(de) > 1e-4){
+      v.az += da*0.16; v.el += de*0.16;
+      rebuild(i);
+    }
+  }
+  for (const arr of TICKS) for (const f of arr) f(t);
+}
+if (FREEZE !== null){ step(parseFloat(FREEZE)); }
+else {
+  const frame = ts => {
+    if (t0===null) t0 = ts;
+    step((ts-t0)/1000);
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

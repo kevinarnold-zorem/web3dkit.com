@@ -1,0 +1,1858 @@
+<!doctype html>
+<html lang="en">
+<head><script id="aura-preview-performance-controller">
+(function() {
+if (window.__auraPreviewPerformanceController) return;
+const nativeRequestAnimationFrame = window.requestAnimationFrame
+? window.requestAnimationFrame.bind(window)
+: function(callback) { return window.setTimeout(function() { callback(Date.now()); }, 16); };
+const nativeCancelAnimationFrame = window.cancelAnimationFrame
+? window.cancelAnimationFrame.bind(window)
+: window.clearTimeout.bind(window);
+const nativeSetInterval = window.setInterval.bind(window);
+let paused = false;
+let nextFrameId = 1;
+const frameRecords = new Map();
+const pausedFrameCallbacks = new Map();
+const style = document.createElement('style');
+style.id = 'aura-preview-performance-style';
+style.textContent = [
+'html[data-aura-preview-paused="true"] *,',
+'html[data-aura-preview-paused="true"] *::before,',
+'html[data-aura-preview-paused="true"] *::after {',
+'  animation-play-state: paused !important;',
+'  transition-duration: 0s !important;',
+'  scroll-behavior: auto !important;',
+'}'
+].join('\n');
+document.head.appendChild(style);
+window.requestAnimationFrame = function(callback) {
+const frameId = nextFrameId++;
+if (paused) {
+pausedFrameCallbacks.set(frameId, callback);
+frameRecords.set(frameId, { paused: true });
+return frameId;
+}
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+return frameId;
+};
+window.cancelAnimationFrame = function(frameId) {
+const record = frameRecords.get(frameId);
+pausedFrameCallbacks.delete(frameId);
+if (record && typeof record.nativeFrameId !== 'undefined') {
+nativeCancelAnimationFrame(record.nativeFrameId);
+}
+frameRecords.delete(frameId);
+};
+window.setInterval = function(callback, delay) {
+const args = Array.prototype.slice.call(arguments, 2);
+return nativeSetInterval(function() {
+if (paused) return;
+callback.apply(this, args);
+}, delay);
+};
+const flushPausedFrames = function() {
+const callbacks = Array.from(pausedFrameCallbacks.entries());
+pausedFrameCallbacks.clear();
+callbacks.forEach(function(entry) {
+const frameId = entry[0];
+const callback = entry[1];
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+});
+};
+const setPaused = function(nextPaused) {
+const shouldPause = Boolean(nextPaused);
+if (paused === shouldPause) return;
+paused = shouldPause;
+document.documentElement.toggleAttribute('data-aura-preview-paused', paused);
+if (!paused) {
+flushPausedFrames();
+}
+};
+window.__auraPreviewPerformanceController = {
+setPaused: setPaused,
+get paused() {
+return paused;
+}
+};
+window.addEventListener('message', function(event) {
+if (event.source !== window.parent) return;
+if (!event.data || event.data.type !== 'aura-preview-performance-mode') return;
+setPaused(event.data.paused);
+});
+})();
+</script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ANTHRA A-40 — The titanium automatic</title>
+<style>
+/* ============================================================
+ANTHRA A-40 — plate deck
+Nine fixed plates; scrolling is free-wheeling with an eased
+self-settle. The watch is one continuous object that re-poses
+between plates; text lives in the flow.
+No gradients on the page — matte means flat.
+============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--display:'Avenir Next','Futura','Century Gothic','Helvetica Neue',Arial,sans-serif;
+--ui:'Avenir Next','Helvetica Neue',Arial,sans-serif;
+--paper:#131316;
+--ink:#E9E6E0;
+--mut:#8B8880;
+--brass:#C2A26A;
+--hair:rgba(233,230,224,.14);
+}
+html{font-size:.3125vw}
+body{
+background:var(--paper);color:var(--ink);font-family:var(--ui);
+font-size:clamp(13px,.9vw,16px);line-height:1.5;
+overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+#bg   {position:fixed;inset:0;z-index:0;pointer-events:none}
+#stage{position:fixed;inset:0;z-index:1;pointer-events:none}
+/* ---------- chrome ---------- */
+#top{
+position:fixed;top:0;left:0;width:100%;z-index:10;
+display:flex;justify-content:space-between;align-items:baseline;
+padding:3.2vh 3.4vw;pointer-events:none;
+background:linear-gradient(180deg,rgba(19,19,22,.92),rgba(19,19,22,.55) 62%,rgba(19,19,22,0));
+opacity:0;transition:opacity .9s ease .2s;
+}
+#top.in{opacity:1}
+#top b{font-size:clamp(13px,1vw,17px);font-weight:600;letter-spacing:.42em;text-transform:uppercase}
+#top span{font-size:clamp(11px,.62vw,13px);letter-spacing:.3em;text-transform:uppercase;color:var(--mut)}
+#pnum{
+position:fixed;left:2.2vw;bottom:-4vh;z-index:1;pointer-events:none;
+font-family:var(--display);font-weight:600;font-size:24vh;line-height:1;
+color:rgba(233,230,224,.055);font-variant-numeric:tabular-nums;
+opacity:0;transition:opacity .9s ease .3s;
+}
+#pnum.in{opacity:1}
+#idx{
+position:fixed;right:3vw;top:50%;transform:translateY(-50%);z-index:10;
+display:flex;flex-direction:column;gap:1.5vh;
+opacity:0;transition:opacity .9s ease .35s;
+}
+#idx.in{opacity:1}
+#idx a{
+display:flex;align-items:center;justify-content:flex-end;gap:.8vw;
+text-decoration:none;color:var(--mut);font-size:clamp(11px,.56vw,12px);
+letter-spacing:.26em;text-transform:uppercase;transition:color .4s ease;
+white-space:nowrap;text-shadow:0 1px 10px rgba(12,12,14,.9);
+}
+#idx a i{width:clamp(5px,.45vw,7px);height:clamp(5px,.45vw,7px);flex:none;
+border:1px solid var(--mut);border-radius:50%;
+transition:background .4s ease,border-color .4s ease}
+#idx a.on{color:var(--ink)}
+#idx a.on i{background:var(--brass);border-color:var(--brass)}
+#idx a .t{opacity:0;transform:translateX(.4em);transition:opacity .35s ease,transform .35s ease}
+#idx a.on .t,#idx a:hover .t{opacity:1;transform:none}
+#cue{
+position:fixed;left:50%;bottom:4.2vh;transform:translateX(-50%);z-index:10;
+font-size:clamp(11px,.58vw,12px);letter-spacing:.4em;text-transform:uppercase;color:var(--mut);
+transition:opacity .5s ease;animation:cuep 2.6s ease-in-out infinite;
+}
+@keyframes cuep{0%,100%{opacity:.35}50%{opacity:1}}
+/* ---------- loader ---------- */
+#loader{
+position:fixed;inset:0;z-index:1000;background:var(--paper);
+display:grid;place-items:center;pointer-events:all;
+}
+#loader .w{font-family:var(--display);font-weight:600;font-size:clamp(19px,1.6vw,26px);
+letter-spacing:.62em;text-transform:uppercase;text-indent:.62em}
+#loader i{position:absolute;left:50%;bottom:14vh;transform:translateX(-50%);
+width:9vw;height:1px;background:var(--hair);display:block;overflow:hidden}
+#loader i::after{content:'';position:absolute;left:0;top:0;height:1px;width:100%;
+background:var(--brass);transform:scaleX(0);transform-origin:left;
+animation:lb 1.15s cubic-bezier(.5,0,.2,1) forwards}
+@keyframes lb{to{transform:scaleX(1)}}
+#loader.done{opacity:0;pointer-events:none;transition:opacity .7s ease}
+/* ---------- plates ---------- */
+.plate{
+position:relative;z-index:2;height:100vh;
+display:grid;grid-template-columns:repeat(12,1fr);
+column-gap:1.6vw;align-content:center;padding:0 7vw;
+}
+.panel{grid-column:1/6}
+.plate.flip .panel{grid-column:8/13}
+.plate.center{justify-items:center;text-align:center}
+.plate.center .panel{grid-column:3/11}
+.kicker{
+font-size:clamp(11px,.62vw,13px);letter-spacing:.42em;text-transform:uppercase;color:var(--brass);
+margin-bottom:2.6vh;display:flex;align-items:center;gap:1vw;
+}
+.kicker::before{content:'';width:2.2vw;height:1px;background:var(--brass);opacity:.55}
+.plate.center .kicker{justify-content:center}
+.plate.center .kicker::before{display:none}
+/* tailwind's preflight loads after this sheet and resets h1-h6 to
+   font-size:inherit / font-weight:inherit, so these carry a class or a
+   descendant to out-specify it */
+.plate h1,.plate h2{font-family:var(--display);font-weight:500;letter-spacing:-.01em}
+.plate .mark{font-size:11vw;line-height:.92;letter-spacing:.02em;text-transform:uppercase;font-weight:600}
+.plate h2{font-size:clamp(30px,3.1vw,52px);line-height:1.06;margin-bottom:2.4vh}
+.lead{font-size:clamp(15px,1vw,18px);line-height:1.7;color:var(--mut);max-width:34em}
+.lead b{color:var(--ink);font-weight:500}
+.subrow{display:flex;flex-wrap:wrap;gap:1.4vh 2vw;margin-top:3vh;
+font-size:clamp(11px,.62vw,13px);
+letter-spacing:.24em;text-transform:uppercase;color:var(--mut)}
+.subrow span:first-child{color:var(--ink)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:1.6vw;margin-top:3.4vh}
+.duo>div{border-top:1px solid var(--hair);padding-top:1.6vh}
+.duo .k{font-size:clamp(11px,.6vw,12px);letter-spacing:.3em;text-transform:uppercase;color:var(--mut);margin-bottom:.9vh}
+.duo .v{font-size:clamp(13px,.85vw,16px);line-height:1.4;color:var(--ink)}
+.bignum{
+position:absolute;right:7vw;bottom:8vh;
+font-family:var(--display);font-weight:500;font-size:8vw;line-height:.9;
+letter-spacing:-.02em;color:var(--ink);
+}
+.bignum em{font-style:normal;font-size:.34em;color:var(--mut)}
+/* finishes chips */
+#chips{display:flex;gap:1vw;margin:3.4vh 0 2.4vh}
+#chips button{
+pointer-events:auto;cursor:pointer;background:none;
+border:1px solid var(--hair);color:var(--mut);
+font-family:var(--ui);font-size:clamp(11px,.62vw,13px);letter-spacing:.24em;text-transform:uppercase;
+padding:1.2vh 1.4vw;white-space:nowrap;transition:color .35s ease,border-color .35s ease;
+}
+#chips button.on{color:var(--ink);border-color:var(--brass)}
+#chips button:hover{color:var(--ink)}
+.finlab{font-size:clamp(11px,.64vw,13px);letter-spacing:.3em;text-transform:uppercase;color:var(--mut)}
+.finlab b{color:var(--ink);font-weight:500;margin-right:1.6vw}
+/* data table */
+.table{border-top:1px solid var(--hair);margin-top:1.4vh;max-width:min(36vw,460px)}
+/* tailwind's own .table utility loads after this sheet and would set
+   display:table on the spec list, so out-specify it */
+.plate .table{display:block;width:100%}
+.tr{display:grid;grid-template-columns:minmax(108px,34%) 1fr;
+column-gap:clamp(12px,1.3vw,22px);padding:1.5vh 0;align-items:baseline;
+border-bottom:1px solid var(--hair)}
+.tr span{font-size:clamp(11px,.6vw,12px);letter-spacing:.28em;text-transform:uppercase;
+color:var(--mut);min-width:0;overflow-wrap:break-word}
+.tr b{font-size:clamp(13px,.85vw,16px);font-weight:500;line-height:1.35;color:var(--ink);min-width:0}
+#p6{align-content:end;padding-bottom:9vh}
+/* end plate */
+.endmeta{display:flex;flex-wrap:wrap;gap:1.4vh 3vw;justify-content:center;margin-top:4vh;
+font-size:clamp(11px,.6vw,13px);letter-spacing:.3em;text-transform:uppercase;color:var(--mut)}
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);
+transition:opacity .8s ease,transform .8s cubic-bezier(.22,1,.36,1)}
+.rv.d1{transition-delay:.1s}.rv.d2{transition-delay:.2s}.rv.d3{transition-delay:.3s}
+.plate.seen .rv{opacity:1;transform:none}
+/* ---------- narrow ---------- */
+@media (max-width:860px){
+html{font-size:1.05vw}
+.plate{grid-template-columns:1fr;padding:0 7vw;align-content:end;padding-bottom:12vh}
+.panel,.plate.flip .panel,.plate.center .panel{grid-column:1/-1}
+.panel{background:rgba(17,17,20,.86);padding:3vh 5vw;margin:0 -5vw}
+.plate .mark{font-size:22vw}
+.plate h2{font-size:7.4vw}
+.lead{font-size:15px;line-height:1.65;max-width:none}
+.kicker{font-size:11px;letter-spacing:.34em}
+.subrow{flex-wrap:wrap;gap:1.2vh 4vw;font-size:11px;letter-spacing:.22em}
+.duo .k{font-size:11px;letter-spacing:.24em}.duo .v{font-size:14px}
+.tr{grid-template-columns:minmax(100px,32%) 1fr;column-gap:14px}
+.tr span{font-size:11px;letter-spacing:.2em}.tr b{font-size:14px}
+.table{max-width:none}
+#chips button{font-size:11px;padding:1.2vh 4vw}
+.finlab{font-size:11px;letter-spacing:.22em}
+#idx .t{display:none}
+#idx{right:4vw}
+#top b{font-size:13px}#top span{display:none}
+#pnum{font-size:16vh}
+#cue{font-size:11px}
+.bignum{font-size:15vw;right:7vw;bottom:auto;top:11vh}   /* clear of the bottom-aligned panel */
+}
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+
+<div id="loader"><div class="w">Anthra</div><i></i></div>
+
+<header id="top"><b>Anthra</b><span>A-40 · The titanium automatic</span></header>
+<div id="pnum">00</div>
+<nav id="idx"></nav>
+<div id="cue">Scroll</div>
+
+<canvas id="bg"></canvas>
+<canvas id="stage"></canvas>
+
+<main id="deck">
+
+  <!-- 00 COVER -->
+  <section class="plate" id="p0">
+    <div class="panel">
+      <div class="kicker rv">Anthra — instrument watches</div>
+      <h1 class="mark rv d1">A-40</h1>
+      <div class="subrow rv d2">
+        <span>The titanium automatic</span><span>40&nbsp;mm</span>
+        <span id="coverRef">Ref. A-40/01</span><span id="coverFin">Titanium</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 THESIS -->
+  <section class="plate" id="p1">
+    <div class="panel">
+      <div class="kicker rv">01 — Thesis</div>
+      <h2 class="rv d1">Built to be looked at<br>through a lens.</h2>
+      <p class="lead rv d2">The A-40 is machined from grade-5 titanium, brushed in one direction,
+        then every edge is cut back and <b>polished to a mirror line</b>. Under macro you find
+        the finishing; at arm&rsquo;s length you simply see it hold the light.</p>
+    </div>
+  </section>
+
+  <!-- 02 CASE -->
+  <section class="plate" id="p2">
+    <div class="panel">
+      <div class="kicker rv">02 — Case</div>
+      <h2 class="rv d1">Brushed flanks,<br>mirror chamfers.</h2>
+      <p class="lead rv d2">Forty millimetres of grade-5 titanium. The flanks carry one straight
+        brush; every edge between them is chamfered and polished until it draws a white line of
+        light. The crown sits recessed; the bezel meets the crystal without a step.</p>
+      <div class="duo rv d3">
+        <div><div class="k">Height</div><div class="v">9.6 mm</div></div>
+        <div><div class="k">Water</div><div class="v">100 m, screwed crown</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 DIAL -->
+  <section class="plate flip" id="p3">
+    <div class="panel">
+      <div class="kicker rv">03 — Dial</div>
+      <h2 class="rv d1">Anthracite,<br>edge to edge.</h2>
+      <p class="lead rv d2">An anthracite sunburst under sapphire coated on its inner face, so the
+        residual reflection is a faint violet ring rather than a white sheet. Moonphase at
+        twelve, the escapement open at six, the date at three.</p>
+    </div>
+  </section>
+
+  <!-- 04 CALIBRE -->
+  <section class="plate" id="p4">
+    <div class="panel">
+      <div class="kicker rv">04 — Calibre</div>
+      <h2 class="rv d1">AC-01,<br>taken apart.</h2>
+      <p class="lead rv d2">Twenty-six jewels, forty-one hours from a full wind, adjusted in five
+        positions. Shown here the honest way — in pieces.</p>
+    </div>
+    <div class="bignum rv d3">41<em>h</em></div>
+  </section>
+
+  <!-- 05 BRACELET -->
+  <section class="plate" id="p5">
+    <div class="panel">
+      <div class="kicker rv">05 — Bracelet</div>
+      <h2 class="rv d1">The same light,<br>again.</h2>
+      <p class="lead rv d2">Outer links brushed with the case, centre links polished with the
+        chamfers, so the bracelet carries the same two finishes down the wrist. Screwed pins,
+        a twenty-to-sixteen taper, and a clasp with nothing written on it.</p>
+    </div>
+  </section>
+
+  <!-- 06 FINISHES -->
+  <section class="plate center" id="p6">
+    <div class="panel">
+      <div class="kicker rv">06 — Finishes</div>
+      <h2 class="rv d1">Four metals.</h2>
+      <p class="lead rv d2" style="margin:0 auto">One case, four treatments.
+        Titanium is the reference.</p>
+      <div id="chips" class="rv d2"></div>
+      <div class="finlab rv d3"><b id="finName">Titanium</b><span id="finRef">A-40/01</span></div>
+    </div>
+  </section>
+
+  <!-- 07 DATA -->
+  <section class="plate" id="p7">
+    <div class="panel" style="grid-column:1/7">
+      <div class="kicker rv">07 — Data</div>
+      <div class="table rv d1">
+        <div class="tr"><span>Reference</span><b id="specRef">A-40/01</b></div>
+        <div class="tr"><span>Case</span><b>Grade-5 titanium, brushed</b></div>
+        <div class="tr"><span>Diameter</span><b>40 mm</b></div>
+        <div class="tr"><span>Height</span><b>9.6 mm</b></div>
+        <div class="tr"><span>Crystal</span><b>Sapphire, AR-coated inside</b></div>
+        <div class="tr"><span>Dial</span><b>Anthracite sunburst</b></div>
+        <div class="tr"><span>Calibre</span><b>AC-01, automatic</b></div>
+        <div class="tr"><span>Reserve</span><b>41 hours</b></div>
+        <div class="tr"><span>Jewels</span><b>26</b></div>
+        <div class="tr"><span>Bracelet</span><b>Three-link, screwed pins</b></div>
+        <div class="tr"><span>Weight</span><b>96 g</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 END -->
+  <section class="plate center" id="p8">
+    <div class="panel">
+      <h2 class="mark rv" style="font-size:9vw">Anthra</h2>
+      <div class="endmeta rv d1">
+        <span>© 2026 Anthra</span><span>The titanium automatic</span><span>A-40</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+/* ============================================================
+   0. MATH / UTIL
+   ============================================================ */
+const clamp=(v,a=0,b=1)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const inv=(a,b,v)=>b===a?0:clamp((v-a)/(b-a));
+const smooth=t=>t*t*(3-2*t);
+const easeIO=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const easeOut=t=>1-Math.pow(1-t,3);
+const easeOutExpo=t=>t>=1?1:1-Math.pow(2,-10*t);
+const TAU=Math.PI*2, D2R=Math.PI/180;
+
+
+/* vectors */
+const V={
+  sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
+  add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],
+  mul:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],
+  dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+  norm:a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/l,a[1]/l,a[2]/l];}
+};
+const rotY=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return[p[0]*c+p[2]*s,p[1],-p[0]*s+p[2]*c];};
+const rotX=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return[p[0],p[1]*c-p[2]*s,p[1]*s+p[2]*c];};
+const rotZ=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return[p[0]*c-p[1]*s,p[0]*s+p[1]*c,p[2]];};
+
+/* colour */
+function hex2rgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function mixc(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];}
+function rgbs(c,al){return 'rgba('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+','+(al===undefined?1:al)+')';}
+
+/* ============================================================
+   1. MATERIALS
+   ============================================================ */
+/* finishes — `gloss` scales reflectivity in shade() */
+const METALS={
+  titanium:{key:'titanium',name:'Titanium',word:['TITANIUM'],model:'A-40/01',chip:'#9AA1A9',gloss:.95,
+            d:hex2rgb('#101318'),m:hex2rgb('#99a1ab'),l:hex2rgb('#ffffff')},
+  onyx    :{key:'onyx',    name:'Onyx',    word:['ONYX'],    model:'A-40/02',chip:'#1B1D21',gloss:.55,
+            d:hex2rgb('#030405'),m:hex2rgb('#1e2126'),l:hex2rgb('#596069')},
+  bronze  :{key:'bronze',  name:'Bronze',  word:['BRONZE'],  model:'A-40/03',chip:'#8A6A3C',gloss:.82,
+            d:hex2rgb('#1f1408'),m:hex2rgb('#8a6a3c'),l:hex2rgb('#f0d6a4')},
+  slate   :{key:'slate',   name:'Slate',   word:['SLATE'],   model:'A-40/04',chip:'#5A6879',gloss:.72,
+            d:hex2rgb('#0d1218'),m:hex2rgb('#536170'),l:hex2rgb('#c2d2e2')}
+};
+const ORDER=['titanium','onyx','bronze','slate'];
+
+/* studio lights (view space) */
+const L1=V.norm([-0.42,0.62,0.66]);
+const L2=V.norm([0.78,0.30,0.54]);
+const EYE=[0,0,1];
+
+/* ---- studio HDR environment sampled by the reflected ray ----
+   two strip softboxes beside the camera, a lid above and a dark
+   table below: the standard product-photography rig             */
+function envLight(R,rough){
+  const w=1+rough*3.2, amp=1/(1+rough*1.2);
+  const az=Math.atan2(R[0],R[2]);
+  const band=Math.exp(-Math.pow((R[1]-0.12)*(2.1/w),2));
+  const s1=Math.exp(-Math.pow((az+0.85)*(2.7/w),2))*1.8;
+  const s2=Math.exp(-Math.pow((az-1.05)*(3.3/w),2))*1.2;
+  const lid=smooth(clamp(R[1]*0.9+0.35))*0.55;
+  const floor=-0.24*smooth(clamp(-R[1]*1.25));
+  return 0.17+lid+floor+(s1+s2)*band*amp;
+}
+const toneMap=x=>1.07*x/(x+0.60);    /* filmic rolloff — HDR peaks survive */
+
+function shade(n,pal,rough,tint,ax){
+  const gl=pal.gloss===undefined?0.8:pal.gloss;
+  const pol=(rough||60)>=90;                       /* polished vs brushed  */
+  const NdE=clamp(V.dot(n,EYE),-1,1);
+  const R=[2*NdE*n[0]-EYE[0],2*NdE*n[1]-EYE[1],2*NdE*n[2]-EYE[2]];
+  const fres=0.30+0.70*Math.pow(1-Math.abs(NdE),5); /* Schlick, metal F0   */
+  const d1=Math.max(0,V.dot(n,L1)), d2=Math.max(0,V.dot(n,L2));
+
+  let env;
+  if(pol) env=envLight(R,0.04);                    /* mirror chamfers      */
+  else if(ax){
+    /* brushed: stretch the reflection along the machining direction */
+    const t=V.norm(V.cross(ax,n)); let e=0;
+    for(const k of [-0.24,0,0.24]){
+      const nn=V.norm([n[0]+t[0]*k,n[1]+t[1]*k,n[2]+t[2]*k]);
+      const NE=clamp(V.dot(nn,EYE),-1,1);
+      e+=envLight([2*NE*nn[0]-EYE[0],2*NE*nn[1]-EYE[1],2*NE*nn[2]-EYE[2]],0.5);
+    }
+    env=e/3;
+  }else env=envLight(R,0.5);
+
+  const h1=V.norm(V.add(L1,EYE)), h2=V.norm(V.add(L2,EYE));
+  const pw=pol?240:70;
+  const sp=Math.pow(Math.max(0,V.dot(n,h1)),pw)*1.5
+          +Math.pow(Math.max(0,V.dot(n,h2)),pw)*0.9;
+
+  const Lx=0.055+0.15*d1+0.06*d2+env*(0.30+0.70*fres)*gl;
+  const t2=clamp(toneMap(Lx),0,1);
+  let c=t2<0.5?mixc(pal.d,pal.m,t2/0.5):mixc(pal.m,pal.l,(t2-0.5)/0.5);
+  c=mixc(c,[255,255,255],clamp(sp*gl,0,1));
+  if(tint)c=mixc(c,tint,0.5);
+  return c;
+}
+
+/* ============================================================
+   2. GEOMETRY  (unit: case radius = 1)
+   ============================================================ */
+const CASE_R=1.0, CASE_T=0.30, DIAL_Z=0.10, BACK_Z=-0.15;
+
+/* quad helper */
+function quad(a,b,c,d,mat,extra){
+  const n=V.norm(V.cross(V.sub(b,a),V.sub(d,a)));
+  return Object.assign({p:[a,b,c,d],n,mat:mat||'metal'},extra||{});
+}
+
+/* a revolved band between two rings */
+function band(r0,z0,r1,z1,seg,mat,extra){
+  const out=[];
+  for(let i=0;i<seg;i++){
+    const a0=i/seg*TAU, a1=(i+1)/seg*TAU;
+    const A=[Math.cos(a0)*r0,Math.sin(a0)*r0,z0];
+    const B=[Math.cos(a1)*r0,Math.sin(a1)*r0,z0];
+    const C=[Math.cos(a1)*r1,Math.sin(a1)*r1,z1];
+    const D=[Math.cos(a0)*r1,Math.sin(a0)*r1,z1];
+    const f=quad(A,B,C,D,mat,extra);
+    /* rim normals so revolved surfaces shade as turned metal */
+    const m=Math.hypot(f.n[0],f.n[1]), nz=f.n[2];
+    f.vn0=[Math.cos(a0)*m,Math.sin(a0)*m,nz];
+    f.vn1=[Math.cos(a1)*m,Math.sin(a1)*m,nz];
+    out.push(f);
+  }
+  return out;
+}
+
+/* a flat annulus / disc facing +z (or -z) */
+function annulus(ri,ro,z,seg,mat,extra){
+  const out=[];
+  for(let i=0;i<seg;i++){
+    const a0=i/seg*TAU,a1=(i+1)/seg*TAU;
+    const A=[Math.cos(a0)*ri,Math.sin(a0)*ri,z];
+    const B=[Math.cos(a1)*ri,Math.sin(a1)*ri,z];
+    const C=[Math.cos(a1)*ro,Math.sin(a1)*ro,z];
+    const D=[Math.cos(a0)*ro,Math.sin(a0)*ro,z];
+    out.push(quad(A,B,C,D,mat,extra));
+  }
+  return out;
+}
+
+/* box from centre + 3 axis vectors (half-extents baked in) */
+function box(c,ax,ay,az,mat,extra){
+  const P=(sx,sy,sz)=>[c[0]+ax[0]*sx+ay[0]*sy+az[0]*sz,
+                       c[1]+ax[1]*sx+ay[1]*sy+az[1]*sz,
+                       c[2]+ax[2]*sx+ay[2]*sy+az[2]*sz];
+  const v=[P(-1,-1,-1),P(1,-1,-1),P(1,1,-1),P(-1,1,-1),
+           P(-1,-1, 1),P(1,-1, 1),P(1,1, 1),P(-1,1, 1)];
+  return [
+    quad(v[4],v[5],v[6],v[7],mat,extra), quad(v[1],v[0],v[3],v[2],mat,extra),
+    quad(v[0],v[1],v[5],v[4],mat,extra), quad(v[3],v[7],v[6],v[2],mat,extra),
+    quad(v[0],v[4],v[7],v[3],mat,extra), quad(v[1],v[2],v[6],v[5],mat,extra)
+  ];
+}
+
+/* ---- the bracelet loop ----
+   A three-link bracelet built the way one is actually made: every link
+   is a straight prism swept between two rings, so the loop articulates
+   in facets instead of bending like a hose, and every edge between two
+   surfaces carries a mirror chamfer. The cross-section below is written
+   clockwise in (s = across the wrist, h = away from it); each vertex
+   owns the edge that leaves it. */
+const LOOP={cz:-1.30,Ry:2.00,Rz:1.50,phi0:30*D2R,N:46};
+function loopPoint(phi){ return [0, LOOP.Ry*Math.sin(phi), LOOP.cz+LOOP.Rz*Math.cos(phi)]; }
+
+/* surface treatments carried by a profile edge */
+const SURF={
+  br:{ao:1.00,brush:'a'},              // brushed link top, grain along the wrist
+  ct:{ao:1.00,pol:1},                  // polished centre link
+  ch:{ao:1.00,pol:1,cham:1},           // mirror chamfer
+  sd:{ao:0.90,brush:'a'},              // lug and end-link flank
+  sw:{ao:0.90,brush:'a',screw:1},      // outer link flank, screwed through
+  in:{ao:0.44},                        // inside the slit between links
+  bo:{ao:0.60,brush:'a'}               // the wrist side
+};
+
+/* link section: two brushed outer links, a proud polished centre link,
+   six mirror chamfers and a narrow recessed slit between the links */
+function linkProfile(W){
+  const mc=W*0.330;                    // centre link half-width
+  const g=0.010;                       // slit
+  const c=0.016, cd=0.013;             // chamfer run / drop
+  const ho=0.052, hc=0.068;            // outer / centre top
+  const hb=-0.094, hg=-0.030;          // wrist side / slit floor
+  const d=0.003;                       // the roll across each link top
+  const o0=mc+g, o1=W, om=(o0+c+o1-c)/2;
+  const P=[], v=(s,h,m,sm)=>P.push({s,h,m,sm:sm||0});
+  v(-o1,hb,'sw');      v(-o1,ho-cd,'ch');
+  v(-o1+c,ho,'br');    v(-om,ho+d,'br',1);   v(-o0-c,ho,'ch');
+  v(-o0,ho-cd,'in');   v(-o0,hg,'in');       v(-mc,hg,'in');
+  v(-mc,hc-cd,'ch');
+  v(-mc+c,hc,'ct');    v(0,hc+d,'ct',1);     v(mc-c,hc,'ch');
+  v(mc,hc-cd,'in');    v(mc,hg,'in');        v(o0,hg,'in');
+  v(o0,ho-cd,'ch');
+  v(o0+c,ho,'br');     v(om,ho+d,'br',1);    v(o1-c,ho,'ch');
+  v(o1,ho-cd,'sw');    v(o1,hb,'bo');
+  /* the three solid blocks this section cuts into, for the end faces */
+  P.caps=[[-o1+c*0.4,-o0-c*0.4,hb,ho-cd*0.45],
+          [-mc+c*0.4, mc-c*0.4,hb,hc-cd*0.45],
+          [ o0+c*0.4, o1-c*0.4,hb,ho-cd*0.45]];
+  return P;
+}
+/* the end link is one solid piece that fills the space between the lugs */
+function endProfile(W){
+  const c=0.020, cd=0.016, ho=0.060, hb=-0.094, d=0.006;
+  const P=[], v=(s,h,m,sm)=>P.push({s,h,m,sm:sm||0});
+  v(-W,hb,'sd');    v(-W,ho-cd,'ch');   v(-W+c,ho,'br');
+  v(0,ho+d,'br',1); v(W-c,ho,'ch');     v(W,ho-cd,'sd');   v(W,hb,'bo');
+  P.caps=[[-W+c*0.4,W-c*0.4,hb,ho-cd*0.45]];
+  return P;
+}
+/* the clasp cover: a flat plate, proud of the links, chamfered all round */
+function claspProfile(W){
+  const c=0.021, cd=0.017, ho=0.074, hb=-0.094, d=0.002;
+  const P=[], v=(s,h,m,sm)=>P.push({s,h,m,sm:sm||0});
+  v(-W,hb,'sd');    v(-W,ho-cd,'ch');   v(-W+c,ho,'br');
+  v(0,ho+d,'br',1); v(W-c,ho,'ch');     v(W,ho-cd,'sd');   v(W,hb,'bo');
+  P.caps=[[-W+c*0.4,W-c*0.4,hb,ho-cd*0.45]];
+  return P;
+}
+
+/* sweep one section between two rings. Normals come from the section,
+   not from the polygons, so a chamfer stays crisp while the roll across
+   a link top shades smoothly. */
+function sweepSection(prof,PA,PB,U,Nv,T,extra,profB){
+  const F=[], n=prof.length;
+  const pt=(P,s,h)=>[P[0]+U[0]*s+Nv[0]*h, P[1]+U[1]*s+Nv[1]*h, P[2]+U[2]*s+Nv[2]*h];
+  const pb=profB||prof;
+  const A=prof.map(v=>pt(PA,v.s,v.h)), B=pb.map(v=>pt(PB,v.s,v.h));
+  const en=[];
+  for(let k=0;k<n;k++){
+    const a=prof[k], b=prof[(k+1)%n];
+    const dx=b.s-a.s, dy=b.h-a.h, l=Math.hypot(dx,dy)||1;
+    en.push([-dy/l, dx/l]);                       // clockwise section → outward
+  }
+  const to3=e=>V.norm([U[0]*e[0]+Nv[0]*e[1], U[1]*e[0]+Nv[1]*e[1], U[2]*e[0]+Nv[2]*e[1]]);
+  for(let k=0;k<n;k++){
+    const k2=(k+1)%n, e=en[k], ep=en[(k+n-1)%n], ex=en[k2];
+    const m=SURF[prof[k].m]||SURF.br;
+    const a=prof[k].sm?[(e[0]+ep[0])/2,(e[1]+ep[1])/2]:e;
+    const b=prof[k2].sm?[(e[0]+ex[0])/2,(e[1]+ex[1])/2]:e;
+    /* a hard edge shades flat, so it carries no rim normals and paints
+       with a solid fill instead of a per-face gradient */
+    const roll=Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])>0.004;
+    F.push(Object.assign({p:[A[k],A[k2],B[k2],B[k]], n:to3(e),
+            vn0:roll?to3(a):null, vn1:roll?to3(b):null,
+            mat:'link', pol:m.pol, cham:m.cham, ao:m.ao, brush:m.brush,
+            screw:m.screw},extra||{}));
+  }
+  /* end faces, so the gap between links never shows through the loop.
+     One per solid block, or the cap would stand proud of the links it
+     is meant to close. */
+  let caps=prof.caps;
+  if(!caps){
+    let s0=prof[0].s, s1=prof[0].s, h0=prof[0].h, h1=prof[0].h;
+    for(const v of prof){ s0=Math.min(s0,v.s); s1=Math.max(s1,v.s);
+                          h0=Math.min(h0,v.h); h1=Math.max(h1,v.h); }
+    caps=[[s0*0.985,s1*0.985,h0*0.96,h1*0.94]];
+  }
+  for(const [c0,c1,g0,g1] of caps){
+    F.push(Object.assign({p:[pt(PA,c0,g0),pt(PA,c1,g0),pt(PA,c1,g1),pt(PA,c0,g1)],
+            n:V.mul(T,-1), mat:'link', ao:0.66},extra||{}));
+    F.push(Object.assign({p:[pt(PB,c0,g1),pt(PB,c1,g1),pt(PB,c1,g0),pt(PB,c0,g0)],
+            n:T, mat:'link', ao:0.66},extra||{}));
+  }
+  return F;
+}
+
+function buildBracelet(){
+  const F=[], a0=LOOP.phi0, a1=TAU-LOOP.phi0, N=LOOP.N, step=(a1-a0)/N;
+  const cl0=Math.round(N/2)-2, cl1=Math.round(N/2)+1;
+  for(let i=0;i<N;i++){
+    const end=(i===0||i===N-1), clasp=(i>=cl0&&i<=cl1);
+    const fA=a0+i*step, fB=fA+step*(end?0.99:clasp?0.975:0.945);
+    const PA=loopPoint(fA), PB=loopPoint(fB);
+    const T=V.norm(V.sub(PB,PA));
+    const U=[1,0,0], Nv=V.norm(V.cross(U,T));
+    const mid=(fA+fB)*0.5;
+    const taper=Math.abs(mid-Math.PI)/(Math.PI-a0);
+    const W=0.400+0.118*taper;          /* 20.6 mm at the lugs, 16 mm at the clasp */
+    F.push(...sweepSection(end?endProfile(W+0.004):clasp?claspProfile(W+0.006):linkProfile(W),
+                           PA,PB,U,Nv,T));
+  }
+  return F;
+}
+
+function buildCase(){
+  const F=[];
+  const S=48;
+  // case flank — one straight brush, turned round the case
+  F.push(...band(CASE_R,-CASE_T*0.40,CASE_R,CASE_T*0.42,S,'metal',{grp:'case',brush:'b'}));
+  // polished chamfer running the flank down into the back
+  F.push(...band(CASE_R,-CASE_T*0.40,0.975,-CASE_T*0.52,S,'metal',{grp:'case',pol:true,cham:1}));
+  // chamfer to bezel
+  F.push(...band(CASE_R,CASE_T*0.42,0.965,CASE_T*0.55,S,'metal',{grp:'bezel',cham:1}));
+  // bezel top face
+  F.push(...annulus(0.845,0.965,CASE_T*0.55,S,'metal',{grp:'bezel'}));
+  // bezel inner wall
+  F.push(...band(0.845,CASE_T*0.55,0.845,DIAL_Z,S,'metal',{grp:'bezel'}));
+  // caseback dome
+  F.push(...band(0.975,-CASE_T*0.52,0.80,-CASE_T*0.66,S,'metal',{grp:'back',brush:'b'}));
+  F.push(...annulus(0.0,0.80,-CASE_T*0.66,S,'metal',{grp:'back',glass:true}));
+  // lugs (4)
+  /* the lugs root well inside the case circle so they grow out of the
+     flank instead of floating beside it, and are swept with the same
+     chamfered section as the bracelet: brushed top, polished edges */
+  const lugProf=(w,ht,hb,c,cd)=>{
+    const P=[], v=(s,h,m,sm)=>P.push({s,h,m,sm:sm||0});
+    v(-w,hb,'sd'); v(-w,ht-cd,'ch'); v(-w+c,ht,'br'); v(0,ht+0.004,'br',1);
+    v(w-c,ht,'ch'); v(w,ht-cd,'sd'); v(w,hb,'bo');
+    P.caps=[[-w+c*0.4,w-c*0.4,hb,ht-cd*0.45]];
+    return P;
+  };
+  for(const sy of [1,-1]) for(const sx of [1,-1]){
+    const P0=[sx*0.605,sy*0.700,0], P1=[sx*0.605,sy*0.960,0], P2=[sx*0.600,sy*1.094,-0.004];
+    const s0=lugProf(0.070,0.058,-0.082,0.017,0.014);
+    const s1=lugProf(0.068,0.052,-0.078,0.016,0.013);
+    const s2=lugProf(0.058,0.034,-0.066,0.014,0.012);
+    F.push(...sweepSection(s0,P0,P1,[1,0,0],[0,0,1],[0,sy,0],{mat:'metal',grp:'lug'},s1));
+    F.push(...sweepSection(s1,P1,P2,[1,0,0],[0,0,1],[0,sy,0],{mat:'metal',grp:'lug'},s2));
+  }
+  // crown
+  const cz=0;
+  for(let i=0;i<14;i++){
+    const a=i/14*TAU;
+    F.push(...box([1.055+0.045,Math.sin(a)*0.10,cz+Math.cos(a)*0.10],
+                  [0.048,0,0],[0,0.016,0],[0,0,0.016],'metal',{grp:'crown'}));
+  }
+  F.push(...box([1.06,0,cz],[0.05,0,0],[0,0.088,0],[0,0,0.088],'metal',{grp:'crown'}));
+  // crown tube, so the crown does not float off the flank
+  F.push(...box([1.012,0,cz],[0.030,0,0],[0,0.104,0],[0,0,0.104],'metal',{grp:'case'}));
+  return F;
+}
+
+/* movement components used in the exploded + mechanism scenes */
+
+function buildMovement(){
+  const F=[];
+  F.push(...band(0.78,-0.05,0.78,0.05,40,'metal',{grp:'mvt'}));
+  F.push(...annulus(0,0.78,0.05,40,'metal',{grp:'mvt',plate:true}));
+  return F;
+}
+
+const GEO={ bracelet:buildBracelet(), cases:buildCase(), mvt:buildMovement() };
+
+/* ============================================================
+   3. RENDERER
+   ============================================================ */
+const cv=document.getElementById('stage'), ctxW=cv.getContext('2d');
+const bgc=document.getElementById('bg'), ctxB=bgc.getContext('2d');
+let ctx=ctxW;                       /* active target for all draw helpers */
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  W=window.innerWidth; H=window.innerHeight;
+  for(const c of [cv,bgc]){ c.width=W*DPR; c.height=H*DPR; c.style.width=W+'px'; c.style.height=H+'px'; }
+  ctxW.setTransform(DPR,0,0,DPR,0,0); ctxB.setTransform(DPR,0,0,DPR,0,0);
+  BGC=null; DOFC=null;
+}
+addEventListener('resize',resize); resize();
+
+const CAM={dist:9.2,focal:9.2};
+function makeXform(st){
+  const f=st.focus;
+  return p=>{
+    let q=[p[0],p[1],p[2]];
+    if(st.explodeFn) q=st.explodeFn(q,p);
+    if(f) q=[q[0]-f[0],q[1]-f[1],q[2]-f[2]];   /* camera focus point */
+    q=rotZ(q,st.rz||0);
+    q=rotY(q,st.ry||0);
+    q=rotX(q,st.rx||0);
+    return q;
+  };
+}
+function project(q,st){
+  const d=CAM.dist-q[2];
+  const k=(CAM.focal/Math.max(0.35,d))*st.scale;
+  return [st.cx+q[0]*k, st.cy-q[1]*k, q[2], k];
+}
+function xnorm(n,st){ let q=rotZ(n,st.rz||0); q=rotY(q,st.ry||0); return rotX(q,st.rx||0); }
+
+/* ---------- dial artwork drawn in dial-local space ---------- */
+/* dial artwork is view-independent: everything static bakes once per
+   finish into an offscreen, so a frame costs one blit plus the hands */
+var DIALC=null, DIALKEY='', DIAL_S=720, DIAL_P=0.02;
+
+/* deterministic noise so the sunburst and the star field bake identically */
+function drand(seed){ let s=seed>>>0;
+  return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+
+/* text helpers — the dial bake works in a y-up space, so anything with
+   glyphs flips locally and draws at -y */
+function dialFont(){ return getComputedStyle(document.body).getPropertyValue('--display'); }
+function trackText(str,x,y,size,gap,fill,weight){
+  ctx.save(); ctx.scale(1,-1);
+  ctx.font=(weight||'500')+' '+size+'px '+dialFont();
+  ctx.textBaseline='middle'; ctx.textAlign='left';
+  const cs=[...str];
+  let w=-gap; for(const c of cs) w+=ctx.measureText(c).width+gap;
+  let cx=x-w/2;
+  ctx.fillStyle=fill;
+  for(const c of cs){ ctx.fillText(c,cx,-y); cx+=ctx.measureText(c).width+gap; }
+  ctx.restore();
+  return w;
+}
+/* engraved text bent around a circle; `up` puts the baseline outward */
+function arcText(str,rad,mid,size,gap,fill,up){
+  ctx.save(); ctx.scale(1,-1);
+  ctx.font='500 '+size+'px '+dialFont();
+  ctx.textBaseline='middle'; ctx.textAlign='center';
+  ctx.fillStyle=fill;
+  const cs=[...str], adv=cs.map(c=>ctx.measureText(c).width+gap);
+  let total=0; for(const a of adv) total+=a;
+  let ang=mid+(up?1:-1)*(total/rad)/2;
+  for(let i=0;i<cs.length;i++){
+    const step=adv[i]/rad;
+    const a=ang-(up?1:-1)*step/2;
+    ctx.save();
+    ctx.translate(Math.cos(a)*rad,-Math.sin(a)*rad);
+    ctx.rotate(up? Math.PI/2-a : -Math.PI/2-a);
+    ctx.fillText(cs[i],0,0);
+    ctx.restore();
+    ang-=(up?1:-1)*step;
+  }
+  ctx.restore();
+}
+
+function buildDialArt(pal){
+  const R=0.845, RP=R+DIAL_P, S=DIAL_S;
+  const Wc=Math.ceil(2*RP*S);
+  DIALC=document.createElement('canvas'); DIALC.width=DIALC.height=Wc;
+  const live=ctx; ctx=DIALC.getContext('2d');
+  /* y is negated so bake ∘ blit(scale 1,-1) is the identity map */
+  ctx.setTransform(S,0,0,-S,Wc/2,Wc/2);
+  const FUR='236,241,246';                 /* furniture, light on anthracite */
+  const rnd=drand(40012);
+
+  /* ---- 1. base: anthracite, lit from the upper left ---- */
+  const g=ctx.createRadialGradient(-0.26,0.30,0.02,0,0,R*1.15);
+  g.addColorStop(0,'#5C636B'); g.addColorStop(.40,'#3B4147');
+  g.addColorStop(.76,'#262B31'); g.addColorStop(1,'#171B20');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.fill();
+
+  /* sunburst — 900 hairlines struck from the centre, brightest under
+     the two softboxes, so the dial turns as the watch turns */
+  ctx.save(); ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.clip();
+  for(let i=0;i<1400;i++){
+    const t=i/1400*TAU;
+    const lobe=Math.pow(Math.max(0,Math.cos(t-2.25)),3)*0.80
+              +Math.pow(Math.max(0,Math.cos(t+0.95)),4)*0.38;
+    const j=rnd();
+    const a=0.008+lobe*0.038+j*0.013;
+    ctx.strokeStyle=(j>0.5?'rgba(255,255,255,':'rgba(0,0,0,')+a.toFixed(3)+')';
+    ctx.lineWidth=0.0022+j*0.0016;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(t)*0.120,Math.sin(t)*0.120);
+    ctx.lineTo(Math.cos(t)*R,Math.sin(t)*R);
+    ctx.stroke();
+  }
+  /* the rays converge into a calm centre, as a struck dial does */
+  const cw=ctx.createRadialGradient(0,0,0.02,0,0,0.34);
+  cw.addColorStop(0,'rgba(38,43,49,.60)'); cw.addColorStop(1,'rgba(38,43,49,0)');
+  ctx.fillStyle=cw; ctx.beginPath(); ctx.arc(0,0,0.34,0,TAU); ctx.fill();
+  ctx.restore();
+
+  /* the dial dishes down into the rehaut */
+  const vg=ctx.createRadialGradient(0,0,R*0.52,0,0,R);
+  vg.addColorStop(0,'rgba(0,0,0,0)');
+  vg.addColorStop(.84,'rgba(0,0,0,.20)');
+  vg.addColorStop(1,'rgba(0,0,0,.46)');
+  ctx.fillStyle=vg; ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.fill();
+
+  /* ---- 2. railroad minute track ---- */
+  const TO=0.748, TI=0.700, TM=0.676;      /* outer / inner / hour reach */
+  ctx.strokeStyle='rgba('+FUR+',.26)'; ctx.lineWidth=0.0045;
+  ctx.beginPath(); ctx.arc(0,0,TO,0,TAU); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,TI,0,TAU); ctx.stroke();
+  for(let i=0;i<60;i++){
+    const t=i/60*TAU, maj=i%5===0;
+    ctx.strokeStyle=maj?'rgba('+FUR+',.92)':'rgba('+FUR+',.40)';
+    ctx.lineWidth=maj?0.015:0.0042;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(t)*TO,Math.sin(t)*TO);
+    ctx.lineTo(Math.cos(t)*(maj?TM:TI),Math.sin(t)*(maj?TM:TI));
+    ctx.stroke();
+  }
+
+  /* ---- 3. applied numerals: a dark drop, then a bright face ---- */
+  const NR=0.575;
+  ctx.save(); ctx.scale(1,-1);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let i=1;i<=12;i++){
+    if(i===3) continue;                                  /* the date sits there */
+    const big=(i===12||i===6);
+    const t=Math.PI/2-(i/12)*TAU;                        /* clockwise from 12 */
+    const x=Math.cos(t)*NR, y=Math.sin(t)*NR;
+    ctx.font=(big?'400 0.140px ':'300 0.125px ')+dialFont();
+    ctx.fillStyle='rgba(0,0,0,.55)';
+    ctx.fillText(String(i),x+0.009,-(y-0.009));
+    ctx.fillStyle='rgba(250,252,255,.95)';
+    ctx.fillText(String(i),x,-y);
+    ctx.fillStyle='rgba(120,130,140,.55)';               /* the cut-off edge */
+    ctx.fillText(String(i),x-0.004,-(y+0.004));
+    ctx.fillStyle='rgba(250,252,255,.95)';
+    ctx.fillText(String(i),x,-y);
+  }
+  ctx.restore();
+
+  /* ---- 4. printing ---- */
+  trackText('ANTHRA',-0.330,0.030,0.058,0.014,'rgba('+FUR+',.95)','600');
+  trackText('INSTRUMENTS',-0.330,-0.044,0.026,0.011,'rgba('+FUR+',.58)','400');
+  trackText('AUTOMATIC',0.262,0.030,0.030,0.008,'rgba('+FUR+',.72)','400');
+  trackText('41 H',0.262,-0.036,0.028,0.009,'rgba(198,164,108,.85)','400');
+
+  /* ---- 5. moonphase at twelve ---- */
+  const mpY=0.335, mpR=0.150;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(0,mpY,mpR,0,TAU); ctx.clip();
+  const sky=ctx.createLinearGradient(0,mpY+mpR,0,mpY-mpR);
+  sky.addColorStop(0,'#141A28'); sky.addColorStop(.55,'#0B0F18'); sky.addColorStop(1,'#05070C');
+  ctx.fillStyle=sky; ctx.fillRect(-mpR,mpY-mpR,mpR*2,mpR*2);
+  /* star field */
+  const sr=drand(7781);
+  for(let i=0;i<46;i++){
+    const sx=(sr()*2-1)*mpR, sy=mpY+(sr()*2-1)*mpR, ss=0.0025+sr()*0.0045;
+    ctx.fillStyle='rgba(226,232,242,'+(0.30+sr()*0.55).toFixed(2)+')';
+    ctx.beginPath(); ctx.arc(sx,sy,ss,0,TAU); ctx.fill();
+  }
+  /* the moon: a lit disc with craters, its terminator cut by a shadow */
+  const mx=-0.028, my=mpY+0.012, mr=0.082;
+  const mg=ctx.createRadialGradient(mx-mr*0.35,my+mr*0.35,mr*0.08,mx,my,mr);
+  mg.addColorStop(0,'#FBFCF6'); mg.addColorStop(.62,'#E4E5DC'); mg.addColorStop(1,'#B9BCB2');
+  ctx.fillStyle=mg; ctx.beginPath(); ctx.arc(mx,my,mr,0,TAU); ctx.fill();
+  const craters=[[-0.024,0.020,0.019],[0.020,0.028,0.013],[0.012,-0.024,0.016],
+                 [-0.032,-0.028,0.011],[0.036,-0.004,0.009],[-0.004,0.044,0.008]];
+  for(const [cx0,cy0,cr] of craters){
+    ctx.fillStyle='rgba(120,124,116,.30)';
+    ctx.beginPath(); ctx.arc(mx+cx0,my+cy0,cr,0,TAU); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.22)';
+    ctx.beginPath(); ctx.arc(mx+cx0-cr*0.22,my+cy0+cr*0.22,cr*0.72,0,TAU); ctx.fill();
+  }
+  /* waxing gibbous: the night side rides back over the right limb */
+  ctx.save();
+  ctx.beginPath(); ctx.arc(mx,my,mr,0,TAU); ctx.clip();
+  const sh=ctx.createRadialGradient(mx+mr*0.92,my,mr*0.30,mx+mr*0.92,my,mr*1.25);
+  sh.addColorStop(0,'rgba(6,8,13,.94)'); sh.addColorStop(1,'rgba(6,8,13,0)');
+  ctx.fillStyle=sh; ctx.fillRect(mx-mr,my-mr,mr*2,mr*2);
+  ctx.restore();
+  /* the second moon just entering the window */
+  ctx.fillStyle='rgba(196,201,192,.34)';
+  ctx.beginPath(); ctx.arc(mpR*1.30,my-0.026,mr*0.72,0,TAU); ctx.fill();
+  ctx.restore();
+  /* window frame: brass ring over a cut edge */
+  ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=0.016;
+  ctx.beginPath(); ctx.arc(0,mpY,mpR+0.004,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(198,164,108,.85)'; ctx.lineWidth=0.009;
+  ctx.beginPath(); ctx.arc(0,mpY,mpR,0,TAU); ctx.stroke();
+
+  /* ---- 6. escapement aperture at six — the static bed ---- */
+  const esY=-0.335, esR=0.150;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(0,esY,esR,0,TAU); ctx.clip();
+  const eg=ctx.createLinearGradient(-esR,esY+esR,esR,esY-esR);
+  eg.addColorStop(0,'#20262C'); eg.addColorStop(1,'#0A0D11');
+  ctx.fillStyle=eg; ctx.fillRect(-esR,esY-esR,esR*2,esR*2);
+  /* mainplate perlage under the mechanism */
+  const pr=drand(3319);
+  for(let i=0;i<34;i++){
+    const px=(pr()*2-1)*esR, py=esY+(pr()*2-1)*esR;
+    ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=0.0035;
+    ctx.beginPath(); ctx.arc(px,py,0.022,0,TAU); ctx.stroke();
+  }
+  /* jewelled bearings sunk into the plate */
+  for(const [jx,jy] of [[0.104,-0.070]]){
+    ctx.fillStyle='rgba(186,62,52,.8)';
+    ctx.beginPath(); ctx.arc(jx,esY+jy,0.013,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(214,180,120,.7)'; ctx.lineWidth=0.005;
+    ctx.beginPath(); ctx.arc(jx,esY+jy,0.018,0,TAU); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=0.016;
+  ctx.beginPath(); ctx.arc(0,esY,esR+0.004,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(198,164,108,.85)'; ctx.lineWidth=0.009;
+  ctx.beginPath(); ctx.arc(0,esY,esR,0,TAU); ctx.stroke();
+
+  /* ---- 7. date at three: a cut aperture over the wheel ---- */
+  const dX=0.585, dW=0.078, dH=0.058;      /* half extents */
+  ctx.save();
+  ctx.beginPath(); ctx.rect(dX-dW,-dH,dW*2,dH*2); ctx.clip();
+  ctx.fillStyle='#15191E'; ctx.fillRect(dX-dW,-dH,dW*2,dH*2);
+  ctx.save(); ctx.scale(1,-1);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='400 0.072px '+dialFont();
+  ctx.fillStyle='rgba(240,244,248,.95)'; ctx.fillText('24',dX,0.002);
+  ctx.font='400 0.066px '+dialFont();
+  ctx.fillStyle='rgba(240,244,248,.16)';
+  ctx.fillText('23',dX,0.108); ctx.fillText('25',dX,-0.104);   /* the wheel either side */
+  ctx.restore();
+  ctx.restore();
+  ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=0.014;
+  ctx.strokeRect(dX-dW,-dH,dW*2,dH*2);
+  ctx.strokeStyle='rgba(206,214,222,.85)'; ctx.lineWidth=0.007;
+  ctx.strokeRect(dX-dW-0.005,-dH-0.005,dW*2+0.010,dH*2+0.010);
+
+  /* ---- 8. sapphire, AR-coated: a violet residual at grazing incidence
+       and two crisp strip-light streaks instead of a white wash ---- */
+  const arc=ctx.createRadialGradient(0,0,R*0.62,0,0,R);
+  arc.addColorStop(0,'rgba(96,88,190,0)');
+  arc.addColorStop(.78,'rgba(96,88,190,.045)');
+  arc.addColorStop(1,'rgba(120,96,215,.13)');
+  ctx.fillStyle=arc; ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.fill();
+
+  ctx=live; DIALKEY=pal.key;
+}
+
+function drawDial(st,pal,opt){
+  const X=makeXform(st);
+  const z=opt.z!==undefined?opt.z:DIAL_Z;
+  const O=project(X([0,0,z]),st);
+  const U=project(X([1,0,z]),st);
+  const Vv=project(X([0,1,z]),st);
+  const ux=U[0]-O[0], uy=U[1]-O[1], vx=Vv[0]-O[0], vy=Vv[1]-O[1];
+  const det=ux*vy-uy*vx;
+  if(Math.abs(det)<1.2) return;                       // edge-on: nothing to draw
+  const facing=xnorm([0,0,1],st)[2];
+  if(opt.back? facing>-0.02 : facing<0.02) return;
+
+  ctx.save();
+  ctx.transform(ux,uy,vx,vy,O[0],O[1]);
+  const R=0.845, a=clamp(Math.abs(facing)*1.4)*(opt.alpha===undefined?1:opt.alpha);
+  ctx.globalAlpha=a;
+
+  ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.clip();
+
+  if(opt.back){ drawCaseback(pal,R); ctx.restore(); return; }
+
+
+  if(!DIALC||DIALKEY!==pal.key) buildDialArt(pal);
+  { const RP=0.845+DIAL_P;
+    ctx.save(); ctx.scale(1,-1);
+    ctx.drawImage(DIALC,-RP,-RP,2*RP,2*RP);
+    ctx.restore(); }
+
+  /* ---- live layer: escapement + hands ---- */
+  const ML=rgbs(pal.l), MM=rgbs(pal.m);
+  const spin=(opt.spin||0);
+
+  /* the balance, live behind the aperture at six */
+  const esY=-0.335, esR=0.150;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(0,esY,esR,0,TAU); ctx.clip();
+  ctx.translate(0,esY);
+  /* escape wheel, half tucked under the cock */
+  ctx.save(); ctx.translate(-0.052,-0.086); ctx.rotate(spin*1.1);
+  const ew=0.042;
+  ctx.beginPath();
+  for(let i=0;i<18;i++){
+    const a0=i/18*TAU, a1=(i+0.34)/18*TAU, a2=(i+0.94)/18*TAU;
+    ctx.lineTo(Math.cos(a0)*ew,Math.sin(a0)*ew);
+    ctx.lineTo(Math.cos(a1)*ew*0.90,Math.sin(a1)*ew*0.90);
+    ctx.lineTo(Math.cos(a2)*ew*0.87,Math.sin(a2)*ew*0.87);
+  }
+  ctx.closePath();
+  ctx.fillStyle='rgba(184,150,94,.9)'; ctx.fill();
+  ctx.fillStyle='rgba(26,22,14,.7)';
+  ctx.beginPath(); ctx.arc(0,0,ew*0.22,0,TAU); ctx.fill();
+  ctx.restore();
+  /* balance wheel: rim, two crossings, timing screws, hairspring */
+  ctx.save(); ctx.translate(0.006,0.004); ctx.rotate(Math.sin(spin*6.2)*0.42);
+  const br=0.090;
+  ctx.strokeStyle='rgba(224,232,240,.92)'; ctx.lineWidth=0.013;
+  ctx.beginPath(); ctx.arc(0,0,br,0,TAU); ctx.stroke();
+  ctx.lineWidth=0.009;
+  for(let i=0;i<2;i++){
+    const t=i/2*Math.PI+0.45;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(t)*br,Math.sin(t)*br);
+    ctx.lineTo(-Math.cos(t)*br,-Math.sin(t)*br); ctx.stroke();
+  }
+  ctx.fillStyle='rgba(188,198,208,.92)';
+  for(let i=0;i<4;i++){
+    const t=i/4*TAU+0.8;
+    ctx.beginPath(); ctx.arc(Math.cos(t)*br,Math.sin(t)*br,0.0095,0,TAU); ctx.fill();
+  }
+  ctx.strokeStyle='rgba(198,208,218,.42)'; ctx.lineWidth=0.0032;
+  ctx.beginPath();
+  for(let i=0;i<=170;i++){
+    const u=i/170, a=u*TAU*3.0, rr=0.012+u*0.026;
+    const hx=Math.cos(a)*rr, hy=Math.sin(a)*rr;
+    if(i) ctx.lineTo(hx,hy); else ctx.moveTo(hx,hy);
+  }
+  ctx.stroke();
+  ctx.restore();
+  /* balance cock across the aperture, jewelled at the tip */
+  const ck=ctx.createLinearGradient(-esR,0.12,0.02,-0.02);
+  ck.addColorStop(0,'rgba(198,206,214,.96)'); ck.addColorStop(1,'rgba(116,124,132,.96)');
+  ctx.fillStyle=ck;
+  ctx.strokeStyle=ck; ctx.lineWidth=0.048; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-esR-0.02,0.058); ctx.lineTo(-0.030,0.006); ctx.stroke();
+  ctx.beginPath(); ctx.arc(-0.030,0.006,0.030,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.34)'; ctx.lineWidth=0.004;
+  ctx.beginPath(); ctx.arc(-0.030,0.006,0.030,0,TAU); ctx.stroke();
+  ctx.fillStyle='rgba(206,72,58,.95)';
+  ctx.beginPath(); ctx.arc(-0.030,0.006,0.012,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(232,240,248,.5)'; ctx.lineWidth=0.0035; ctx.stroke();
+  ctx.fillStyle='rgba(214,222,230,.92)';
+  ctx.beginPath(); ctx.arc(-0.112,0.052,0.014,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineWidth=0.005;
+  ctx.beginPath(); ctx.moveTo(-0.123,0.045); ctx.lineTo(-0.101,0.059); ctx.stroke();
+  ctx.restore();
+
+  /* hands — rhodium dauphine, throwing a soft shadow on the dial */
+  const hh=opt.hourAng!==undefined?opt.hourAng:(-40*D2R);
+  const mm=opt.minAng!==undefined?opt.minAng:(72*D2R);
+  drawHand(hh,0.415,0.036,ML,MM);
+  drawHand(mm,0.640,0.028,ML,MM);
+
+  /* seconds — a brass needle with a counterweight */
+  ctx.save(); ctx.rotate(spin*0.55);
+  ctx.save(); ctx.translate(0.012,-0.012); ctx.globalAlpha=0.30;
+  drawSeconds('rgba(0,0,0,1)'); ctx.restore();
+  drawSeconds('rgba(200,166,110,.96)');
+  ctx.restore();
+
+  /* pinion cap */
+  ctx.fillStyle=ML; ctx.beginPath(); ctx.arc(0,0,0.034,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=0.005; ctx.stroke();
+  ctx.fillStyle='#0b0b0c'; ctx.beginPath(); ctx.arc(0,0,0.015,0,TAU); ctx.fill();
+
+  /* the crystal reflects the studio, not the dial: the two strip lights
+     stay put while the watch turns under them, and open up as the glass
+     tips toward grazing */
+  const rz=st.rz||0, ry=st.ry||0, rx=st.rx||0;
+  const graze=clamp(0.45+(1-Math.abs(facing))*1.5);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(0,0,0.845,0,TAU); ctx.clip();
+  ctx.rotate(-rz-0.58+ry*0.30);
+  const yo=rx*0.55-ry*0.22;
+  const s1=ctx.createLinearGradient(0,0.08+yo,0,0.42+yo);
+  s1.addColorStop(0,'rgba(255,255,255,0)');
+  s1.addColorStop(.5,'rgba(255,255,255,'+(0.085*graze).toFixed(3)+')');
+  s1.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=s1; ctx.fillRect(-0.9,0.08+yo,1.8,0.34);
+  const s2=ctx.createLinearGradient(0,-0.46+yo,0,-0.24+yo);
+  s2.addColorStop(0,'rgba(255,255,255,0)');
+  s2.addColorStop(.5,'rgba(232,238,255,'+(0.055*graze).toFixed(3)+')');
+  s2.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=s2; ctx.fillRect(-0.9,-0.46+yo,1.8,0.22);
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function drawSeconds(c){
+  ctx.strokeStyle=c; ctx.fillStyle=c;
+  ctx.lineWidth=0.0075; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,-0.150); ctx.lineTo(0,0.610); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,-0.112,0.030,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(0,0.470,0.024,0,TAU); ctx.fill();
+}
+
+/* the dauphine outline, drawn from the pinion out */
+function handPath(len,w){
+  ctx.beginPath();
+  ctx.moveTo(0,-0.086);
+  ctx.lineTo(w*0.80,-0.026);
+  ctx.lineTo(w*0.58,len*0.84);
+  ctx.lineTo(0,len);
+  ctx.lineTo(-w*0.58,len*0.84);
+  ctx.lineTo(-w*0.80,-0.026);
+  ctx.closePath();
+}
+
+function drawHand(ang,len,w,ML,MM){
+  ctx.save(); ctx.rotate(ang);
+  /* shadow cast down onto the dial */
+  ctx.save(); ctx.translate(0.016,-0.016);
+  ctx.fillStyle='rgba(0,0,0,.34)'; handPath(len,w); ctx.fill();
+  ctx.restore();
+  /* two facets either side of the ridge */
+  ctx.save(); handPath(len,w); ctx.clip();
+  ctx.fillStyle=ML; ctx.fillRect(-w*1.4,-0.2,w*1.4,len+0.4);
+  ctx.fillStyle=MM; ctx.fillRect(0,-0.2,w*1.4,len+0.4);
+  /* lume inlay set into the face */
+  ctx.beginPath();
+  ctx.moveTo(0,len*0.90); ctx.lineTo(w*0.34,len*0.78);
+  ctx.lineTo(w*0.30,0.010); ctx.lineTo(-w*0.30,0.010);
+  ctx.lineTo(-w*0.34,len*0.78); ctx.closePath();
+  ctx.fillStyle='rgba(222,230,212,.38)'; ctx.fill();
+  ctx.restore();
+  /* the ridge itself, then a cut edge */
+  ctx.strokeStyle='rgba(255,255,255,.42)'; ctx.lineWidth=0.004;
+  ctx.beginPath(); ctx.moveTo(0,-0.062); ctx.lineTo(0,len*0.97); ctx.stroke();
+  handPath(len,w);
+  ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=0.005; ctx.stroke();
+  ctx.restore();
+}
+
+/* polished bezel ring with screws, drawn in the bezel plane */
+function drawBezelFace(st,pal,alpha){
+  const X=makeXform(st), z=CASE_T*0.55+0.002;
+  const O=project(X([0,0,z]),st),U=project(X([1,0,z]),st),Vv=project(X([0,1,z]),st);
+  const ux=U[0]-O[0],uy=U[1]-O[1],vx=Vv[0]-O[0],vy=Vv[1]-O[1];
+  if(Math.abs(ux*vy-uy*vx)<1.2) return;
+  const facing=xnorm([0,0,1],st)[2];
+  if(facing<0.03) return;
+  ctx.save(); ctx.transform(ux,uy,vx,vy,O[0],O[1]);
+  ctx.globalAlpha=clamp(alpha*facing*1.5);
+  const ri=0.845, ro=0.985;
+  ctx.beginPath(); ctx.arc(0,0,ro,0,TAU); ctx.arc(0,0,ri,0,TAU,true);
+  ctx.clip('evenodd');
+  /* the polished sweep: a conic gradient sampled off the same shading
+     model, so the ring turns smoothly instead of banding into wedges */
+  const NS=48;
+  if(ctx.createConicGradient){
+    const cg=ctx.createConicGradient(0,0,0);
+    for(let i=0;i<=NS;i++){
+      const am=i/NS*TAU;
+      const n=V.norm(xnorm([Math.cos(am)*0.55,Math.sin(am)*0.55,0.80],st));
+      cg.addColorStop(i/NS,rgbs(shade(n,pal,120)));
+    }
+    ctx.fillStyle=cg; ctx.fillRect(-ro,-ro,ro*2,ro*2);
+  }else{
+    for(let i=0;i<NS;i++){
+      const a0=i/NS*TAU,a1=(i+1)/NS*TAU,am=(a0+a1)/2;
+      const n=V.norm(xnorm([Math.cos(am)*0.42,Math.sin(am)*0.42,0.85],st));
+      ctx.fillStyle=rgbs(shade(n,pal,120));
+      ctx.beginPath(); ctx.moveTo(0,0);
+      ctx.arc(0,0,ro,a0-0.004,a1+0.004); ctx.closePath(); ctx.fill();
+    }
+  }
+  ctx.restore();
+  /* screws */
+  ctx.save(); ctx.transform(ux,uy,vx,vy,O[0],O[1]);
+  ctx.globalAlpha=clamp(alpha*facing*1.5);
+  for(let i=0;i<8;i++){
+    const a=i/8*TAU+Math.PI/8, sx=Math.cos(a)*0.915, sy=Math.sin(a)*0.915;
+    const g=ctx.createLinearGradient(sx-0.03,sy-0.03,sx+0.03,sy+0.03);
+    g.addColorStop(0,rgbs(pal.l)); g.addColorStop(1,rgbs(pal.d));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,0.032,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=0.008;
+    ctx.beginPath(); ctx.moveTo(sx-0.021,sy-0.012); ctx.lineTo(sx+0.021,sy+0.012); ctx.stroke();
+  }
+  /* inner + outer edge definition */
+  ctx.strokeStyle='rgba(0,0,0,.30)'; ctx.lineWidth=0.012;
+  ctx.beginPath(); ctx.arc(0,0,0.845,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.30)'; ctx.lineWidth=0.010;
+  ctx.beginPath(); ctx.arc(0,0,0.978,0,TAU); ctx.stroke();
+  ctx.restore();
+}
+
+
+function drawCaseback(pal,R){
+  const g=ctx.createRadialGradient(-0.25,0.28,0.02,0,0,R);
+  g.addColorStop(0,rgbs(pal.l)); g.addColorStop(.5,rgbs(pal.m)); g.addColorStop(1,rgbs(pal.d));
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.fill();
+  /* the back is turned, so it carries concentric tool marks */
+  ctx.save(); ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.clip();
+  for(let r=0.10;r<R;r+=0.018){
+    ctx.strokeStyle='rgba(255,255,255,'+(0.020+0.014*Math.cos(r*38)).toFixed(3)+')';
+    ctx.lineWidth=0.006;
+    ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.stroke();
+  }
+  ctx.restore();
+  /* sapphire port over the movement */
+  ctx.save(); ctx.beginPath(); ctx.arc(0,0,R*0.62,0,TAU); ctx.clip();
+  const PR=R*0.62;
+  ctx.fillStyle='#0e0f11'; ctx.fillRect(-R,-R,2*R,2*R);
+  /* the calibre seen through the port: striped bridges, rotor, wheels */
+  ctx.save(); ctx.rotate(-0.42);
+  for(let x=-PR;x<PR;x+=0.055){
+    const lg=ctx.createLinearGradient(x,0,x+0.055,0);
+    lg.addColorStop(0,'rgba(196,204,212,.20)'); lg.addColorStop(1,'rgba(12,14,16,.20)');
+    ctx.fillStyle=lg; ctx.fillRect(x,-PR,0.055,2*PR);
+  }
+  ctx.restore();
+  const wheels=[[0.20,-0.09,0.105],[-0.02,-0.20,0.082],[-0.20,-0.02,0.070]];
+  for(const [wx,wy,wr] of wheels){
+    ctx.fillStyle='rgba(188,158,106,.9)';
+    ctx.beginPath(); ctx.arc(wx,wy,wr,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(94,76,46,.5)'; ctx.lineWidth=0.006;
+    for(let i=0;i<16;i++){ const t=i/16*TAU;
+      ctx.beginPath();
+      ctx.moveTo(wx+Math.cos(t)*wr*0.55,wy+Math.sin(t)*wr*0.55);
+      ctx.lineTo(wx+Math.cos(t)*wr,wy+Math.sin(t)*wr); ctx.stroke(); }
+    ctx.fillStyle='rgba(186,62,52,.75)';
+    ctx.beginPath(); ctx.arc(wx,wy,wr*0.24,0,TAU); ctx.fill();
+  }
+  /* the winding rotor sweeps over half the movement */
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,PR*0.96,0.35,Math.PI+0.35); ctx.closePath();
+  const rg=ctx.createLinearGradient(-PR,PR,PR,-PR);
+  rg.addColorStop(0,'rgba(74,80,86,.96)'); rg.addColorStop(.55,'rgba(32,36,40,.96)');
+  rg.addColorStop(1,'rgba(16,18,20,.96)');
+  ctx.fillStyle=rg; ctx.fill();
+  ctx.strokeStyle='rgba(214,178,116,.55)'; ctx.lineWidth=0.012; ctx.stroke();
+  ctx.fillStyle='rgba(214,178,116,.9)';
+  ctx.beginPath(); ctx.arc(0,0,0.048,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(20,22,24,.9)';
+  ctx.beginPath(); ctx.arc(0,0,0.019,0,TAU); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=0.012;
+  ctx.beginPath(); ctx.arc(0,0,R*0.62,0,TAU); ctx.stroke();
+  /* engraving — mirrored, because this face is read from behind */
+  ctx.save(); ctx.scale(-1,1);
+  arcText('ANTHRA  ·  A-40',R*0.80,Math.PI/2,0.062,0.010,'rgba(255,255,255,.34)',true);
+  arcText('GRADE-5 TITANIUM  ·  100 M',R*0.80,-Math.PI/2,0.050,0.008,'rgba(255,255,255,.26)',false);
+  ctx.restore();
+  for(let i=0;i<8;i++){ const t=i/8*TAU+0.2;
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    ctx.beginPath(); ctx.arc(Math.cos(t)*R*0.90,Math.sin(t)*R*0.90,0.030,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.lineWidth=0.006; ctx.stroke(); }
+}
+
+/* ---------- face list renderer ---------- */
+var DOFC=null;
+/* bezel + chamfers and centre links are mirror-polished; the rest
+   carries the straight titanium brush */
+function matRough(f){
+  if(f.pol||f.grp==='bezel') return 140;
+  if(f.mat==='link') return 66;
+  return 62;
+}
+
+/* the brush is drawn, not faked: hairlines laid along the machining
+   direction of any face big enough on screen to show them. `fam` picks
+   which pair of edges they run between. */
+function brushFace(P,fam,area,al){
+  const n=Math.max(4,Math.min(16,Math.round(Math.sqrt(area)/9)));
+  const seed=((P[0][0]*7.13+P[0][1]*3.71)|0)>>>0;
+  ctx.lineWidth=0.7;
+  for(let i=1;i<=n;i++){
+    const h=((seed+i*2654435761)>>>0)/4294967296;
+    const t=(i-0.5+ (h-0.5)*0.8)/n;                    /* uneven, like a real grain */
+    if(t<=0.02||t>=0.98) continue;
+    let x0,y0,x1,y1;
+    if(fam==='a'){
+      x0=P[0][0]+(P[1][0]-P[0][0])*t; y0=P[0][1]+(P[1][1]-P[0][1])*t;
+      x1=P[3][0]+(P[2][0]-P[3][0])*t; y1=P[3][1]+(P[2][1]-P[3][1])*t;
+    }else{
+      x0=P[0][0]+(P[3][0]-P[0][0])*t; y0=P[0][1]+(P[3][1]-P[0][1])*t;
+      x1=P[1][0]+(P[2][0]-P[1][0])*t; y1=P[1][1]+(P[2][1]-P[1][1])*t;
+    }
+    ctx.strokeStyle=(h>0.5?'rgba(255,255,255,':'rgba(0,0,0,')
+      +(al*(0.028+h*0.05)).toFixed(3)+')';
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  }
+}
+function drawFaces(faces,st,pal,opt){
+  opt=opt||{};
+  const X=makeXform(st), out=[];
+  const ax=xnorm([0,0,1],st);          /* brushing axis in view space */
+  for(const f of faces){
+    if(opt.filter && !opt.filter(f)) continue;
+    const q=[X(f.p[0]),X(f.p[1]),X(f.p[2]),X(f.p[3])];
+    const n=xnorm(f.n,st);
+    const cz=(q[0][2]+q[1][2]+q[2][2]+q[3][2])*0.25;
+    const cxm=(q[0][0]+q[1][0]+q[2][0]+q[3][0])*0.25;
+    const cym=(q[0][1]+q[1][1]+q[2][1]+q[3][1])*0.25;
+    const view=V.norm([-cxm,-cym,CAM.dist-cz]);
+    if(V.dot(n,view)<=0.001) continue;
+    out.push({q,n,z:cz,f});
+  }
+  out.sort((a,b)=>a.z-b.z);
+  const al=opt.alpha===undefined?1:opt.alpha;
+
+  const paint=o=>{
+    const f=o.f, r=matRough(f);
+    const P=o.q.map(p=>project(p,st));
+    /* baked occlusion: slit walls, undersides and flanks sit in shadow */
+    const ao=f.ao===undefined?1:f.ao;
+    const tone=c=>{
+      let k=c;
+      if(f.mat==='link') k=mixc(k,pal.d,0.045);    /* the strap reads just under the case */
+      if(ao<0.999)       k=mixc(k,pal.d,1-ao);
+      return k;
+    };
+    ctx.beginPath();
+    ctx.moveTo(P[0][0],P[0][1]);
+    for(let i=1;i<4;i++) ctx.lineTo(P[i][0],P[i][1]);
+    ctx.closePath();
+    let cA,cB;
+    if(f.vn0){
+      /* revolved or swept face: shade both rims and sweep a gradient
+         across, so the surface reads as turned metal, not a polygon fan */
+      cA=tone(shade(xnorm(f.vn0,st),pal,r,opt.tint,ax));
+      cB=tone(shade(xnorm(f.vn1,st),pal,r,opt.tint,ax));
+      const ax0=(P[0][0]+P[3][0])/2, ay0=(P[0][1]+P[3][1])/2;
+      const bx0=(P[1][0]+P[2][0])/2, by0=(P[1][1]+P[2][1])/2;
+      let fill;
+      if(Math.abs(ax0-bx0)+Math.abs(ay0-by0)<0.75
+       || Math.abs(cA[0]-cB[0])+Math.abs(cA[1]-cB[1])+Math.abs(cA[2]-cB[2])<7) fill=rgbs(cA);
+      else{ const g=ctx.createLinearGradient(ax0,ay0,bx0,by0);
+        g.addColorStop(0,rgbs(cA)); g.addColorStop(1,rgbs(cB)); fill=g; }
+      ctx.fillStyle=fill; ctx.fill();
+      ctx.strokeStyle=fill; ctx.lineWidth=0.6; ctx.stroke();
+    }else{
+      cA=cB=tone(shade(o.n,pal,r,opt.tint,ax));
+      ctx.fillStyle=rgbs(cA); ctx.fill();
+      ctx.strokeStyle=rgbs(cA); ctx.lineWidth=0.6; ctx.stroke();
+    }
+    if(f.screw){
+      const d1=Math.hypot(P[1][0]-P[0][0],P[1][1]-P[0][1]);
+      const d2=Math.hypot(P[3][0]-P[0][0],P[3][1]-P[0][1]);
+      const rr=Math.min(d1,d2)*0.27;
+      if(rr>1.3){
+        const mx=(P[0][0]+P[1][0]+P[2][0]+P[3][0])/4, my=(P[0][1]+P[1][1]+P[2][1]+P[3][1])/4;
+        ctx.fillStyle=rgbs(mixc(cA,pal.d,0.40));
+        ctx.beginPath(); ctx.arc(mx,my,rr,0,TAU); ctx.fill();
+        ctx.fillStyle=rgbs(mixc(cA,[255,255,255],0.28));
+        ctx.beginPath(); ctx.arc(mx-rr*0.16,my-rr*0.16,rr*0.72,0,TAU); ctx.fill();
+        ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=Math.max(0.5,rr*0.16);
+        ctx.beginPath();
+        ctx.moveTo(mx-(P[3][0]-P[0][0])/d2*rr*0.72,my-(P[3][1]-P[0][1])/d2*rr*0.72);
+        ctx.lineTo(mx+(P[3][0]-P[0][0])/d2*rr*0.72,my+(P[3][1]-P[0][1])/d2*rr*0.72);
+        ctx.stroke();
+      }
+    }
+    if(f.brush||f.cham){
+      const area=Math.abs((P[1][0]-P[0][0])*(P[2][1]-P[0][1])-(P[2][0]-P[0][0])*(P[1][1]-P[0][1]))
+               + Math.abs((P[2][0]-P[0][0])*(P[3][1]-P[0][1])-(P[3][0]-P[0][0])*(P[2][1]-P[0][1]));
+      if(f.brush && area>260) brushFace(P,f.brush,area*0.5,al);
+      /* a chamfer that catches the rig draws the white line of light */
+      if(f.cham && area>90){
+        const l=(cA[0]+cA[1]+cA[2]+cB[0]+cB[1]+cB[2])/1530;
+        if(l>0.52){
+          ctx.strokeStyle='rgba(255,255,255,'+(Math.min(0.5,(l-0.52)*1.7)*al).toFixed(3)+')';
+          ctx.lineWidth=0.9;
+          ctx.beginPath();
+          ctx.moveTo((P[0][0]+P[1][0])/2,(P[0][1]+P[1][1])/2);
+          ctx.lineTo((P[3][0]+P[2][0])/2,(P[3][1]+P[2][1])/2);
+          ctx.stroke();
+        }
+      }
+    }
+  };
+
+  ctx.save(); ctx.globalAlpha=al;
+  /* cheap 85mm depth of field: everything behind the focal band is
+     rendered once through a blur, then the sharp set on top */
+  const wantDof=opt.dof && ('filter' in ctx);
+  const far=[], near=[];
+  for(const o of out) ((wantDof&&o.z<-1.15)?far:near).push(o);
+  if(far.length){
+    /* paint the far set unfiltered offscreen, then composite it
+       through a single blurred drawImage */
+    if(!DOFC||DOFC.width!==cv.width||DOFC.height!==cv.height){
+      DOFC=document.createElement('canvas');
+      DOFC.width=cv.width; DOFC.height=cv.height;
+    }
+    const main=ctx;
+    ctx=DOFC.getContext('2d');
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.clearRect(0,0,W,H);
+    for(const o of far) paint(o);
+    ctx=main;
+    ctx.save(); ctx.filter='blur(2.6px)'; ctx.globalAlpha=al*0.92;
+    ctx.drawImage(DOFC,0,0,W,H); ctx.restore();
+  }
+  for(const o of near) paint(o);
+  ctx.restore();
+}
+
+/* ============================================================
+   4. BACKDROP — the static field (base + grain + vignette) bakes
+   once per resize; per frame it is a single blit
+   ============================================================ */
+var BGC=null, POOL=null, SHAD=null, GRAIN=null, GRAINP=null;
+function buildField(){
+  BGC=document.createElement('canvas');
+  BGC.width=W*DPR; BGC.height=H*DPR;
+  const g=BGC.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0);
+  g.fillStyle='rgb(19,19,22)'; g.fillRect(0,0,W,H);
+  const gr=document.createElement('canvas'); gr.width=gr.height=180;
+  const gg=gr.getContext('2d');
+  for(let i=0;i<3400;i++){
+    gg.fillStyle='rgba(255,255,255,'+(Math.random()*0.05).toFixed(3)+')';
+    gg.fillRect(Math.random()*180|0,Math.random()*180|0,1,1);
+  }
+  g.globalAlpha=0.55; g.fillStyle=g.createPattern(gr,'repeat');
+  g.fillRect(0,0,W,H); g.globalAlpha=1;
+  const vg=g.createRadialGradient(W/2,H/2,Math.min(W,H)*0.42,W/2,H/2,Math.max(W,H)*0.78);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.32)');
+  g.fillStyle=vg; g.fillRect(0,0,W,H);
+  /* small sprites for the key pool and the contact shadow */
+  POOL=document.createElement('canvas'); POOL.width=POOL.height=256;
+  { const p=POOL.getContext('2d');
+    const r=p.createRadialGradient(128,128,12,128,128,128);
+    r.addColorStop(0,'rgba(255,255,255,.07)'); r.addColorStop(1,'rgba(255,255,255,0)');
+    p.fillStyle=r; p.fillRect(0,0,256,256); }
+  /* micro-grain laid over the metal so the flat fills carry a
+     photographic surface rather than reading as vector shapes */
+  GRAIN=document.createElement('canvas'); GRAIN.width=GRAIN.height=140;
+  { const p=GRAIN.getContext('2d');
+    for(let i=0;i<5200;i++){
+      const v=Math.random();
+      p.fillStyle=(v>0.5?'rgba(255,255,255,':'rgba(0,0,0,')+(0.018+Math.random()*0.05).toFixed(3)+')';
+      p.fillRect(Math.random()*140|0,Math.random()*140|0,1,Math.random()<0.22?2:1);
+    } }
+  GRAINP=null;
+  SHAD=document.createElement('canvas'); SHAD.width=SHAD.height=256;
+  { const p=SHAD.getContext('2d');
+    const r=p.createRadialGradient(128,128,0,128,128,128);
+    r.addColorStop(0,'rgba(0,0,0,1)'); r.addColorStop(.55,'rgba(0,0,0,.45)');
+    r.addColorStop(1,'rgba(0,0,0,0)');
+    p.fillStyle=r; p.fillRect(0,0,256,256); }
+}
+function drawBackdrop(deep){
+  if(!BGC) buildField();
+  ctx.drawImage(BGC,0,0,W,H);
+  if(deep>0.004){
+    ctx.fillStyle='rgba(0,0,0,'+(0.40*deep).toFixed(3)+')';
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+/* ============================================================
+   6. WATCH COMPOSITE
+   ============================================================ */
+/* explode offsets per part group, along the case axis (+z) */
+const EXPLODE={ crystal:2.30, bezel:1.55, dial:0.95, mvt:0.05, back:-1.15, case:0.0, lug:0.0, crown:0.35 };
+
+function watchState(o){
+  return {cx:o.cx,cy:o.cy,scale:o.scale,ry:o.ry,rx:o.rx,rz:o.rz||0,
+          focus:o.focus||null,explodeFn:o.explodeFn||null};
+}
+
+function drawWatch(o){
+  const pal=o.pal, st=watchState(o);
+  const ex=o.explode||0;
+  const A=o.alpha===undefined?1:o.alpha;          /* 0 must stay 0 */
+  if(A<=0.003 && ex<=0.003) return;
+  if(ex>0.001){
+    st.explodeFn=(q,orig)=>[q[0],q[1],q[2]];   // handled per-group below
+  }
+
+  /* bracelet */
+  if(o.bracelet>0.004){
+    const bst=Object.assign({},st);
+    if(ex>0.001){
+      bst.explodeFn=q=>[q[0],q[1],q[2]-ex*1.9];
+    }
+    drawFaces(GEO.bracelet,bst,pal,{alpha:o.bracelet*A,dof:o.dof});
+  }
+
+  /* case groups, each with its own explode shift */
+  const groups=[['back',EXPLODE.back],['case',EXPLODE.case],['lug',EXPLODE.lug],
+                ['crown',EXPLODE.crown],['bezel',EXPLODE.bezel]];
+  for(const [g,off] of groups){
+    const gs=Object.assign({},st);
+    if(ex>0.001){ const dz=off*ex*1.35; gs.explodeFn=q=>[q[0],q[1],q[2]+dz]; }
+    drawFaces(GEO.cases,gs,pal,{alpha:A,dof:o.dof,filter:f=>f.grp===g});
+  }
+
+  /* caseback artwork */
+  const bs=Object.assign({},st);
+  if(ex>0.001){ const dz=EXPLODE.back*ex*1.35; bs.explodeFn=q=>[q[0],q[1],q[2]+dz]; }
+  drawDial(bs,pal,{back:true,z:-CASE_T*0.66-0.001,alpha:A});
+
+  /* movement plate (visible when exploded) */
+  if(ex>0.02){
+    const ms=Object.assign({},st);
+    const dz=EXPLODE.mvt*ex*1.35;
+    ms.explodeFn=q=>[q[0],q[1],q[2]+dz];
+    drawFaces(GEO.mvt,ms,pal,{alpha:ex*A});
+    drawMovementFace(ms,pal,ex*A,o.spin||0,dz);
+  }
+
+  /* dial */
+  const ds=Object.assign({},st);
+  if(ex>0.001){ const dz=EXPLODE.dial*ex*1.35; ds.explodeFn=q=>[q[0],q[1],q[2]+dz]; }
+  drawDial(ds,pal,{alpha:A,spin:o.spin||0,hourAng:o.hourAng,minAng:o.minAng});
+
+  /* bezel ring on top of the dial edge */
+  const zs=Object.assign({},st);
+  if(ex>0.001){ const dz=EXPLODE.bezel*ex*1.35; zs.explodeFn=q=>[q[0],q[1],q[2]+dz]; }
+  drawBezelFace(zs,pal,A);
+
+  /* sapphire crystal disc when exploded */
+  if(ex>0.02){
+    const cs=Object.assign({},st);
+    const dz=EXPLODE.crystal*ex*1.35;
+    cs.explodeFn=q=>[q[0],q[1],q[2]+dz];
+    drawGlassDisc(cs,0.845,DIAL_Z,ex*0.9*A);
+  }
+}
+
+/* the movement/calibre face — used exploded and in the PERPETUAL CORE scene */
+function drawMovementFace(st,pal,alpha,spin,zoff){
+  const z=0.051+(zoff||0)*0;
+  const X=makeXform(st);
+  const O=project(X([0,0,0.051]),st), U=project(X([1,0,0.051]),st), Vv=project(X([0,1,0.051]),st);
+  const ux=U[0]-O[0],uy=U[1]-O[1],vx=Vv[0]-O[0],vy=Vv[1]-O[1];
+  if(Math.abs(ux*vy-uy*vx)<1.2) return;
+  const facing=xnorm([0,0,1],st)[2];
+  if(facing<0.02) return;
+  ctx.save(); ctx.transform(ux,uy,vx,vy,O[0],O[1]);
+  ctx.globalAlpha=clamp(alpha*facing*1.4);
+  const R=0.78;
+  ctx.beginPath(); ctx.arc(0,0,R,0,TAU); ctx.clip();
+  const g=ctx.createRadialGradient(-0.2,0.25,0.02,0,0,R);
+  g.addColorStop(0,'#c8ced4'); g.addColorStop(.55,'#8d949b'); g.addColorStop(1,'#4c5257');
+  ctx.fillStyle=g; ctx.fillRect(-R,-R,2*R,2*R);
+  /* côtes de Genève */
+  ctx.save(); ctx.rotate(-0.5);
+  for(let x=-R;x<R;x+=0.075){
+    const lg=ctx.createLinearGradient(x,0,x+0.075,0);
+    lg.addColorStop(0,'rgba(255,255,255,.16)'); lg.addColorStop(1,'rgba(0,0,0,.13)');
+    ctx.fillStyle=lg; ctx.fillRect(x,-R,0.075,2*R);
+  }
+  ctx.restore();
+  /* chapter numerals ring */
+  ctx.save(); ctx.scale(1,-1);
+  ctx.font='400 0.062px Inter, Helvetica, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(20,22,24,.8)';
+  for(let i=0;i<24;i++){ const t=i/24*TAU-Math.PI/2;
+    ctx.save(); ctx.translate(Math.cos(t)*R*0.88,-Math.sin(t)*R*0.88);
+    ctx.rotate(t+Math.PI/2); ctx.fillText(String(i).padStart(2,'0'),0,0); ctx.restore(); }
+  ctx.restore();
+  /* rotor */
+  ctx.save(); ctx.rotate(spin*0.35);
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R*0.92,-0.25,Math.PI+0.25); ctx.closePath();
+  const rg=ctx.createLinearGradient(-R,R,R,-R);
+  rg.addColorStop(0,'#3b3f43'); rg.addColorStop(.5,'#202326'); rg.addColorStop(1,'#0e1012');
+  ctx.fillStyle=rg; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.lineWidth=0.012; ctx.stroke();
+  ctx.restore();
+  /* jewels + wheels */
+  const wheels=[[0.30,-0.10,0.17],[0.05,-0.30,0.13],[-0.26,-0.16,0.115],[-0.10,0.18,0.10]];
+  for(const [wx,wy,wr] of wheels){
+    ctx.save(); ctx.translate(wx,wy); ctx.rotate(spin*(0.8+wr));
+    ctx.fillStyle='rgba(188,158,106,.92)';
+    ctx.beginPath(); ctx.arc(0,0,wr,0,TAU); ctx.fill();
+    ctx.strokeStyle='rgba(94,76,46,.55)'; ctx.lineWidth=0.008;
+    for(let i=0;i<16;i++){ const t=i/16*TAU;
+      ctx.beginPath(); ctx.moveTo(Math.cos(t)*wr*0.55,Math.sin(t)*wr*0.55);
+      ctx.lineTo(Math.cos(t)*wr,Math.sin(t)*wr); ctx.stroke(); }
+    ctx.fillStyle='rgba(32,26,16,.7)'; ctx.beginPath(); ctx.arc(0,0,wr*0.22,0,TAU); ctx.fill();
+    ctx.restore();
+  }
+  /* balance wheel */
+  ctx.save(); ctx.translate(-0.02,0.36); ctx.rotate(Math.sin(spin*3.2)*0.62);
+  ctx.strokeStyle='rgba(226,232,238,.9)'; ctx.lineWidth=0.022;
+  ctx.beginPath(); ctx.arc(0,0,0.155,0,TAU); ctx.stroke();
+  ctx.lineWidth=0.012;
+  for(let i=0;i<4;i++){const t=i/4*TAU;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(t)*0.155,Math.sin(t)*0.155); ctx.stroke();}
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawGlassDisc(st,r,z,alpha){
+  const X=makeXform(st);
+  const seg=48, P=[];
+  for(let i=0;i<seg;i++){const a=i/seg*TAU; P.push(project(X([Math.cos(a)*r,Math.sin(a)*r,z]),st));}
+  ctx.save(); ctx.globalAlpha=clamp(alpha)*0.55;
+  ctx.beginPath(); ctx.moveTo(P[0][0],P[0][1]);
+  for(let i=1;i<seg;i++) ctx.lineTo(P[i][0],P[i][1]);
+  ctx.closePath();
+  const c=project(X([0,0,z]),st);
+  const g=ctx.createLinearGradient(c[0]-P[0][3]*0.8,c[1]-P[0][3]*0.8,c[0]+P[0][3]*0.8,c[1]+P[0][3]*0.8);
+  g.addColorStop(0,'rgba(255,255,255,.42)');
+  g.addColorStop(.5,'rgba(220,230,240,.10)');
+  g.addColorStop(1,'rgba(255,255,255,.34)');
+  ctx.fillStyle=g; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1.2; ctx.stroke();
+  ctx.restore();
+}
+
+
+
+/* ============================================================
+   7. PLATE DECK CONTROLLER
+   No timeline scrub. Nine snap plates; the watch is one object
+   whose pose is interpolated between per-plate keys.
+   ============================================================ */
+const el=id=>document.getElementById(id);
+const $$=(s,r)=>[...(r||document).querySelectorAll(s)];
+
+const PLATES=[
+  {id:'p0',label:'Cover',   pose:{x:.63,y:.52,s:.30,ry:-.38,rx:.10,rz:0}},
+  {id:'p1',label:'Thesis',  pose:{x:.76,y:.52,s:.21,ry:-1.05,rx:.14,rz:0}},
+  {id:'p2',label:'Case',    pose:{x:.70,y:.50,s:.38,ry:-.58,rx:.16,rz:0}},
+  {id:'p3',label:'Dial',    pose:{x:.27,y:.50,s:.42,ry:-.05,rx:.03,rz:0}},
+  {id:'p4',label:'Calibre', pose:{x:.60,y:.48,s:.19,ry:-1.30,rx:.06,rz:0}},
+  {id:'p5',label:'Bracelet',pose:{x:.60,y:.44,s:.27,ry:-1.24,rx:.30,rz:.04}},
+  {id:'p6',label:'Finishes',pose:{x:.50,y:.24,s:.15,ry:-.40,rx:.10,rz:0}},
+  {id:'p7',label:'Data',    pose:{x:.76,y:.55,s:.19,ry:-.22,rx:.08,rz:0}},
+  {id:'p8',label:'End',     pose:{x:.50,y:.40,s:.12,ry:-.35,rx:.10,rz:0}}
+];
+const N=PLATES.length;
+const bell=(p,c,w)=>Math.max(0,1-Math.abs(p-c)/(w||1));
+
+let metalKey='titanium';
+const M=()=>METALS[metalKey];
+let spin=0,tSec=0,sT=0,loaded=false,revealAt=Infinity;
+
+/* index rail */
+el('idx').innerHTML=PLATES.map((p,i)=>
+  `<a href="#" data-go="${i}"><span class="t">${p.label}</span><i></i></a>`).join('');
+const idxLinks=$$('#idx a');
+idxLinks.forEach(a=>{ a.style.pointerEvents='auto';
+  a.addEventListener('click',e=>{e.preventDefault(); go(+a.dataset.go);}); });
+
+/* finish chips */
+el('chips').innerHTML=ORDER.map(k=>
+  `<button data-k="${k}">${METALS[k].name}</button>`).join('');
+const chips=$$('#chips button');
+chips.forEach(b=>b.addEventListener('click',()=>setMetal(b.dataset.k)));
+
+function setMetal(k){
+  metalKey=k;
+  const m=METALS[k];
+  chips.forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  el('finName').textContent=m.name;
+  el('finRef').textContent=m.model;
+  el('specRef').textContent=m.model;
+  el('coverRef').textContent='Ref. '+m.model;
+  el('coverFin').textContent=m.name;
+}
+setMetal('titanium');
+
+/* reveal on entry */
+const io=new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('seen'); });
+},{threshold:.35});
+$$('.plate').forEach(p=>io.observe(p));
+
+/* eased programmatic scroll — replaces the browser's abrupt smooth-scroll */
+let glideRAF=0, gliding=false, lastInput=0, lastYpx=0;
+function glideTo(y,dur){
+  cancelAnimationFrame(glideRAF);
+  const y0=scrollY, d=y-y0, t0=performance.now();
+  if(Math.abs(d)<1){ gliding=false; return; }
+  gliding=true;
+  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  const step=now=>{
+    const p=clamp((now-t0)/dur);
+    scrollTo(0,y0+d*ease(p));
+    if(p<1) glideRAF=requestAnimationFrame(step); else gliding=false;
+  };
+  glideRAF=requestAnimationFrame(step);
+}
+function stopGlide(){ cancelAnimationFrame(glideRAF); gliding=false; }
+/* any real input cancels a glide immediately — never fight the reader */
+addEventListener('wheel',()=>{lastInput=performance.now();stopGlide();},{passive:true});
+addEventListener('touchmove',()=>{lastInput=performance.now();stopGlide();},{passive:true});
+
+/* keys */
+function go(n){
+  n=clamp(n,0,N-1);
+  glideTo(n*innerHeight,620);
+}
+addEventListener('keydown',e=>{
+  const cur=Math.round(scrollY/innerHeight);
+  if(e.key==='ArrowDown'||e.key==='PageDown'||e.key===' '){ e.preventDefault(); go(cur+1); }
+  if(e.key==='ArrowUp'||e.key==='PageUp'){ e.preventDefault(); go(cur-1); }
+});
+
+/* loader */
+function boot(){
+  el('loader').classList.add('done');
+  loaded=true; revealAt=performance.now();
+  el('top').classList.add('in');
+  el('idx').classList.add('in');
+  el('pnum').classList.add('in');
+}
+if(document.readyState==='complete') setTimeout(boot,1250);
+else addEventListener('load',()=>setTimeout(boot,1250));
+setTimeout(()=>{ if(!loaded) boot(); },3200);
+
+/* ============================================================
+   8. MAIN LOOP
+   ============================================================ */
+let last=performance.now(), lastActive=-1;
+function frame(now){ tick(now); requestAnimationFrame(frame); }
+function tick(now){
+  const dt=Math.min(48,now-last); last=now; tSec+=dt; spin+=dt*0.0016;
+  if(innerWidth!==W||innerHeight!==H) resize();
+  if(!W||!H) return;
+
+  const target=clamp(scrollY/H,0,N-1);
+  sT+=(target-sT)*(1-Math.pow(0.0006,dt/1000));
+
+  /* when the reader pauses between plates, drift to the nearest one
+     instead of snapping — the settle is an 700ms ease, not a yank */
+  const calm=now-lastInput>240;
+  const vel=Math.abs(scrollY-lastYpx); lastYpx=scrollY;
+  const nearestY=Math.round(target)*H;
+  if(loaded&&calm&&!gliding&&vel<0.4&&Math.abs(scrollY-nearestY)>2) glideTo(nearestY,540);
+
+  const i=Math.min(N-2,Math.floor(sT));
+  const f=smooth(clamp(sT-i));
+  const A=PLATES[i].pose, B=PLATES[i+1].pose;
+  const L=(a,b)=>a+(b-a)*f;
+
+  const deep=bell(sT,4,1);          /* the calibre plate darkens the field  */
+  const ex  =bell(sT,4,0.85);       /* …and explodes the watch              */
+  const rise=loaded?easeOutExpo(clamp((now-revealAt)/1500)):0;
+
+  /* ---- studio field ---- */
+  const wx=L(A.x,B.x)*W, wy=L(A.y,B.y)*H, ws=L(A.s,B.s)*Math.min(W,H);
+  ctx=ctxB; ctx.setTransform(DPR,0,0,DPR,0,0);
+  drawBackdrop(deep);
+  /* key pool + contact shadow: two cached-sprite blits */
+  ctx.save(); ctx.globalAlpha=0.9;
+  ctx.drawImage(POOL,wx-ws*3.4,wy-ws*3.4,ws*6.8,ws*6.8);
+  const shA=0.55*clamp(1.15-(ws/Math.min(W,H))*1.55)*(1-ex)*rise;
+  if(shA>0.012){
+    ctx.globalAlpha=shA;
+    ctx.drawImage(SHAD,wx-ws*1.55,wy+ws*1.30-ws*0.23,ws*3.1,ws*0.46);
+  }
+  ctx.restore();
+
+  /* ---- watch ---- */
+  ctx=ctxW; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,W,H);
+  const idle=Math.sin(tSec*0.00025)*0.05;   /* slow breathing so plates never freeze */
+  drawWatch({
+    pal:M(),
+    cx:wx, cy:wy,
+    scale:ws*(0.6+0.4*rise),
+    ry:L(A.ry,B.ry)+idle, rx:L(A.rx,B.rx), rz:L(A.rz,B.rz),
+    explode:ex, bracelet:1, alpha:rise, spin,
+    dof:ws>Math.min(W,H)*0.30
+  });
+
+  /* the metal takes the grain; source-atop keeps it off the backdrop */
+  if(GRAIN){
+    if(!GRAINP) GRAINP=ctxW.createPattern(GRAIN,'repeat');
+    ctx.save();
+    ctx.globalCompositeOperation='source-atop';
+    ctx.globalAlpha=0.62;
+    ctx.fillStyle=GRAINP; ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+
+  /* ---- chrome (touch the DOM only on a plate change) ---- */
+  const active=Math.round(target);
+  if(active!==lastActive){
+    lastActive=active;
+    el('pnum').textContent=String(active).padStart(2,'0');
+    idxLinks.forEach((a,k)=>a.classList.toggle('on',k===active));
+    el('cue').style.opacity = active===0 ? '' : '0';
+  }
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

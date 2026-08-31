@@ -1,0 +1,1401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cortexa — Intelligence, mapped to every signal you own</title>
+<meta name="description" content="Cortexa — the layer between raw data and real decisions.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%2305070c%27/%3E%3Cellipse cx=%2716%27 cy=%2715%27 rx=%278.2%27 ry=%279.2%27 fill=%27none%27 stroke=%27%2340cfff%27 stroke-width=%272.6%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=block" rel="stylesheet">
+<style>
+:root{
+  --serif:'Instrument Serif',Georgia,'Times New Roman',serif;
+  --ink:#ffffff;
+  --muted:rgba(228,237,248,.72);
+  --dim:#7f97ba;
+  --dim-2:#6d86a8;
+  --page:#000000;
+  --pad:44px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--page);
+  color:var(--ink);
+  font-family:Geist,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow:hidden;
+}
+
+/* ---------------------------------------------------------------- stage */
+#stage{position:fixed;inset:0;overflow:hidden;z-index:0}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* corner falloff + a soft scrim under the nav, painted over the canvas */
+#veil{position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(128% 84% at 50% 44%, rgba(0,0,0,0) 40%, rgba(0,0,0,.34) 76%, rgba(0,0,0,.80) 100%);
+}
+
+/* ------------------------------------------------------------------ nav */
+/* Corner-anchored frame: the bust holds the middle, the copy occupies the
+   four corners and the margins.  Nothing is centred except the subject.  */
+nav{
+  position:fixed;left:0;right:0;top:0;height:92px;
+  display:flex;align-items:center;
+  padding:0 var(--pad);
+  z-index:6;
+}
+.brand{
+  display:flex;align-items:center;gap:11px;
+  color:#f4f8fc;text-decoration:none;white-space:nowrap;
+}
+.brand svg{display:block;width:21px;height:26px;overflow:visible;opacity:.95}
+.brand span{
+  font-family:var(--serif);
+  font-size:22px;font-weight:400;line-height:1;letter-spacing:.004em;
+}
+
+.navpill{
+  position:absolute;left:50%;top:24px;transform:translateX(-50%);
+  height:44px;display:flex;align-items:center;
+  padding:0 6px;border-radius:999px;
+  background:rgba(4,7,12,.72);
+  border:1px solid rgba(160,196,236,.13);
+  backdrop-filter:blur(14px) saturate(1.1);
+  -webkit-backdrop-filter:blur(14px) saturate(1.1);
+}
+.navpill a{
+  color:rgba(233,239,247,.72);text-decoration:none;
+  font-size:14px;font-weight:400;line-height:1;letter-spacing:-.006em;
+  padding:0 15px;white-space:nowrap;transition:color .2s ease;
+}
+.navpill a:hover{color:#fff}
+
+.navcta{
+  position:absolute;right:var(--pad);top:22px;
+  height:40px;display:inline-flex;align-items:center;gap:9px;
+  padding:0 18px;border-radius:999px;
+  color:#eef3f9;
+  background:rgba(10,13,19,.52);
+  border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(12px) saturate(1.1);
+  -webkit-backdrop-filter:blur(12px) saturate(1.1);
+  font-size:13.5px;font-weight:450;line-height:1;letter-spacing:-.008em;
+  text-decoration:none;white-space:nowrap;
+  transition:border-color .2s ease,transform .2s ease;
+}
+.navcta:hover{border-color:rgba(255,255,255,.34);transform:translateY(-1px)}
+.ring{width:7px;height:7px;border-radius:50%;border:1.3px solid currentColor;
+  flex:0 0 auto;opacity:.6}
+
+/* ------------------------------------------------------- container lines */
+/* Two hairlines marking the content frame, ticked at both ends.  They sit
+   above the canvas and below the type, so the bust reads as living inside
+   a measured frame rather than floating.                                  */
+.rails{
+  position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);
+  width:calc(100vw - var(--pad)*2 + 44px);
+  display:flex;justify-content:space-between;
+  z-index:4;pointer-events:none;
+}
+.rail{
+  position:relative;width:1px;flex:0 0 1px;align-self:stretch;
+  background:linear-gradient(to bottom,
+    rgba(255,255,255,0) 0%, rgba(214,234,250,.115) 9%,
+    rgba(214,234,250,.115) 91%, rgba(255,255,255,0) 100%);
+}
+.rail::before,.rail::after{
+  content:"";position:absolute;left:-2.5px;width:6px;height:6px;
+  background:rgba(214,234,250,.42);
+}
+.rail::before{top:108px}
+.rail::after{bottom:108px}
+
+/* ----------------------------------------------------------------- hero */
+.stage{position:fixed;inset:0;z-index:5;pointer-events:none}
+.stage > *{pointer-events:auto}
+
+h1{
+  position:absolute;left:var(--pad);top:120px;
+  font-family:var(--serif);
+  font-size:60px;font-weight:400;line-height:63px;letter-spacing:-.004em;
+  color:#fff;white-space:nowrap;
+  text-shadow:0 0 42px rgba(2,10,22,.78), 0 2px 26px rgba(0,0,0,.5);
+}
+h1 .dim{color:var(--dim);display:block}
+
+.lede{
+  position:absolute;left:var(--pad);top:calc(50vh + 22px);width:344px;
+  font-size:15px;font-weight:400;line-height:22px;letter-spacing:-.008em;
+  color:var(--muted);
+  text-shadow:0 0 10px rgba(2,8,18,.95), 0 0 26px rgba(0,6,14,.85);
+}
+.facts{
+  position:absolute;right:var(--pad);top:calc(50vh + 22px);text-align:right;
+  font-size:15px;font-weight:400;line-height:22px;letter-spacing:-.008em;
+  color:var(--muted);
+  text-shadow:0 0 10px rgba(2,8,18,.95), 0 0 26px rgba(0,6,14,.85);
+}
+
+.bigtag{
+  position:absolute;right:var(--pad);bottom:44px;text-align:right;
+  font-family:var(--serif);
+  font-size:60px;font-weight:400;line-height:63px;letter-spacing:-.004em;
+  color:#fff;white-space:nowrap;
+  text-shadow:0 0 44px rgba(2,10,22,.9), 0 2px 30px rgba(0,0,0,.6);
+}
+.bigtag .dim{color:var(--dim-2);display:block}
+
+.actions{position:absolute;left:var(--pad);bottom:48px;display:flex;align-items:center;gap:14px}
+.btn{
+  height:46px;border-radius:23px;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  font-size:15px;font-weight:450;line-height:1;letter-spacing:-.008em;
+  text-decoration:none;white-space:nowrap;
+  transition:transform .22s cubic-bezier(.22,.7,.3,1), background .22s ease, border-color .22s ease;
+}
+.btn-solid{
+  padding:0 21px;background:#f4f7fb;color:#0a0d12;
+  box-shadow:0 10px 30px rgba(0,0,0,.42);
+}
+.btn-solid:hover{background:#fff;transform:translateY(-1.5px)}
+.btn-ghost{
+  padding:0 19px;color:#eef3f9;
+  background:rgba(10,13,19,.52);
+  border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.btn-ghost:hover{border-color:rgba(255,255,255,.34);transform:translateY(-1.5px)}
+.btn-ghost .arw{font-size:15px;opacity:.85;transform:translateY(.5px)}
+
+a:focus-visible{outline:2px solid rgba(190,220,255,.78);outline-offset:3px;border-radius:999px}
+
+/* ------------------------------------------------------------ responsive */
+@media (max-width:1280px){
+  h1{font-size:50px;line-height:53px;top:112px}
+  .bigtag{font-size:50px;line-height:53px}
+}
+@media (max-width:1120px){
+  .navpill{display:none}
+  h1{font-size:44px;line-height:47px;top:106px}
+  .bigtag{font-size:40px;line-height:43px;bottom:128px}
+  .lede{top:auto;bottom:246px;width:min(320px,44vw)}
+  .facts{top:auto;bottom:246px}
+}
+@media (max-width:820px){
+  h1{font-size:36px;line-height:39px;top:96px;white-space:normal;max-width:56vw}
+  .bigtag{font-size:31px;line-height:34px;bottom:142px}
+  .lede{bottom:250px;width:min(280px,52vw);font-size:14px;line-height:20px}
+  .facts{bottom:250px;font-size:14px;line-height:20px}
+}
+@media (max-width:620px){
+  :root{--pad:22px}
+  nav{height:76px}
+  .navcta{display:none}
+  .facts{display:none}
+  h1{font-size:31px;line-height:34px;top:82px;max-width:none}
+  .lede{top:172px;bottom:auto;width:min(320px,86vw);font-size:13.5px;line-height:19px}
+  .bigtag{left:var(--pad);right:auto;text-align:left;font-size:25px;line-height:28px;bottom:122px}
+  .actions{bottom:40px;gap:11px}
+  .btn{height:42px;font-size:14px}
+  .btn-solid{padding:0 17px} .btn-ghost{padding:0 15px}
+  .rail::before{top:84px} .rail::after{bottom:84px}
+}
+/* Short and wide: the bust spans most of the middle band, so the side copy
+   has to clear the bottom pair entirely rather than sit just above it.   */
+@media (max-height:720px) and (min-width:820px){
+  h1{font-size:42px;line-height:45px;top:92px}
+  .bigtag{font-size:30px;line-height:33px;bottom:34px}
+  .lede,.facts{top:auto;bottom:150px;font-size:13.5px;line-height:19px}
+  .actions{bottom:34px}
+  .rail::before{top:88px} .rail::after{bottom:88px}
+}
+@media (max-height:560px){
+  h1{font-size:34px;line-height:37px;top:78px}
+  .bigtag{font-size:25px;line-height:28px;bottom:30px}
+  .lede,.facts{bottom:124px;font-size:13px;line-height:18px}
+  .actions{bottom:30px}
+}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <div id="veil"></div>
+</div>
+
+<div class="rails" aria-hidden="true"><span class="rail"></span><span class="rail"></span></div>
+
+<nav>
+  <a class="brand" href="#">
+    <svg viewBox="0 0 22 27" fill="none" aria-hidden="true">
+      <ellipse cx="11" cy="11.6" rx="8.1" ry="10.1" stroke="currentColor" stroke-width="2.1"/>
+      <path d="M2.2 21.6 H19.8" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    </svg>
+    <span>Cortexa</span>
+  </a>
+  <div class="navpill">
+    <a href="#">Platform</a>
+    <a href="#">Signals</a>
+    <a href="#">Research</a>
+    <a href="#">Company</a>
+    <a href="#">Pricing</a>
+  </div>
+  <a class="navcta" href="#">Start free <i class="ring"></i></a>
+</nav>
+
+<div class="stage">
+  <h1>Intelligence, mapped to<span class="dim">every signal you own.</span></h1>
+
+  <p class="lede">The layer between raw data and real decisions &mdash;<br>every source reconciled into one graph.</p>
+  <p class="facts">Nothing to re-instrument<br>Answers in seconds</p>
+
+  <p class="bigtag"><span class="dim">Built for teams</span>who ask why.</p>
+
+  <div class="actions">
+    <a class="btn btn-solid" href="#">Book a demo <i class="ring"></i></a>
+    <a class="btn btn-ghost" href="#">Explore the platform <span class="arw">&#8627;</span></a>
+  </div>
+</div>
+
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+<script>
+"use strict";
+/* =====================================================================
+   Cortexa hero — a point-cloud bust lit only by its own silhouette.
+
+   The whole look rests on one structural choice: the scan axis points at
+   the CAMERA, not at the top of the skull.  Rings of constant polar angle
+   then crowd against the silhouette and spread apart toward the middle of
+   the disc, so the rim is a dense bright comb and the face stays dark for
+   free — and every comb tooth lands perpendicular to the local contour.
+
+   The bust itself is anatomical rather than a generalised ellipsoid: a
+   measured male skull profile swept out of one centre at the brow line,
+   and a torso with a real trapezius slope, clavicle groove and pec swell
+   instead of a cone of revolution.
+   ===================================================================== */
+
+const CFG = {
+  /* ---- framing (measured off the reference at 1440x911) ---- */
+  HEAD_HALF_W   : 192 / 911,   /* head half-width, in viewport heights   */
+  HEAD_CY       : 0.3917,      /* scan centre (brow line), fraction of vh */
+  FOV           : 34,
+
+  /* ---- skull profile: radius out of the scan centre, psi = 0 at the
+         crown to PI at the chin, 25 samples.  Normalised so r(90) = 1,
+         i.e. one unit is the head's half-width.  Crown 1.205 + chin 1.760
+         = 2.97 tall against 2.0 wide — a real male head is 1.49.        */
+  HEAD_R: [1.230,1.240,1.246,1.244,1.230,1.203,1.172,1.134,1.100,1.060,
+           1.028,1.011,1.000,1.006,1.028,1.056,1.108,1.176,1.256,1.352,
+           1.452,1.570,1.700,1.800,1.860],
+
+  /* ---- scan resolution ---- */
+  RINGS         : 128,
+  TICK_PITCH    : 4.0/152.0,  /* comb pitch on the flanks, head half-widths */
+
+  /* ---- body ---- */
+  BODY_ROWS     : 210,
+  BODY_COLS     : 240,
+
+  /* ---- dust ---- */
+  DUST          : 104000,
+  HAZE          : 1150,
+  GAIN_HAZE     : 0.020,
+
+  /* ---- point sizes (css px at dpr 1) ---- */
+  PT_HEAD       : 3.20,
+  PT_BODY       : 3.20,
+  PT_DUST       : 1.9,
+
+  /* ---- exposure ---- */
+  GAIN_HEAD     : 1.20,
+  GAIN_BODY     : 0.80,
+  GAIN_DUST     : 0.55,
+
+  /* ---- intro dolly: dist = D*(1 - A*exp(-t/TAU)) ---- */
+  INTRO_A       : 0.955,
+  INTRO_TAU     : 0.255,
+  INTRO_LEN     : 2.6,
+
+  /* ---- pointer: torch + extraction ---- */
+  TORCH         : 0.50,       /* lambert key that follows the cursor     */
+  TORCH_R       : 3.10,       /* torch falloff, world units              */
+  TORCH_DUST    : 1.05,
+  TORCH_DUST_W  : 0.34,       /* the pool the torch throws on the cloud  */
+  PULL          : 0.088,      /* how far shell motes lift off, world     */
+  PULL_DUST     : 0.032,
+  PULL_R        : 0.165,      /* cursor radius, aspect-corrected NDC     */
+
+  /* ---- bloom ---- */
+  BLOOM_THRESH  : 0.55,
+  AMBIENT       : 1.00,
+  BLOOM_STRENGTH: 0.70,
+};
+
+/* dev: ?GAIN_HEAD=1.3&BLOOM_STRENGTH=0.9 overrides any scalar in CFG so a
+   parameter sweep costs one page load instead of one edit                */
+try{
+  new URLSearchParams(location.search).forEach((v,k)=>{
+    if (k in CFG && typeof CFG[k] === 'number') CFG[k] = parseFloat(v);
+  });
+}catch(e){}
+
+/* ---------------------------------------------------------------- utils */
+const TAU = Math.PI * 2;
+function mulberry(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0;
+  let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t;
+  return ((t^t>>>14)>>>0)/4294967296; }; }
+const rnd = mulberry(20260820);
+
+/* =====================================================================
+   Anatomical bust.  The head is a real skull — a measured side profile
+   swept out of one centre at the brow line, with the skull deeper than it
+   is wide, the jaw shallower than the skull, and separate lobes for the
+   ear, brow, nose, mandible corner and chin.  Masculinised against the
+   earlier build: flatter crown, fuller upper sides, a much wider jaw and
+   a shorter, blunter chin.
+   ===================================================================== */
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function sstep(a,b,x){ const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); }
+function catmull(t,p0,p1,p2,p3){
+  const t2=t*t, t3=t2*t;
+  return 0.5*((2*p1) + (-p0+p2)*t + (2*p0-5*p1+4*p2-p3)*t2 + (-p0+3*p1-3*p2+p3)*t3);
+}
+function sampleTable(tab,u){
+  const n=tab.length-1, x=clamp(u,0,1)*n, i=Math.floor(x), f=x-i;
+  return catmull(f, tab[Math.max(i-1,0)], tab[i], tab[Math.min(i+1,n)], tab[Math.min(i+2,n)]);
+}
+
+/* radius of the head surface along a unit direction out of the scan centre.
+   +z is the way the face points, which is straight at the camera.        */
+function headRadius(dx,dy,dz){
+  const psi = Math.acos(clamp(dy,-1,1)), deg = psi*180/Math.PI;
+  let r = sampleTable(CFG.HEAD_R, psi/Math.PI);
+
+  /* the skull is deeper than it is wide; the jaw is shallower than the skull */
+  const dBack  = 1.215 - 0.28*sstep(104,164,deg);
+  const dFront = 1.230 - 0.50*sstep(94,150,deg) + 0.040*sstep(40,86,deg);
+  const dr = dz > 0 ? dFront : dBack;
+  let m = 1.0/Math.sqrt(dx*dx + dy*dy + (dz/dr)*(dz/dr));
+
+  /* temples pinch in a touch above the ears */
+  m *= 1.0 - 0.036*Math.exp(-Math.pow((deg-58)/22,2))*Math.abs(dz);
+  r *= m;
+
+  /* ear: flat lobe on each side, just behind the widest point */
+  const eDot = clamp(Math.abs(dx)*0.960 + dy*(-0.150) + dz*(-0.235), -1, 1);
+  r += 0.052*Math.exp(-Math.pow(Math.acos(eDot)/0.255, 2.1));
+  /* brow ridge — heavy, and most of what reads as male from the front */
+  const bDot = clamp(dz*0.945 + dy*0.327, -1, 1);
+  r += 0.052*Math.exp(-Math.pow(Math.acos(bDot)/0.30, 2))*sstep(50,84,deg);
+  /* nose */
+  const nDot = clamp(dz*0.966 + dy*(-0.259), -1, 1);
+  r += 0.070*Math.exp(-Math.pow(Math.acos(nDot)/0.140,2))*sstep(88,106,deg);
+  /* mandible corner: the square-jaw signature, and it has to sit on the
+     silhouette (no dz term worth speaking of) or it never shows          */
+  const jDot = clamp(Math.abs(dx)*0.855 + dy*(-0.500) + dz*0.135, -1, 1);
+  r += 0.085*Math.exp(-Math.pow(Math.acos(jDot)/0.36, 2))*sstep(104,150,deg);
+  /* chin */
+  const cDot = clamp(dz*0.470 + dy*(-0.883), -1, 1);
+  r += 0.050*Math.exp(-Math.pow(Math.acos(cDot)/0.32,2))*sstep(128,162,deg);
+  return r;
+}
+/* the mass below the cheekbones sits forward of the skull centre */
+function headZShift(dy){
+  const deg = Math.acos(clamp(dy,-1,1))*180/Math.PI;
+  return 0.070*sstep(84,152,deg);
+}
+
+/* silhouette radius at screen angle phi — the surface at dz = 0.  Cached,
+   because the dust rejection loop asks for it about a million times.     */
+const OUT_TAB = (function(){
+  const N = 1440, t = new Float64Array(N+1);
+  for (let i=0;i<=N;i++){
+    const phi = i/N*TAU;
+    t[i] = headRadius(Math.cos(phi), Math.sin(phi), 0);
+  }
+  return t;
+})();
+function outlineR(phi){
+  let u = phi/TAU; u -= Math.floor(u);
+  const x = u*1440, i = Math.floor(x), f = x-i;
+  return OUT_TAB[i]*(1-f) + OUT_TAB[i+1]*f;
+}
+
+/* Outward unit normal of the silhouette curve, in the screen plane.     */
+const _n2=[0,0];
+function outlineN(phi, out){
+  const h=0.004;
+  const r  = outlineR(phi);
+  const rp = (outlineR(phi+h) - outlineR(phi-h))/(2*h);
+  const tx = rp*Math.cos(phi) - r*Math.sin(phi);
+  const ty = rp*Math.sin(phi) + r*Math.cos(phi);
+  const l  = Math.hypot(tx,ty) || 1;
+  out[0] =  ty/l; out[1] = -tx/l;
+}
+
+/* The comb teeth in the reference run along the silhouette's NORMAL, not
+   along a ray from the head's centre — measure the dash angle against the
+   local contour and it is perpendicular everywhere.  A star-shaped scan
+   can only ever fold radially, so the rings are steered: normal-aligned
+   within the first few percent of the radius (all the comb anyone sees)
+   and back to radial deeper in, where the face is dark and the difference
+   costs nothing but keeps the pole a single point.                       */
+function headPoint(psi, phi, out){
+  const sp = Math.sin(psi), cp = Math.cos(psi);
+  const dx = sp*Math.cos(phi), dy = sp*Math.sin(phi), dz = cp;
+  const r  = headRadius(dx,dy,dz);
+  const R  = outlineR(phi);
+
+  /* how far in from the silhouette this ring lands, as a fraction        */
+  const t = clamp(1.0 - (r*sp)/R, 0, 1);
+
+  outlineN(phi, _n2);
+  const wN = Math.exp(-Math.pow(t/0.42, 2));
+  let ax = Math.cos(phi)*(1-wN) + _n2[0]*wN;
+  let ay = Math.sin(phi)*(1-wN) + _n2[1]*wN;
+  const al = Math.hypot(ax,ay) || 1; ax/=al; ay/=al;
+
+  out[0] = R*Math.cos(phi) - ax*R*t;
+  out[1] = R*Math.sin(phi) - ay*R*t;
+  out[2] = r*dz + headZShift(dy);
+}
+
+/* --------------------------------------------------- torso -------------
+   Not a cone of revolution: an elliptical trunk whose cross-section goes
+   from round at the neck to a flattened superellipse across the shoulder
+   girdle, with the trapezius ridge, a clavicle groove and a pec swell on
+   the front.  Widths in head half-widths, y measured off the brow line.  */
+const BODY_Y = [-1.35,-1.80,-2.02,-2.18,-2.34,-2.50,-2.68,-2.88,-3.12,-3.44,-3.80,-4.45];
+const BODY_W = [ 0.63, 0.63, 0.67, 0.79, 1.00, 1.29, 1.64, 2.00, 2.34, 2.62, 2.78, 2.84];
+const BODY_D = [ 0.47, 0.48, 0.51, 0.58, 0.67, 0.78, 0.90, 1.02, 1.14, 1.26, 1.34, 1.39];
+function bodyProfile(y){
+  const T = BODY_Y, n = T.length-1;
+  if (y >= T[0]) return [BODY_W[0], BODY_D[0]];
+  if (y <= T[n]) return [BODY_W[n], BODY_D[n]];
+  for (let i=0;i<n;i++){
+    if (y <= T[i] && y >= T[i+1]){
+      const f = (T[i]-y)/(T[i]-T[i+1]);
+      return [catmull(f, BODY_W[Math.max(i-1,0)], BODY_W[i], BODY_W[i+1], BODY_W[Math.min(i+2,n)]),
+              catmull(f, BODY_D[Math.max(i-1,0)], BODY_D[i], BODY_D[i+1], BODY_D[Math.min(i+2,n)])];
+    }
+  }
+  return [BODY_W[n], BODY_D[n]];
+}
+const BODY_Y0 = -1.35, BODY_Y1 = -4.45;
+/* the neck column attaches behind the jaw, not under the brow — without
+   this the chin sits inside the neck and the jawline never reads         */
+const BODY_Z0 = -0.42;
+function bodyPoint(v, u, out){
+  const y = BODY_Y0 + v*(BODY_Y1 - BODY_Y0);
+  const p = bodyProfile(y), W = p[0], D = p[1];
+  /* round at the neck, flattened front-and-back across the chest */
+  const n = 2.02 + 0.62*sstep(-2.20,-3.10,y);
+  const e = 2.0/n;
+  const cu = Math.cos(u), su = Math.sin(u);
+  const sx = (cu<0?-1:1)*Math.pow(Math.abs(cu), e);
+  const sz = (su<0?-1:1)*Math.pow(Math.abs(su), e);
+  let x = W*sx;
+  let z = D*sz*(su > 0 ? 1.0 : 1.07);          /* the back is a touch deeper */
+
+  if (su > 0){                                  /* front only */
+    const f = su;
+    /* clavicle groove running out from the sternal notch */
+    z -= 0.070*f*Math.exp(-Math.pow((y+2.26)/0.14,2))*Math.exp(-Math.pow(x/1.55,2));
+    /* pectoral swell below it */
+    z += 0.055*f*Math.exp(-Math.pow((y+2.84)/0.32,2))*Math.exp(-Math.pow((Math.abs(x)-0.78)/0.52,2));
+  }
+  /* sternocleidomastoid: two soft cords down the front of the neck */
+  if (su > 0.25 && y > -2.20){
+    z += 0.030*su*Math.exp(-Math.pow((Math.abs(x)-0.28)/0.16,2))*sstep(-2.20,-1.60,y);
+  }
+  out[0]=x; out[1]=y; out[2]=z + BODY_Z0;
+}
+
+/* central-difference normal of a parametric surface ------------------ */
+const _a=[0,0,0], _b=[0,0,0], _c=[0,0,0], _d=[0,0,0];
+function surfNormal(fn, s, t, ds, dt, out){
+  fn(s-ds, t, _a); fn(s+ds, t, _b);
+  fn(s, t-dt, _c); fn(s, t+dt, _d);
+  const ux=_b[0]-_a[0], uy=_b[1]-_a[1], uz=_b[2]-_a[2];
+  const vx=_d[0]-_c[0], vy=_d[1]-_c[1], vz=_d[2]-_c[2];
+  let nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
+  const l = Math.hypot(nx,ny,nz) || 1;
+  out[0]=nx/l; out[1]=ny/l; out[2]=nz/l;
+}
+
+/* =============================================================== build  */
+/* Meridians are NOT evenly spaced in the screen angle.  Measured off the
+   reference, the comb pitch along the silhouette is ~4px on the flanks
+   and ~8px over the crown and under the chin — a factor of two that a
+   uniform d(phi) cannot produce (it gives 1.6 the wrong way round).  So
+   the meridian angles are solved from a density target instead.         */
+function buildMeridianTable(){
+  const N = 4096, cum = new Float64Array(N+1);
+  const h = 0.002;
+  let acc = 0;
+  for (let i=0;i<=N;i++){
+    cum[i] = acc;
+    if (i === N) break;
+    const phi = (i+0.5)/N*TAU;
+    const r  = outlineR(phi);
+    const rp = (outlineR(phi+h) - outlineR(phi-h))/(2*h);
+    const speed  = Math.hypot(r, rp);
+    const target = 1.0 + Math.pow(Math.abs(Math.sin(phi)), 3.0);
+    acc += (speed/target)*(TAU/N);
+  }
+  let NM = Math.round(acc/CFG.TICK_PITCH/16)*16;
+  const tab = new Float64Array(NM);
+  let k = 0;
+  for (let j=0;j<NM;j++){
+    const want = acc*j/NM;
+    while (k < N && cum[k+1] < want) k++;
+    const t = (want - cum[k])/Math.max(1e-9, cum[k+1]-cum[k]);
+    tab[j] = (k + t)/N*TAU;
+  }
+  return tab;
+}
+const PHI_TAB = buildMeridianTable();
+
+function buildHead(){
+  const pos=[], nor=[], seed=[], gain=[];
+  const p=[0,0,0], n=[0,0,0];
+  const NR = CFG.RINGS, NM = PHI_TAB.length;
+  const dpsi = Math.PI/NR;
+  for (let i=0;i<NR;i++){
+    const psi = (i+0.5)*dpsi;
+    const s = Math.sin(psi);
+    /* keep the columns lined up by only ever halving the meridian count */
+    let step = 1, nm = NM;
+    while (nm > 7 && nm > 6*NR*s && (nm % 2) === 0){ nm >>= 1; step <<= 1; }
+    for (let j=0;j<nm;j++){
+      const phi = PHI_TAB[j*step];
+      headPoint(psi, phi, p);
+      surfNormal(headPoint, psi, phi, 0.004, 0.004, n);
+      pos.push(p[0],p[1],p[2]); nor.push(n[0],n[1],n[2]); seed.push(rnd());
+      /* the jaw sits over the neck; fade the head out where it would be
+         buried inside it, or the chin hangs below the jawline as a fringe */
+      const bp = bodyProfile(p[1]);
+      const inNeck = Math.hypot(p[0]/(bp[0]*0.95), (p[2]-BODY_Z0)/(bp[1]*0.95));
+      let g = p[1] > -1.30 ? 1.0 : (0.18 + 0.82*Math.min(1, Math.max(0, inNeck-0.90)/0.30));
+      /* The skull's own curvature now carries most of the rim variation,
+         so this is a light touch: a little extra at the crown and along
+         the flanks, where a real head reads brightest.                   */
+      const sp2 = Math.sin(phi), ap = Math.abs(sp2), cf2 = Math.abs(Math.cos(phi));
+      /* the cheekbone-to-gonion run is the brightest edge on a lit head,
+         and it is what makes the jaw read once the dust hides everything
+         inside the silhouette                                            */
+      const jawBand = Math.exp(-Math.pow((sp2 + 0.62)/0.30, 2))*cf2;
+      g *= 1.0 + 0.55*sstep(0.930,1.0, sp2)
+               + 0.42*(1.0 - sstep(0.25,0.74, ap))
+               + 0.85*jawBand;
+      /* a radial head always closes to a point at its bottom pole; leave
+         it bright and the chin reads as an alien spike.  Fade it out and
+         let the neck's own rails carry the jawline instead.              */
+      g *= 1.0 - 0.34*sstep(0.90, 0.999, -sp2);
+      gain.push(g);
+    }
+  }
+  return pack(pos,nor,seed,gain);
+}
+
+function buildBody(){
+  const pos=[], nor=[], seed=[], gain=[];
+  const p=[0,0,0], n=[0,0,0];
+  const NV = CFG.BODY_ROWS, NU = CFG.BODY_COLS;
+  for (let i=0;i<NV;i++){
+    const v = (i+0.5)/NV;
+    for (let j=0;j<NU;j++){
+      const u = (j/NU)*TAU;
+      bodyPoint(v + (rnd()-0.5)*0.9/NV, u + (rnd()-0.5)*0.9*TAU/NU, p);
+      surfNormal(bodyPoint, v, u, 0.0022, 0.006, n);
+      pos.push(p[0],p[1],p[2]); nor.push(n[0],n[1],n[2]); seed.push(rnd());
+      /* the neck reads dark in the reference and the shoulders carry the
+         glow, so the torso's own exposure is a ramp, not a constant      */
+      const yy = p[1];
+      let g1 = yy > -1.58 ? 0.10 : Math.min(2.10, 0.10 + ((-1.58-yy)/0.50)*1.60);
+      /* and anything the head is standing in front of has to go: without
+         depth testing the neck's rails otherwise run straight up through
+         the jaw and out the temples                                     */
+      if (hiddenByHead(p[0], p[1], p[2])) g1 *= 0.06;
+      gain.push(g1);
+    }
+  }
+  return pack(pos,nor,seed,gain);
+}
+
+function pack(pos,nor,seed,gain){
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('aNormal',  new THREE.Float32BufferAttribute(nor,3));
+  g.setAttribute('aSeed',    new THREE.Float32BufferAttribute(seed,1));
+  g.setAttribute('aGain',    new THREE.Float32BufferAttribute(gain,1));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,-1,0), 6);
+  return g;
+}
+
+/* camera geometry, needed at build time so the dust can be carved against
+   the bust's projected silhouette                                        */
+const CAM_D = 1.0 / (CFG.HEAD_HALF_W * 2 * Math.tan(CFG.FOV*Math.PI/360));
+const CAM_Y = (CFG.HEAD_CY - 0.5) * 2 * Math.tan(CFG.FOV*Math.PI/360) * CAM_D;
+function hiddenByHead(x,y,z){
+  if (z > 0.42) return false;
+  const sc = CAM_D/(CAM_D - z);
+  const px = x*sc, py = CAM_Y + sc*(y - CAM_Y);
+  const R = outlineR(Math.atan2(py, px));
+  return Math.hypot(px,py) < R*0.995;
+}
+function hiddenByBust(x,y,z){
+  if (z > 0.42) return false;
+  const sc = CAM_D/(CAM_D - z);
+  const px = x*sc, py = CAM_Y + sc*(y - CAM_Y);
+  if (py > -0.68){
+    const R = outlineR(Math.atan2(py, px));
+    return Math.hypot(px,py) < R*1.015;
+  }
+  const bp = bodyProfile(py);
+  return Math.abs(px) < bp[0]*1.02;
+}
+
+/* --------------------------------------------------------------- dust  */
+/* a lumpy volume of motes that hugs the bust and thins toward the frame
+   corners.  Brightness is baked per particle from the same lump field —
+   rejection sampling alone never makes a bright blob, it just makes a
+   dense one.                                                            */
+function hash3(x,y,z){
+  let h = Math.sin(x*127.1 + y*311.7 + z*74.7)*43758.5453;
+  return h - Math.floor(h);
+}
+function vnoise(x,y,z){
+  const xi=Math.floor(x), yi=Math.floor(y), zi=Math.floor(z);
+  const xf=x-xi, yf=y-yi, zf=z-zi;
+  const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf), w=zf*zf*(3-2*zf);
+  function g(i,j,k){ return hash3(xi+i, yi+j, zi+k); }
+  const c00=g(0,0,0)*(1-u)+g(1,0,0)*u, c10=g(0,1,0)*(1-u)+g(1,1,0)*u;
+  const c01=g(0,0,1)*(1-u)+g(1,0,1)*u, c11=g(0,1,1)*(1-u)+g(1,1,1)*u;
+  const c0=c00*(1-v)+c10*v, c1=c01*(1-v)+c11*v;
+  return c0*(1-w)+c1*w;
+}
+function fbm(x,y,z){
+  let s=0, a=0.5, f=1;
+  for (let i=0;i<4;i++){ s += a*vnoise(x*f,y*f,z*f); f*=2.07; a*=0.5; }
+  return s;
+}
+
+function buildDust(){
+  const N = CFG.DUST;
+  const pos=new Float32Array(N*3), att=new Float32Array(N*3); /* bright,size,seed */
+
+  /* Two octaves of value noise at very different scales: the coarse one
+     carves the cloud masses and their voids, the fine one gives each mass
+     its grain.  Discrete blobs were tried first and always read as
+     snowballs — the reference's clouds are connected, ragged and laney.  */
+  function density(x,y,z){
+    const big  = fbm(x*0.40+11.0, y*0.36-3.0, z*0.30+5.0);
+    const mid  = fbm(x*1.15-6.0,  y*1.05+2.0, z*0.80-4.0);
+    let d = 0.62*big + 0.38*mid;
+    d = (d - 0.360)/0.36;                   /* deep voids, but not empty  */
+    return 0.070 + 0.930*Math.pow(Math.max(0, Math.min(1, d)), 1.35);
+  }
+  function envelope(x,y,z){
+    let e = Math.exp(-Math.pow(x/2.32,2)) *
+            Math.exp(-Math.pow((y+0.85)/2.90,2)) *
+            Math.exp(-Math.pow((z+2.10)/3.10,2));
+    /* the shoulders throw the strongest glow in the reference           */
+    e *= 0.44 + 1.00*Math.exp(-Math.pow(Math.max(0,y+0.20)/1.70,2));
+    /* and a hot band right across the trapezius line                    */
+    e *= 1.0 + 1.9*Math.exp(-Math.pow((y+2.25)/0.85,2))*Math.exp(-Math.pow(x/2.30,2));
+    return e;
+  }
+  /* the reference keeps a dark moat right outside the silhouette — the
+     clouds start a good 60-80px clear of the head, and without that gap
+     the rim's skirt never falls off the way it should                    */
+  function moat(x,y,z){
+    const phi = Math.atan2(y, x);
+    const R = outlineR(phi);
+    const rr = Math.hypot(x,y)/R;
+    const near = Math.exp(-Math.pow((rr-1.0)/0.23,2)) * Math.exp(-Math.pow(Math.max(0,-y-1.3)/1.5,2));
+    return 1.0 - 0.52*near;
+  }
+
+  let i=0, guard=0;
+  while (i<N && guard<N*160){
+    guard++;
+    const x = (rnd()*2-1)*5.2;
+    const y = -3.9 + rnd()*6.9;
+    const z = -6.2 + rnd()*7.6;
+    if (hiddenByBust(x,y,z)) continue;
+    const env = envelope(x,y,z);
+    const d   = density(x,y,z);
+    if (rnd() > Math.min(1, d*env*moat(x,y,z)*4.4)) continue;
+    pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+    const star = Math.pow(rnd(),11.0);
+    att[i*3]   = 0.085 + 0.86*Math.pow(d,1.20)*(0.35+0.65*env) + 0.80*star;
+    att[i*3+1] = 0.36 + 0.68*Math.pow(rnd(),2.1) + 0.50*d + 1.3*star;
+    att[i*3+2] = rnd();
+    i++;
+  }
+
+  /* a thin halo of motes clinging to the bust: the reference's silhouette
+     is not a clean edge, it is fringed with loose particles              */
+  const HALO = Math.min(N-i, 1400);
+  for (let k=0;k<HALO && i<N;k++){
+    const phi = rnd()*TAU;
+    const R = outlineR(phi);
+    const t = 1.0 + Math.pow(rnd(),1.6)*0.46;
+    const cz = (rnd()*2-1);
+    const sc = Math.sqrt(Math.max(0.02, 1-cz*cz*0.86));
+    let x = Math.cos(phi)*R*t*sc, y = Math.sin(phi)*R*t*sc, z = cz*1.30;
+    if (hiddenByBust(x,y,z)) continue;
+    pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+    const w = Math.exp(-Math.pow((t-1.0)/0.26,2));
+    att[i*3]   = 0.07 + 0.42*w*(0.4+0.6*rnd()) + 0.9*Math.pow(rnd(),10.0);
+    att[i*3+1] = 0.38 + 0.70*Math.pow(rnd(),2.4);
+    att[i*3+2] = rnd();
+    i++;
+  }
+
+  /* Spray along the shoulder line.  The torso's limb on its own is a
+     crisp curve and reads as a drawn edge; in the reference the shoulder
+     is a soft band of loose motes with the bright line buried in it.     */
+  const SPRAY = Math.min(N-i, 9000);
+  for (let k=0;k<SPRAY && i<N;k++){
+    const v  = Math.pow(rnd(), 0.75);
+    const y  = -1.45 - v*1.95;
+    const bp = bodyProfile(y);
+    const th = rnd()*TAU;
+    const t  = 0.86 + Math.pow(rnd(),0.9)*0.46;
+    const x  = Math.cos(th)*bp[0]*t;
+    const z  = Math.sin(th)*bp[1]*t;
+    if (Math.abs(x) > 5.2 || z < -6.4) continue;
+    if (hiddenByHead(x,y,z)) continue;
+    pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+    const w = Math.exp(-Math.pow((t-1.0)/0.20,2));
+    const facing = 0.30 + 0.70*Math.abs(Math.cos(th));   /* brighter at the limb */
+    att[i*3]   = (0.10 + 1.15*w*facing) * (0.45+0.55*rnd()) + 0.9*Math.pow(rnd(),9.0);
+    att[i*3+1] = 0.42 + 0.95*Math.pow(rnd(),2.2);
+    att[i*3+2] = rnd();
+    i++;
+  }
+
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos.subarray(0,i*3),3));
+  g.setAttribute('aAtt',     new THREE.BufferAttribute(att.subarray(0,i*3),3));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,-1,-2), 15);
+  return g;
+}
+
+/* A cheap stand-in for volumetric scatter: a few hundred very large, very
+   faint sprites.  Without it the frame's midtones sit ~10x below the
+   reference — the reference's median pixel is not black, it is a wash.   */
+function buildHaze(){
+  const N = CFG.HAZE;
+  const pos=new Float32Array(N*3), att=new Float32Array(N*3);
+  let i=0, guard=0;
+  while (i<N && guard<N*70){
+    guard++;
+    const x = (rnd()*2-1)*4.6;
+    const y = -3.5 + rnd()*6.0;
+    const z = -5.6 + rnd()*6.2;
+    let e = Math.exp(-Math.pow(x/2.30,2)) *
+            Math.exp(-Math.pow((y+0.95)/2.25,2)) *
+            Math.exp(-Math.pow((z+2.0)/2.70,2));
+    e *= 0.32 + 1.05*Math.exp(-Math.pow(Math.max(0,y+0.25)/1.6,2));
+    e *= 1.0 + 2.2*Math.exp(-Math.pow((y+2.30)/0.95,2))*Math.exp(-Math.pow(x/2.10,2));
+    {
+      const phi=Math.atan2(y,x), R=outlineR(phi), rr=Math.hypot(x,y)/R;
+      e *= 1.0 - 0.50*Math.exp(-Math.pow((rr-1.0)/0.26,2))*Math.exp(-Math.pow(Math.max(0,-y-1.3)/1.5,2));
+    }
+    const n = fbm(x*0.55-4.0, y*0.55+7.0, z*0.45-2.0);
+    const k = Math.pow(Math.max(0.02, n-0.26)/0.74, 1.1);
+    if (rnd() > Math.min(1, e*k*2.6)) continue;
+    if (hiddenByBust(x,y,z)) continue;
+    pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+    att[i*3]   = 0.16 + 1.0*k*e;
+    att[i*3+1] = 46.0 + 105.0*Math.pow(rnd(),1.5);
+    att[i*3+2] = rnd();
+    i++;
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos.subarray(0,i*3),3));
+  g.setAttribute('aAtt',     new THREE.BufferAttribute(att.subarray(0,i*3),3));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,-1,-2), 14);
+  return g;
+}
+
+/* =========================================================== renderer   */
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:false, alpha:false,
+  powerPreference:'high-performance', stencil:false, depth:false});
+renderer.setClearColor(0x000000, 1);
+renderer.autoClear = false;
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(CFG.FOV, 1, 0.02, 90);
+
+const bust = new THREE.Group();
+scene.add(bust);
+
+/* ------------------------------------------------------------ shaders  */
+const SHELL_VS = `
+attribute vec3 aNormal;
+attribute float aSeed;
+attribute float aGain;
+uniform float uSize, uCamD, uGain, uTime, uPix, uAlpha, uPlateau, uRimP;
+uniform vec3  uLightV;             /* torch position, view space        */
+uniform float uTorch, uTorchR;     /* strength, falloff radius          */
+uniform vec2  uCur;                /* cursor, aspect-corrected NDC      */
+uniform float uCurR, uPull, uAspect;
+varying float vI;
+varying float vHot;
+void main(){
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vec3 N  = normalize(normalMatrix * aNormal);
+
+  /* ---- how close is this mote to the cursor, on screen? ---- */
+  vec4 cp0 = projectionMatrix * mv;
+  vec2 nd0 = cp0.xy / max(1e-4, cp0.w);
+  float dc = length((nd0 - uCur) * vec2(uAspect, 1.0));
+  float w  = exp(-(dc*dc)/(2.0*uCurR*uCurR));
+
+  /* ---- extraction: motes near the cursor lift off the shell along
+     their own normal and drift toward the lens.  Everything here is a
+     function of time and the pointer, so a seeked frame still matches. */
+  float jit = fract(aSeed*311.7);
+  float amp = uPull * w * (0.30 + 1.45*jit)
+            * (0.72 + 0.38*sin(uTime*2.3 + aSeed*61.0));
+  mv.xyz += normalize(N*0.62 + vec3(0.0,0.0,1.0)*0.85) * amp;
+
+  vec3 V  = normalize(-mv.xyz);
+  float nv = dot(N, V);
+  float rim  = clamp(1.0 - abs(nv), 0.0, 1.0);
+  float face = mix(0.035, 1.0, smoothstep(-0.055, 0.095, nv));
+  /* a modest bump on a plateau: the screen-space density spike at the
+     limb is already doing most of the work                              */
+  float I = (pow(rim, uRimP) + uPlateau) * face * aGain;
+  /* a perfectly even lattice reads as a wireframe; the reference's motes
+     vary a lot point to point, and that scatter is most of what makes it
+     look scanned rather than drawn                                       */
+  float v = fract(aSeed*97.31);
+  I *= 0.30 + 1.55*v*v;
+  /* slow per-point shimmer so the shell breathes instead of sitting     */
+  I *= 0.78 + 0.42 * (0.5 + 0.5*sin(uTime*0.85 + aSeed*43.7));
+
+  /* ---- torch: a real lambert key that rakes the face.  The interior of
+     the shell is otherwise almost black, so this is the only thing that
+     ever shows the brow, nose and cheek.                                */
+  vec3 Lv = uLightV - mv.xyz;
+  float dl = length(Lv);
+  float lam = max(0.0, dot(N, Lv/max(dl,1e-4)));
+  float att = 1.0 / (1.0 + (dl*dl)/(uTorchR*uTorchR));
+  I += uTorch * aGain * lam*lam * att * (0.45 + 0.9*v);
+
+  /* the extracted motes burn brighter as they come loose */
+  I *= 1.0 + 2.1*w*uPull*6.0;
+
+  float depth = max(0.05, -mv.z);
+  gl_Position = projectionMatrix * mv;
+  /* fat blunt motes on the comb, fine ones across the face: one size for
+     both makes the rim wiry or the interior polka-dotted, never neither  */
+  gl_PointSize = uSize * (0.44 + 0.86*rim*rim + 1.1*w*uPull*6.0)
+               * uPix * pow(clamp(uCamD/depth, 0.05, 9.0), 0.35);
+  vI = I * uGain * uAlpha;
+  vHot = w*uPull*6.0;
+}`;
+
+const SHELL_FS = `
+precision highp float;
+uniform vec3 uColA, uColB;
+varying float vI;
+varying float vHot;
+void main(){
+  vec2 d = gl_PointCoord - 0.5;
+  float r2 = dot(d,d)*4.0;
+  /* compact support: a plain gaussian leaves the sprite quad's corners
+     lit, which reads as literal squares once the sprites get big         */
+  float a = pow(max(0.0, 1.0 - r2), 1.9);
+  float e = vI * a;
+  vec3 c = mix(uColA, uColB, clamp(e*2.4, 0.0, 1.0));
+  c = mix(c, vec3(0.72,0.93,1.0), clamp(vHot*0.55, 0.0, 0.65));
+  gl_FragColor = vec4(c * e, 1.0);
+}`;
+
+const DUST_VS = `
+attribute vec3 aAtt;
+uniform float uSize, uCamD, uGain, uTime, uPix, uAlpha;
+uniform vec2  uCur;
+uniform float uCurR, uPull, uAspect, uTorch, uTorchW;
+varying float vI;
+varying float vS;
+varying float vHot;
+void main(){
+  vec3 p = position;
+  /* the field breathes very slowly; nothing here integrates, so the
+     whole page is a pure function of time and can be seeked            */
+  float s = aAtt.z;
+  p.x += 0.075*sin(uTime*0.13 + s*39.0);
+  p.y += 0.062*sin(uTime*0.11 + s*57.0 + 1.7);
+  p.z += 0.075*sin(uTime*0.09 + s*23.0 + 3.1);
+  vec4 mv = modelViewMatrix * vec4(p, 1.0);
+
+  /* the cloud gets dragged toward the cursor rather than pushed off a
+     surface — a slow inward swirl, so it reads as being gathered up    */
+  vec4 cp0 = projectionMatrix * mv;
+  vec2 nd0 = cp0.xy / max(1e-4, cp0.w);
+  vec2 off = (uCur - nd0) * vec2(uAspect, 1.0);
+  float dc = length(off);
+  float w  = exp(-(dc*dc)/(2.0*uCurR*uCurR));
+  float wt = exp(-(dc*dc)/(2.0*uTorchW*uTorchW));   /* wider: the pool  */
+  vec2 tang = vec2(-off.y, off.x);
+  float k = uPull * w * (0.35 + 1.2*fract(s*173.1));
+  mv.xy += (off*0.55 + tang*1.25) * k;
+  mv.z  += k*0.40;
+
+  float depth = max(0.05, -mv.z);
+  gl_Position = projectionMatrix * mv;
+  gl_PointSize = uSize * aAtt.y * (1.0 + 0.45*w*uPull*6.0)
+               * uPix * pow(clamp(uCamD/depth, 0.05, 9.0), 0.55);
+  float tw = 0.72 + 0.46*sin(uTime*0.9 + s*61.0);
+  float hot = w*uPull*6.0;
+  vI = aAtt.x * uGain * uAlpha * tw * (1.0 + 0.95*hot + uTorch*wt);
+  vS = aAtt.y;
+  vHot = hot;
+}`;
+
+const DUST_FS = `
+precision highp float;
+uniform vec3 uColA, uColB;
+varying float vI;
+varying float vS;
+varying float vHot;
+void main(){
+  vec2 d = gl_PointCoord - 0.5;
+  float r2 = dot(d,d)*4.0;
+  float soft = mix(2.6, 1.35, clamp((vS-0.6)/1.6, 0.0, 1.0));
+  float a = pow(max(0.0, 1.0 - r2), soft);
+  float e = vI * a;
+  vec3 c = mix(uColA, uColB, clamp(e*0.85, 0.0, 1.0));
+  c = mix(c, vec3(0.66,0.90,1.0), clamp(vHot*0.45, 0.0, 0.55));
+  gl_FragColor = vec4(c * e, 1.0);
+}`;
+
+/* radial smear used only while the dolly is moving fast ---------------- */
+const STREAK_VS = `
+attribute float aEnd;
+attribute vec3 aAtt;
+uniform float uCamD, uGain, uStreak, uAlpha, uTime;
+varying float vI;
+void main(){
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vec4 cp = projectionMatrix * mv;
+  vec2 ndc = cp.xy / max(1e-4, cp.w);
+  /* pull the tail toward the frame centre; a dolly-out rakes outward    */
+  float k = 1.0 + uStreak * aEnd;
+  ndc *= k;
+  cp.xy = ndc * cp.w;
+  gl_Position = cp;
+  float fade = 1.0 / (1.0 + abs(uStreak)*3.0);
+  vI = aAtt.x * uGain * uAlpha * fade * (1.0 - 0.75*aEnd);
+}`;
+const STREAK_FS = `
+precision highp float;
+uniform vec3 uColA;
+varying float vI;
+void main(){ gl_FragColor = vec4(uColA * vI, 1.0); }`;
+
+function shellMat(colA, colB, size, gain){
+  return new THREE.ShaderMaterial({
+    vertexShader:SHELL_VS, fragmentShader:SHELL_FS,
+    uniforms:{ uSize:{value:size}, uCamD:{value:8}, uGain:{value:gain}, uTime:{value:0},
+               uPix:{value:1}, uAlpha:{value:1}, uPlateau:{value:0.036}, uRimP:{value:4.2},
+               uLightV:{value:new THREE.Vector3(0,0,6)}, uTorch:{value:0}, uTorchR:{value:3.4},
+               uCur:{value:new THREE.Vector2(0,0)}, uCurR:{value:0.16}, uPull:{value:0},
+               uAspect:{value:1.6},
+               uColA:{value:new THREE.Color(colA)}, uColB:{value:new THREE.Color(colB)} },
+    transparent:true, blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false
+  });
+}
+
+const headMat = shellMat(0x27466a, 0x33c7ff, CFG.PT_HEAD, CFG.GAIN_HEAD);
+const bodyMat = shellMat(0x24425f, 0x33c2ff, CFG.PT_BODY, CFG.GAIN_BODY);
+bodyMat.uniforms.uPlateau.value = 0.058;
+bodyMat.uniforms.uRimP.value = 2.2;
+const dustMat = new THREE.ShaderMaterial({
+  vertexShader:DUST_VS, fragmentShader:DUST_FS,
+  uniforms:{ uSize:{value:CFG.PT_DUST}, uCamD:{value:8}, uGain:{value:CFG.GAIN_DUST},
+             uTime:{value:0}, uPix:{value:1}, uAlpha:{value:1},
+             uCur:{value:new THREE.Vector2(0,0)}, uCurR:{value:0.20}, uPull:{value:0},
+             uAspect:{value:1.6}, uTorch:{value:0}, uTorchW:{value:0.34},
+             uColA:{value:new THREE.Color(0x0a2f78)}, uColB:{value:new THREE.Color(0x9fddff)} },
+  transparent:true, blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false
+});
+
+const headGeo = buildHead();
+const bodyGeo = buildBody();
+const dustGeo = buildDust();
+
+const headPts = new THREE.Points(headGeo, headMat);
+const bodyPts = new THREE.Points(bodyGeo, bodyMat);
+const dustPts = new THREE.Points(dustGeo, dustMat);
+headPts.frustumCulled = bodyPts.frustumCulled = dustPts.frustumCulled = false;
+bust.add(headPts); bust.add(bodyPts);
+scene.add(dustPts);
+
+const hazeMat = new THREE.ShaderMaterial({
+  vertexShader:DUST_VS, fragmentShader:DUST_FS,
+  uniforms:{ uSize:{value:1.0}, uCamD:{value:8}, uGain:{value:CFG.GAIN_HAZE},
+             uTime:{value:0}, uPix:{value:1}, uAlpha:{value:1},
+             uColA:{value:new THREE.Color(0x061c52)}, uColB:{value:new THREE.Color(0x2f9adf)} },
+  transparent:true, blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false
+});
+const hazePts = new THREE.Points(buildHaze(), hazeMat);
+hazePts.frustumCulled = false;
+scene.add(hazePts);
+
+/* streak geometry: every Nth dust mote becomes a short radial line ----- */
+function streakGeo(geo, stride){
+  const src = geo.getAttribute('position'), sa = geo.getAttribute('aAtt');
+  const n = Math.floor(src.count/stride);
+  const pos = new Float32Array(n*6), end = new Float32Array(n*2), att = new Float32Array(n*6);
+  for (let i=0;i<n;i++){
+    const j = i*stride;
+    for (let k=0;k<2;k++){
+      pos[i*6+k*3+0]=src.getX(j); pos[i*6+k*3+1]=src.getY(j); pos[i*6+k*3+2]=src.getZ(j);
+      att[i*6+k*3+0]=sa.getX(j);  att[i*6+k*3+1]=sa.getY(j);  att[i*6+k*3+2]=sa.getZ(j);
+      end[i*2+k] = k;
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aAtt',     new THREE.BufferAttribute(att,3));
+  g.setAttribute('aEnd',     new THREE.BufferAttribute(end,1));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,-1,-2), 14);
+  return g;
+}
+function streakMat(col, gain){
+  return new THREE.ShaderMaterial({
+    vertexShader:STREAK_VS, fragmentShader:STREAK_FS,
+    uniforms:{ uCamD:{value:8}, uGain:{value:gain}, uStreak:{value:0}, uAlpha:{value:1},
+               uTime:{value:0}, uColA:{value:new THREE.Color(col)} },
+    transparent:true, blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false
+  });
+}
+const dustStreakMat = streakMat(0x2f9ce0, 0.15);
+const dustStreaks = new THREE.LineSegments(streakGeo(dustGeo,4), dustStreakMat);
+dustStreaks.frustumCulled = false; dustStreaks.visible = false;
+scene.add(dustStreaks);
+
+/* head shell smear: a sparse subset, otherwise the frame floods -------- */
+const headStreakGeoSrc = (function(){
+  const src = headGeo.getAttribute('position');
+  const n = src.count;
+  const keep = [];
+  for (let i=0;i<n;i+=5) keep.push(i);
+  const pos=new Float32Array(keep.length*3), att=new Float32Array(keep.length*3);
+  for (let i=0;i<keep.length;i++){
+    const j=keep[i];
+    pos[i*3]=src.getX(j); pos[i*3+1]=src.getY(j); pos[i*3+2]=src.getZ(j);
+    att[i*3]=1; att[i*3+1]=1; att[i*3+2]=0;
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aAtt',     new THREE.BufferAttribute(att,3));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,0,0), 4);
+  return g;
+})();
+const headStreakMat = streakMat(0x35b6f0, 0.085);
+const headStreaks = new THREE.LineSegments(streakGeo(headStreakGeoSrc,1), headStreakMat);
+headStreaks.frustumCulled = false; headStreaks.visible = false;
+bust.add(headStreaks);
+
+/* ======================================================== post chain    */
+const quadGeo = new THREE.BufferGeometry();
+quadGeo.setAttribute('position', new THREE.Float32BufferAttribute([-1,-1,0, 3,-1,0, -1,3,0],3));
+quadGeo.setAttribute('uv',       new THREE.Float32BufferAttribute([0,0, 2,0, 0,2],2));
+const quadCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const quadScene = new THREE.Scene();
+const quadMesh = new THREE.Mesh(quadGeo, null);
+quadMesh.frustumCulled = false;
+quadScene.add(quadMesh);
+function blit(mat, target){
+  quadMesh.material = mat;
+  renderer.setRenderTarget(target || null);
+  renderer.clear(true,false,false);
+  renderer.render(quadScene, quadCam);
+}
+
+const rtOpts = { type: THREE.HalfFloatType, format: THREE.RGBAFormat,
+  minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer:false, stencilBuffer:false };
+let rtScene = new THREE.WebGLRenderTarget(2,2,rtOpts);
+const LEVELS = 5;
+let rtBright = new THREE.WebGLRenderTarget(2,2,rtOpts);
+let rtA = [], rtB = [];
+for (let i=0;i<LEVELS;i++){ rtA.push(new THREE.WebGLRenderTarget(2,2,rtOpts));
+                            rtB.push(new THREE.WebGLRenderTarget(2,2,rtOpts)); }
+
+const VS_QUAD = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position,1.0); }`;
+
+const brightMat = new THREE.ShaderMaterial({
+  vertexShader:VS_QUAD, uniforms:{ tDiffuse:{value:null}, uThresh:{value:CFG.BLOOM_THRESH} },
+  fragmentShader:`
+  precision highp float; varying vec2 vUv;
+  uniform sampler2D tDiffuse; uniform float uThresh;
+  void main(){
+    vec3 c = max(texture2D(tDiffuse, vUv).rgb, 0.0);
+    c = min(c, vec3(64.0));
+    float l = max(max(c.r,c.g), c.b);
+    float k = clamp(max(l-uThresh, 0.0)/max(l, 1e-4), 0.0, 1.0);
+    gl_FragColor = vec4(c*k, 1.0);
+  }`,
+  depthTest:false, depthWrite:false
+});
+
+const blurMat = new THREE.ShaderMaterial({
+  vertexShader:VS_QUAD,
+  uniforms:{ tDiffuse:{value:null}, uDir:{value:new THREE.Vector2(1,0)}, uTexel:{value:new THREE.Vector2()} },
+  fragmentShader:`
+  precision highp float; varying vec2 vUv;
+  uniform sampler2D tDiffuse; uniform vec2 uDir, uTexel;
+  void main(){
+    vec2 o = uDir*uTexel;
+    vec3 s = texture2D(tDiffuse, vUv).rgb*0.2270270270;
+    s += (texture2D(tDiffuse, vUv+o*1.3846153846).rgb + texture2D(tDiffuse, vUv-o*1.3846153846).rgb)*0.3162162162;
+    s += (texture2D(tDiffuse, vUv+o*3.2307692308).rgb + texture2D(tDiffuse, vUv-o*3.2307692308).rgb)*0.0702702703;
+    gl_FragColor = vec4(s,1.0);
+  }`,
+  depthTest:false, depthWrite:false
+});
+
+const compMat = new THREE.ShaderMaterial({
+  vertexShader:VS_QUAD,
+  uniforms:{
+    tScene:{value:null}, tB0:{value:null}, tB1:{value:null}, tB2:{value:null},
+    tB3:{value:null}, tB4:{value:null},
+    uStrength:{value:CFG.BLOOM_STRENGTH}, uRes:{value:new THREE.Vector2()}, uTime:{value:0},
+    uAmb:{value:CFG.AMBIENT}
+  },
+  fragmentShader:`
+  precision highp float; varying vec2 vUv;
+  uniform sampler2D tScene, tB0, tB1, tB2, tB3, tB4;
+  uniform float uStrength, uTime, uAmb; uniform vec2 uRes;
+  vec3 aces(vec3 x){
+    const float a=2.51,b=0.03,c=2.43,d=0.59,e=0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0.0, 1.0);
+  }
+  float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+  void main(){
+    vec3 base = max(texture2D(tScene, vUv).rgb, 0.0);
+    vec3 bl = texture2D(tB0, vUv).rgb*0.10
+            + texture2D(tB1, vUv).rgb*0.22
+            + texture2D(tB2, vUv).rgb*0.44
+            + texture2D(tB3, vUv).rgb*0.86
+            + texture2D(tB4, vUv).rgb*1.30;
+    vec3 col = base + max(bl, 0.0)*uStrength;
+    col = aces(col*1.06);
+    col = pow(max(col, 0.0), vec3(1.0/2.2));
+    /* atmosphere: the reference's dark quartile is not black, it is a thin
+       blue wash over the lower middle of the frame.  Adding it in display
+       space keeps it a couple of levels instead of a milky floor         */
+    vec2 q = (vUv - vec2(0.5, 0.40)) * vec2(1.02, 1.38);
+    col += vec3(0.004, 0.013, 0.034) * uAmb * exp(-dot(q,q)*2.7);
+    /* grain lives in display space: adding it to a near-zero linear value
+       and THEN gamma-encoding turns 0.006 into 24/255 of milky floor      */
+    float g = hash(gl_FragCoord.xy + fract(uTime)*137.0) - 0.5;
+    col = clamp(col*(1.0 + g*0.055) + g*0.010, 0.0, 1.0);
+    gl_FragColor = vec4(col, 1.0);
+  }`,
+  depthTest:false, depthWrite:false
+});
+
+/* ============================================================== layout  */
+let W=1, H=1, DPR=1;
+let camDist = 8;
+function layout(){
+  W = window.innerWidth; H = window.innerHeight;
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  renderer.setPixelRatio(DPR);
+  renderer.setSize(W, H, false);
+  camera.aspect = W/H;
+
+  /* the bust is keyed to viewport height so the composition holds — but
+     capped against width, or a portrait phone gets a head wider than the
+     screen                                                              */
+  const half = Math.tan(THREE.MathUtils.degToRad(CFG.FOV)/2);
+  const fit = Math.min(1, (W*1.46)/H);
+  camDist = 1.0 / (CFG.HEAD_HALF_W * fit * 2 * half);
+  camera.updateProjectionMatrix();
+
+  /* vertical placement: put the head's centre at HEAD_CY of the frame   */
+  const yOff = (CFG.HEAD_CY - 0.5) * 2 * half * camDist;
+  camera.position.set(0, yOff, camDist);
+  camera.lookAt(0, yOff, 0);
+
+  const w = Math.max(2, Math.round(W*DPR)), h = Math.max(2, Math.round(H*DPR));
+  rtScene.setSize(w,h);
+  rtBright.setSize(Math.max(2,w>>1), Math.max(2,h>>1));
+  for (let i=0;i<LEVELS;i++){
+    const s = 1 << (i+1);
+    rtA[i].setSize(Math.max(2,Math.round(w/s)), Math.max(2,Math.round(h/s)));
+    rtB[i].setSize(Math.max(2,Math.round(w/s)), Math.max(2,Math.round(h/s)));
+  }
+  compMat.uniforms.uRes.value.set(w,h);
+  headMat.uniforms.uPix.value = DPR;
+  bodyMat.uniforms.uPix.value = DPR;
+  dustMat.uniforms.uPix.value = DPR;
+  hazeMat.uniforms.uPix.value = DPR;
+}
+window.addEventListener('resize', layout);
+layout();
+
+/* =============================================================== loop   */
+/* pointer state.  tx/ty are the raw NDC target, x/y the eased follow, and
+   `on` ramps the torch and the extraction in and out so leaving the window
+   does not snap them off.                                                */
+const mouse = {x:0, y:0, tx:0, ty:0, on:0, onT:0, has:false};
+function setPointer(e){
+  mouse.tx = (e.clientX/window.innerWidth  - 0.5)*2;
+  mouse.ty = (e.clientY/window.innerHeight - 0.5)*2;
+  mouse.onT = 1; mouse.has = true;
+}
+window.addEventListener('pointermove', setPointer, {passive:true});
+window.addEventListener('pointerdown', setPointer, {passive:true});
+window.addEventListener('pointerleave', ()=>{ mouse.onT = 0; });
+window.addEventListener('blur', ()=>{ mouse.onT = 0; });
+
+let t0 = performance.now()/1000;
+let seekT = null;
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const _lw = new THREE.Vector3(), _lv = new THREE.Vector3();
+
+function introDist(t){
+  const e = Math.exp(-t/CFG.INTRO_TAU);
+  const k = 1 - CFG.INTRO_A*e;
+  return camDist * Math.max(0.006, k);
+}
+
+function frame(tRaw){
+  const t = REDUCED ? Math.max(tRaw, CFG.INTRO_LEN) : tRaw;
+  const half = Math.tan(THREE.MathUtils.degToRad(CFG.FOV)/2);
+  const yOff = (CFG.HEAD_CY - 0.5) * 2 * half * camDist;
+
+  const d = introDist(t);
+  /* rate of the dolly, in log space — zero at rest, big mid-throw       */
+  const dd = (CFG.INTRO_A/CFG.INTRO_TAU)*Math.exp(-t/CFG.INTRO_TAU) / Math.max(0.02, 1 - CFG.INTRO_A*Math.exp(-t/CFG.INTRO_TAU));
+  const streak = Math.min(1.4, dd*0.075);
+
+  const settle = Math.min(1, Math.max(0, (t-0.9)/1.4));
+  const now = performance.now()/1000;
+  const dt  = Math.min(0.05, Math.max(0.001, now - (frame._last || now - 1/60)));
+  frame._last = now;
+  const ease = 1 - Math.pow(0.0015, dt);          /* ~frame-rate free    */
+  mouse.x += (mouse.tx - mouse.x)*ease;
+  mouse.y += (mouse.ty - mouse.y)*ease;
+  mouse.on += (mouse.onT - mouse.on)*(1 - Math.pow(0.02, dt));
+
+  /* the pointer also nudges the camera a little, so the parallax between
+     the bust and the cloud is a real depth cue and not just a spin       */
+  camera.position.set(mouse.x*0.30*settle, yOff - mouse.y*0.18*settle, d);
+  camera.lookAt(mouse.x*0.06*settle, yOff, 0);
+
+  bust.rotation.y = Math.sin(t*0.11)*0.0035 + mouse.x*0.150*settle;
+  bust.rotation.x = Math.sin(t*0.09)*0.0025 - mouse.y*0.082*settle;
+
+  const alpha = Math.min(1, t/0.30);
+  for (const m of [headMat, bodyMat, dustMat, hazeMat]){
+    m.uniforms.uCamD.value = camDist;
+    m.uniforms.uTime.value = t;
+    m.uniforms.uAlpha.value = alpha;
+  }
+
+  /* ---- torch + extraction ---- */
+  /* the torch is a lighting change and stays; the extraction is motion,
+     so it is dialled right down when the visitor asked for less of it   */
+  const live = mouse.on * settle * alpha;
+  const pullK = REDUCED ? 0.15 : 1.0;
+  /* the torch hangs a little off-axis and in front of the bust; a light
+     sitting on the camera axis cannot sculpt anything                    */
+  _lw.set(mouse.x*2.9, yOff*0.35 - mouse.y*2.3 + 0.15, 2.35);
+  _lv.copy(_lw).applyMatrix4(camera.matrixWorldInverse);
+  const curX = mouse.x, curY = -mouse.y;
+  for (const m of [headMat, bodyMat]){
+    m.uniforms.uLightV.value.copy(_lv);
+    m.uniforms.uTorch.value = CFG.TORCH * live;
+    m.uniforms.uTorchR.value = CFG.TORCH_R;
+    m.uniforms.uCur.value.set(curX, curY);
+    m.uniforms.uCurR.value = CFG.PULL_R;
+    m.uniforms.uPull.value = CFG.PULL * live * pullK;
+    m.uniforms.uAspect.value = W/H;
+  }
+  dustMat.uniforms.uCur.value.set(curX, curY);
+  dustMat.uniforms.uCurR.value = CFG.PULL_R*1.35;
+  dustMat.uniforms.uPull.value = CFG.PULL_DUST * live * pullK;
+  dustMat.uniforms.uAspect.value = W/H;
+  dustMat.uniforms.uTorch.value = CFG.TORCH_DUST * live;
+  dustMat.uniforms.uTorchW.value = CFG.TORCH_DUST_W;
+  /* pulling the camera back packs more of the cloud into the frame, so
+     hold the exposure down while the dolly is hot                        */
+  const hot = 1/(1 + streak*1.6);
+  headMat.uniforms.uGain.value = CFG.GAIN_HEAD*(0.80 + 0.20*hot);
+  bodyMat.uniforms.uGain.value = CFG.GAIN_BODY*(0.80 + 0.20*hot);
+  dustMat.uniforms.uGain.value = CFG.GAIN_DUST*hot;
+  hazeMat.uniforms.uGain.value = CFG.GAIN_HAZE*hot;
+
+  const showStreak = streak > 0.012;
+  dustStreaks.visible = headStreaks.visible = showStreak;
+  if (showStreak){
+    dustStreakMat.uniforms.uStreak.value = streak;
+    headStreakMat.uniforms.uStreak.value = streak;
+    dustStreakMat.uniforms.uAlpha.value = alpha;
+    headStreakMat.uniforms.uAlpha.value = alpha;
+  }
+
+  /* ---- draw ---- */
+  renderer.setRenderTarget(rtScene);
+  renderer.clear(true,false,false);
+  renderer.render(scene, camera);
+
+  brightMat.uniforms.tDiffuse.value = rtScene.texture;
+  blit(brightMat, rtBright);
+
+  let src = rtBright;
+  for (let i=0;i<LEVELS;i++){
+    const w = rtA[i].width, h = rtA[i].height;
+    blurMat.uniforms.tDiffuse.value = src.texture;
+    blurMat.uniforms.uDir.value.set(1,0);
+    blurMat.uniforms.uTexel.value.set(1/w, 1/h);
+    blit(blurMat, rtB[i]);
+    blurMat.uniforms.tDiffuse.value = rtB[i].texture;
+    blurMat.uniforms.uDir.value.set(0,1);
+    blit(blurMat, rtA[i]);
+    src = rtA[i];
+  }
+
+  compMat.uniforms.tScene.value = rtScene.texture;
+  compMat.uniforms.tB0.value = rtA[0].texture;
+  compMat.uniforms.tB1.value = rtA[1].texture;
+  compMat.uniforms.tB2.value = rtA[2].texture;
+  compMat.uniforms.tB3.value = rtA[3].texture;
+  compMat.uniforms.tB4.value = rtA[4].texture;
+  compMat.uniforms.uTime.value = t;
+  blit(compMat, null);
+}
+
+function tick(){
+  requestAnimationFrame(tick);
+  if (seekT !== null) return;
+  frame(performance.now()/1000 - t0);
+}
+tick();
+
+window.__seek = function(t){ seekT = t; frame(t); };
+window.__cfg  = CFG;
+</script>
+</body>
+</html>

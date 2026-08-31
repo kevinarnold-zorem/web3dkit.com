@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Isometric Motion Grid — Testimonials</title>
+<style>
+  :root{
+    --bg:#08090A;
+    --rule:rgba(226,232,240,.085);
+    --fig:rgba(226,232,240,.26);
+    --title:rgba(240,243,248,.94);
+    --body:rgba(226,232,240,.44);
+    --line:rgba(226,232,240,.11);
+    --chip:rgba(226,232,240,.055);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);
+    color:var(--body);
+    font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    font-feature-settings:"cv05" 1,"ss03" 1;
+  }
+  .mono{
+    font-family:ui-monospace,SFMono-Regular,Menlo,"Roboto Mono",monospace;
+    font-size:12.5px;letter-spacing:.2em;color:var(--fig);
+    text-transform:uppercase;
+  }
+  .art{display:block}
+  .art svg{display:block;width:100%;height:100%;overflow:visible}
+  .rule{
+    position:absolute;top:0;bottom:0;width:1px;
+    background:linear-gradient(to bottom,transparent 0,var(--rule) 26px,var(--rule) 93%,transparent 100%);
+    pointer-events:none;
+  }
+  .hr{height:1px;background:var(--line);border:0}
+  body{display:flex;align-items:center;min-height:100vh}
+  .wrap{width:100%;max-width:1360px;margin:0 auto;padding:62px 56px 66px}
+  .head{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:40px;
+    padding-bottom:30px;border-bottom:1px solid var(--line);margin-bottom:0;
+  }
+  .head h2{
+    font-size:clamp(26px,2.7vw,34px);font-weight:600;letter-spacing:-.028em;
+    color:var(--title);line-height:1.12;max-width:19ch;text-wrap:balance;
+  }
+  .head .aside{display:flex;flex-direction:column;gap:9px;text-align:right;flex:none}
+  .head .aside b{font-size:19px;font-weight:600;color:var(--title);letter-spacing:-.02em}
+  .grid{position:relative;display:grid;grid-template-columns:repeat(3,1fr)}
+  .card{padding:30px 40px 6px;position:relative}
+  .card:first-child{padding-left:0}
+  .card:last-child{padding-right:0}
+  .art{margin:14px 0 26px;height:224px}
+  blockquote{
+    font-size:16px;line-height:1.6;color:rgba(226,232,240,.72);
+    letter-spacing:-.008em;max-width:34ch;text-wrap:pretty;margin-bottom:24px;
+  }
+  .by{display:flex;align-items:center;gap:12px;padding-top:18px;border-top:1px solid var(--line)}
+  .by .ring{
+    width:26px;height:26px;border-radius:50%;flex:none;
+    border:1.5px solid rgba(226,232,240,.24);
+  }
+  .by .who{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .by .who b{font-size:13.5px;font-weight:600;color:var(--title);letter-spacing:-.01em}
+  .by .who span{font-size:12.5px;color:var(--body)}
+  .stars{margin-left:auto;display:flex;gap:4px;flex:none}
+  .stars i{width:5px;height:5px;border-radius:50%;background:rgba(226,232,240,.3)}
+  .stars i.off{background:rgba(226,232,240,.11)}
+  @media (max-width:960px){
+    .grid{grid-template-columns:1fr}
+    .rule{display:none}
+    .card,.card:first-child,.card:last-child{padding:26px 0 10px}
+    .wrap{padding:48px 26px 56px}
+    .head{flex-direction:column;align-items:flex-start}
+    .head .aside{text-align:left}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <h2>The drawing survives the handoff.</h2>
+    <div class="aside"><b>Fig T &mdash; 03</b><span class="mono">Field reports</span></div>
+  </header>
+  <section class="grid">
+    <i class="rule" style="left:33.3333%"></i>
+    <i class="rule" style="left:66.6667%"></i>
+    <figure class="card" data-orbit>
+      <span class="mono">Fig T.1 &nbsp;/&nbsp; Review</span>
+      <div class="art" data-art data-view="-425 -415 800 700"></div>
+      <blockquote>We stopped redrawing the product for every deck. One file answers spec review, the store page and the manual.</blockquote>
+      <figcaption class="by">
+        <span class="ring"></span>
+        <span class="who"><b>Ilse Brandt</b><span>Hardware lead, Kestrel</span></span>
+        <span class="stars"><i></i><i></i><i></i><i></i><i></i></span>
+      </figcaption>
+    </figure>
+    <figure class="card" data-orbit>
+      <span class="mono">Fig T.2 &nbsp;/&nbsp; Rollout</span>
+      <div class="art" data-art data-view="-425 -415 800 700"></div>
+      <blockquote>Ten weeks of illustration turned into an afternoon. The parts move, so the reviewers finally trusted them.</blockquote>
+      <figcaption class="by">
+        <span class="ring"></span>
+        <span class="who"><b>Marco Alvear</b><span>Design director, Northbay</span></span>
+        <span class="stars"><i></i><i></i><i></i><i></i><i></i></span>
+      </figcaption>
+    </figure>
+    <figure class="card" data-orbit>
+      <span class="mono">Fig T.3 &nbsp;/&nbsp; Support</span>
+      <div class="art" data-art data-view="-425 -415 800 700"></div>
+      <blockquote>Support tickets dropped once the docs used the same scenes as the console. People recognise the shape.</blockquote>
+      <figcaption class="by">
+        <span class="ring"></span>
+        <span class="who"><b>Priya Raghavan</b><span>Head of ops, Tessellate</span></span>
+        <span class="stars"><i></i><i></i><i></i><i></i><i class="off"></i></span>
+      </figcaption>
+    </figure>
+  </section>
+</div>
+<script>
+/* ---------------------------------------------------------------
+   isometric toolkit
+   world: x -> screen down-right, z -> screen down-left, y -> up
+--------------------------------------------------------------- */
+const SV = 'http://www.w3.org/2000/svg';
+
+/* --- orthographic camera: azimuth + elevation, live -----------
+   at az=45deg / el=35.264deg this is exactly the classic 2:1 isometric
+   the artwork is authored in, so the resting view is the true isometric. */
+const S = 1.224745;                       // overall scale
+const AZ0 = Math.PI/4, EL0 = Math.asin(1/Math.sqrt(3));
+let ca = Math.cos(AZ0), sa = Math.sin(AZ0), T = S*Math.sin(EL0), V = S*Math.cos(EL0);
+function setCam(az, el){
+  ca = Math.cos(az); sa = Math.sin(az);
+  T = S*Math.sin(el); V = S*Math.cos(el);
+}
+
+const px = (x,z)=> S*(x*ca - z*sa);
+const py = (x,y,z)=> T*(x*sa + z*ca) - V*y;
+const P  = (x,y,z)=> [px(x,z), py(x,y,z)];
+/* screen basis vectors of the world axes */
+const exv = ()=> [S*ca,  T*sa];
+const ezv = ()=> [-S*sa, T*ca];
+
+/* --- monotone remap: every colour collapses to a dark tonal band,
+       every shape keeps a hairline edge (wireframe idiom) --------- */
+const VARS={'var(--white)':'#F4F5F2','var(--ink)':'#17332F','var(--red)':'#E1512E',
+            'var(--dark)':'#163337','var(--green)':'#96B99D','var(--beige)':'#D7D4C9'};
+const EDGE='rgba(226,232,240,0.34)', EDGE2='rgba(226,232,240,0.23)';
+function lumOf(c){
+  c = VARS[c] || c;
+  if (typeof c !== 'string' || c[0] !== '#') return 128;
+  let h = c.slice(1);
+  if (h.length === 3) h = h.split('').map(x=>x+x).join('');
+  return 0.299*parseInt(h.slice(0,2),16) + 0.587*parseInt(h.slice(2,4),16) + 0.114*parseInt(h.slice(4,6),16);
+}
+function mono(tag, a){
+  if (!a) return a;
+  if (a.filter){ a.opacity = 0; a.filter = null; return a; }   // soft shadows are dropped
+  if (tag === 'text'){ a.fill = 'rgba(226,232,240,0.40)'; return a; }
+  const tiny = ['r','rx','width','height'].some(k => a[k] !== undefined && Math.abs(parseFloat(a[k])) < 3);
+  const hadStroke = a.stroke && a.stroke !== 'none';
+  if (a.fill && a.fill !== 'none'){
+    if (String(a.fill).indexOf('url(') === 0){ a.opacity = 0; }
+    else {
+      const v = Math.round(10 + (lumOf(a.fill)/255) * (hadStroke ? 9 : 17));
+      a.fill = `rgb(${v},${v+1},${v+2})`;
+      if (!hadStroke){ a.stroke = EDGE2; a['stroke-width'] = tiny ? 0.022 : 2.2; }
+    }
+  }
+  if (hadStroke){
+    a.stroke = EDGE;
+    const w = parseFloat(a['stroke-width']);
+    if (!isNaN(w)) a['stroke-width'] = w < 1 ? w*0.75 : Math.max(2.0, Math.min(4.0, w*0.6));
+  }
+  return a;
+}
+
+function el(tag, attrs, kids){
+  const n = document.createElementNS(SV, tag);
+  attrs = mono(tag, attrs);
+  if (attrs) for (const k in attrs){
+    if (attrs[k] === null || attrs[k] === undefined) continue;
+    n.setAttribute(k, attrs[k]);
+  }
+  if (kids) (Array.isArray(kids)?kids:[kids]).forEach(c=>c && n.appendChild(c));
+  return n;
+}
+const g = (attrs, kids)=> el('g', attrs, kids);
+
+/* face transform matrices ------------------------------------- */
+// top face at height y : (u,v) -> world(u, y, v)
+const mTop = (y=0)=> {const a=exv(),b=ezv(); return `matrix(${a[0]},${a[1]},${b[0]},${b[1]},0,${-V*y})`;};
+const mFlat = ()=> {const a=exv(),b=ezv(); return `matrix(${a[0]},${a[1]},${b[0]},${b[1]},0,0)`;};
+// left face at z=const : (u,v) -> world(u, -v, z)
+const mLeft = (z)=> {const o=P(0,0,z),a=exv(); return `matrix(${a[0]},${a[1]},0,${V},${o[0]},${o[1]})`;};
+// right face at x=const : (u,v) -> world(x, -v, u)
+const mRight = (x)=> {const o=P(x,0,0),b=ezv(); return `matrix(${b[0]},${b[1]},0,${V},${o[0]},${o[1]})`;};
+
+/* shapes in the XZ plane, returned as arrays of [x,z] ---------- */
+function sRect(x0,z0,x1,z1){ return [[x0,z0],[x1,z0],[x1,z1],[x0,z1]]; }
+function sRRect(x0,z0,x1,z1,r,seg=16){
+  const pts=[], c=[[x1-r,z0+r,-Math.PI/2,0],[x1-r,z1-r,0,Math.PI/2],[x0+r,z1-r,Math.PI/2,Math.PI],[x0+r,z0+r,Math.PI,Math.PI*1.5]];
+  for(const [cx,cz,a0,a1] of c)
+    for(let i=0;i<=seg;i++){const a=a0+(a1-a0)*i/seg; pts.push([cx+Math.cos(a)*r, cz+Math.sin(a)*r]);}
+  return pts;
+}
+function sEllipse(cx,cz,rx,rz,seg=64){
+  const pts=[]; for(let i=0;i<seg;i++){const a=i/seg*Math.PI*2; pts.push([cx+Math.cos(a)*rx, cz+Math.sin(a)*rz]);}
+  return pts;
+}
+const dPath = pts => 'M'+pts.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L')+'Z';
+
+/* project a XZ shape onto screen at height y */
+const proj = (pts,y)=> pts.map(p=>P(p[0],y,p[1]));
+
+/* extruded solid: top polygon + near silhouette split L/R ------ */
+function prism(pts, y, h, o={}){
+  o = Object.assign({top:'var(--white)', left:'var(--green)', right:'var(--green)', stroke:'var(--ink)', sw:3.6, speckle:0}, o);
+  const Sp = proj(pts, y);
+  const n = Sp.length;
+  let imin=0, imax=0, iy=0;
+  Sp.forEach((s,i)=>{ if(s[0]<Sp[imin][0]||(s[0]===Sp[imin][0]&&s[1]>Sp[imin][1])) imin=i;
+                      if(s[0]>Sp[imax][0]||(s[0]===Sp[imax][0]&&s[1]>Sp[imax][1])) imax=i;
+                      if(s[1]>Sp[iy][1]) iy=i; });
+  const chain=(a,b)=>{const out=[];let i=a;for(let k=0;k<=n;k++){out.push(i); if(i===b)break; i=(i+1)%n;} return out;};
+  let near = chain(imin,imax);
+  if (!near.includes(iy)) near = chain(imax,imin);
+  const cutAt = near.indexOf(iy);
+  const A = near.slice(0, cutAt+1).map(i=>Sp[i]);
+  const B = near.slice(cutAt).map(i=>Sp[i]);
+  const band = c => 'M'+c.map(p=>p[0].toFixed(2)+' '+p[1].toFixed(2)).join('L')
+                 + 'L'+c.slice().reverse().map(p=>p[0].toFixed(2)+' '+(p[1]+h).toFixed(2)).join('L')+'Z';
+  const leftFirst = (A[0][0] <= B[B.length-1][0]);
+  const pL = band(leftFirst?A:B.slice().reverse());
+  const pR = band(leftFirst?B:A.slice().reverse());
+  return g(null, [
+    el('path',{d:pL, fill:o.left,  stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'}),
+    el('path',{d:pR, fill:o.right, stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'}),
+    el('path',{d:dPath(Sp), fill:o.top, stroke:o.stroke, 'stroke-width':o.sw, 'stroke-linejoin':'round'})
+  ]);
+}
+
+/* flat plate lying in the XZ plane (no extrusion) */
+function plate(pts, y, o={}){
+  return el('path',{d:dPath(proj(pts,y)), fill:o.fill||'var(--white)',
+                    stroke:o.stroke===null?null:(o.stroke||'var(--ink)'),
+                    'stroke-width':o.sw||3.6,'stroke-linejoin':'round'});
+}
+/* extruded rounded plate lying on the top plane */
+function pad(x0,z0,x1,z1,r,y,h,o){ return prism(sRRect(x0,z0,x1,z1,r), y, h, o); }
+/* arbitrary 3-D polygon */
+function poly3(pts, o={}){
+  const d = 'M'+pts.map(p=>{const q=P(p[0],p[1],p[2]); return q[0].toFixed(2)+' '+q[1].toFixed(2);}).join('L')+'Z';
+  return el('path',{d, fill:o.fill||'#FFF', stroke:o.stroke===null?null:(o.stroke||'var(--ink)'),
+                    'stroke-width':o.sw||3.6,'stroke-linejoin':'round'});
+}
+/* avatar mark — a ring, legible at hairline weight */
+function personGlyph(cx,cz,r,fill){
+  return el('circle',{cx, cy:cz, r:r*0.42, fill:'none', stroke:fill, 'stroke-width':r*0.30});
+}
+/* small 2x2 matrix mark */
+function logoPath(cx,cz,s){
+  const q=s*0.34, gp=s*0.10, out=[];
+  for(let i=0;i<2;i++) for(let j=0;j<2;j++){
+    const x=cx-q-gp/2+i*(q+gp), z=cz-q-gp/2+j*(q+gp);
+    out.push(dPath(sRRect(x,z,x+q,z+q,q*0.28)));
+  }
+  return out.join(' ');
+}
+/* grounding shadow under a footprint (kept for parity; mono() drops the blur) */
+function groundShadow(pts, dx, dy, o){
+  return el('path',{d:dPath(proj(pts,0).map(q=>[q[0]+dx,q[1]+dy])),
+                    fill:'#AEB2AA', opacity:(o&&o.opacity)||.4, filter:'url(#b40)'});
+}
+
+/* rail space: (a,b) where a runs along the screen horizontal and b
+   runs into the picture, so a row of parts can be spaced by eye and
+   still land on a straight, evenly-gapped line on screen.           */
+const RU = Math.SQRT1_2;
+const rail = pts => pts.map(([a,b])=>[(a+b)*RU, (b-a)*RU]);
+const mRail = (y=0)=> mTop(y) + ' rotate(-45)';
+const railP = (a,y,b)=> P((a+b)*RU, y, (b-a)*RU);
+
+/* named parts -------------------------------------------------
+   'ground' lies flat and carries everything; 'object' stands on it;
+   'float' hovers in its own clear screen region. Objects and floats
+   are laid out so no two of them ever share screen space.          */
+const part = (kind, name, attrs)=> g(Object.assign({'data-part': kind+':'+name}, attrs||null));
+/* a float is authored around the origin and placed by screen offset,
+   so its position in the frame never moves when the camera orbits.  */
+const floatAt = (name, sx, sy)=> part('float', name, {transform:`translate(${sx},${sy})`});
+
+/* ---------------- animation clock ---------------------------- */
+const TICKS = [];
+const BUILD = [];
+let BUILDING = 0;
+const onTick = f => TICKS[BUILDING].push(f);
+const easeIO = t => 0.5-0.5*Math.cos(Math.PI*Math.min(1,Math.max(0,t)));
+const wrap = (t,p)=> (t%p+p)%p;
+
+/* a curly quote mark, drawn on a top face in local (x,z) ------- */
+function quoteGlyph(cx, cz, s, fill){
+  const out = g();
+  [-1, 1].forEach(sgn=>{
+    const x = cx + sgn*s*0.60;
+    out.appendChild(el('circle',{cx:x, cy:cz, r:s*0.40, fill:'none', stroke:fill, 'stroke-width':s*0.22}));
+    out.appendChild(el('path',{d:`M${(x-s*0.34).toFixed(1)} ${(cz+s*0.34).toFixed(1)} q ${(s*0.06).toFixed(1)} ${(s*0.5).toFixed(1)} ${(s*0.5).toFixed(1)} ${(s*0.62).toFixed(1)}`,
+                               fill:'none', stroke:fill, 'stroke-width':s*0.2, 'stroke-linecap':'round'}));
+  });
+  return out;
+}
+
+/* a small plate parked in the free upper-left corner of a figure, so all
+   three figures carry the same silhouette above the deck ---------- */
+function parkedPlate(root, name, draw){
+  const P = floatAt(name, -278, -302); root.appendChild(P);
+  const w = g(); P.appendChild(w);
+  w.appendChild(pad(-92,-48, 92, 48, 22, 0, 14, {top:'#FBFBF7',left:'#E4E4DE',right:'#D8D8D2'}));
+  draw(g({transform:mTop(0)}, null), w);
+  return w;
+}
+
+/* the deck all three figures stand on -------------------------- */
+function testimonialDeck(root, top){
+  const BX=212, BZ=222, R=96, BH=42;
+  const GROUND = part('ground','deck'); root.appendChild(GROUND);
+  GROUND.appendChild(prism(sRRect(-BX,-BZ,BX,BZ,R), 0, BH, {top, left:'#FBFBFB', right:'#EFEFEF'}));
+  const deck = g({transform:mTop(0)}); GROUND.appendChild(deck);
+  return deck;
+}
+
+/* ============================================================== *
+ *  T.1 — the quote plate lifts off its own footprint
+ * ============================================================== */
+BUILD[0] = function(){
+  const root = cellG[0];
+  const deck = testimonialDeck(root, '#F3F3EF');
+
+  /* five rating marks, engraved flat across the front-left ------ */
+  const dots = [];
+  for(let i=0;i<5;i++){
+    const c = el('circle',{cx:-170+i*60, cy:150, r:20, fill:'none', stroke:'#141414','stroke-width':6});
+    deck.appendChild(c); dots.push(c);
+  }
+  deck.appendChild(el('path',{d:dPath(sRRect(120,80,190,150,32)),fill:'none',stroke:'#DADAD6','stroke-width':3.4}));
+
+  /* the quote plate, seated at the back, rising in place -------- */
+  const PLATE = part('object','quote'); root.appendChild(PLATE);
+  const pw = g(); PLATE.appendChild(pw);
+  const PY = 26;
+  pw.appendChild(pad(-178,-190, 116,-20, 34, PY, PY, {top:'#FBFBF7',left:'#E4E4DE',right:'#D8D8D2'}));
+  const pf = g({transform:mTop(PY)}); pw.appendChild(pf);
+  pf.appendChild(quoteGlyph(-116,-146,46,'#141414'));
+  [[-156,-84,242],[-156,-52,190],[-156,-20,128]].forEach(([x0,z,len])=>
+    pf.appendChild(el('path',{d:dPath(sRRect(x0,z-7,x0+len,z+7,7)),fill:'#D9D9D3'})));
+  pf.appendChild(el('path',{d:dPath(sRRect(20,-172,96,-116,24)),fill:'none',stroke:'#141414','stroke-width':3.2}));
+
+  /* the reviewer chip, seated clear of the plate --------------- */
+  const CHIP = part('object','reviewer'); root.appendChild(CHIP);
+  CHIP.appendChild(pad(120,80, 190,150, 32, 18, 18, {top:'#FBFBFB',left:'#E6E6E6',right:'#DADADA'}));
+  CHIP.appendChild(g({transform:mTop(18)}, personGlyph(155,115,44,'#141414')));
+
+  const badge = parkedPlate(root, 'verified', (f, w)=>{
+    w.appendChild(f);
+    f.appendChild(el('circle',{cx:-56,cy:0,r:26,fill:'none',stroke:'#141414','stroke-width':7}));
+    f.appendChild(el('path',{d:'M-70 2 l11 13 l21 -30',fill:'none',stroke:'#141414','stroke-width':7,
+                             'stroke-linecap':'round','stroke-linejoin':'round'}));
+    f.appendChild(el('path',{d:dPath(sRRect(-6,-20,68,-6,7)),fill:'#D9D9D3'}));
+    f.appendChild(el('path',{d:dPath(sRRect(-6,8,44,22,7)),fill:'#D9D9D3'}));
+  });
+
+  onTick(t=>{
+    const p = wrap(t, 5.0), q = p/5.0;
+    const lift = p<1.2 ? easeIO(p/1.2) : p<2.6 ? 1 : p<3.8 ? 1-easeIO((p-2.6)/1.2) : 0;
+    badge.setAttribute('transform', `translate(0,${(Math.sin(q*Math.PI*2)*9).toFixed(2)})`);
+    pw.setAttribute('transform', `translate(0,${(-22*lift).toFixed(2)})`);
+    dots.forEach((c,i)=> c.setAttribute('opacity', wrap(q*5 - i*0.42, 5) < 3.1 ? 1 : 0.26));
+  });
+};
+
+/* ============================================================== *
+ *  T.2 — the score settles on the dial
+ * ============================================================== */
+BUILD[1] = function(){
+  const root = cellG[1];
+  const deck = testimonialDeck(root, '#F1F1EE');
+
+  const rings = [178,136,96].map(rr=>{
+    const e = el('path',{d:dPath(sEllipse(0,14,rr,rr)),fill:'none',stroke:'#D6D6D2','stroke-width':3.2});
+    deck.appendChild(e); return e;
+  });
+  const ticks = [];
+  for(let i=0;i<16;i++){
+    const a = -Math.PI*0.78 + (i/15)*Math.PI*1.56;
+    const c = Math.cos(a), s = Math.sin(a);
+    const tk = el('path',{d:`M${(c*152).toFixed(1)} ${(s*152+14).toFixed(1)} L${(c*180).toFixed(1)} ${(s*180+14).toFixed(1)}`,
+                          fill:'none', stroke:'#141414','stroke-width':7});
+    deck.appendChild(tk); ticks.push(tk);
+  }
+  deck.appendChild(el('path',{d:dPath(sEllipse(0,14,74,74)),fill:'#0B0B0B'}));
+
+  /* the dial head, the only thing standing on this deck -------- */
+  const DIAL = part('object','dial'); root.appendChild(DIAL);
+  DIAL.appendChild(pad(-62,-48, 62, 76, 62, 44, 44, {top:'#FBFBFB',left:'#E8E8E8',right:'#DCDCDC'}));
+  const kf = g({transform:mTop(44)}); DIAL.appendChild(kf);
+  kf.appendChild(el('circle',{cx:0,cy:14,r:42,fill:'none',stroke:'#141414','stroke-width':5}));
+  const needle = g(); kf.appendChild(needle);
+  needle.appendChild(el('path',{d:dPath(sRRect(-7,-36,7,10,7)),fill:'#141414'}));
+
+  /* the score plate, parked in the free upper-left corner ------ */
+  const sw = parkedPlate(root, 'score', (f, w)=>{
+    w.appendChild(f);
+    f.appendChild(el('path',{d:dPath(sRRect(-72,-30,-4,32,18)),fill:'#141414'}));
+    f.appendChild(el('path',{d:dPath(sRRect(14,-22,70,-8,7)),fill:'#D9D9D3'}));
+    f.appendChild(el('path',{d:dPath(sRRect(14,6,48,20,7)),fill:'#D9D9D3'}));
+  });
+
+  onTick(t=>{
+    const p = wrap(t + 1.7, 5.0), q = p/5.0;
+    const u = 0.5-0.5*Math.cos(q*Math.PI*2);
+    needle.setAttribute('transform', `rotate(${(-64 + 128*u).toFixed(2)} 0 14)`);
+    const lit = Math.round(2 + 13*u);
+    ticks.forEach((tk,i)=> tk.setAttribute('opacity', i<=lit ? 1 : 0.2));
+    sw.setAttribute('transform', `translate(0,${(Math.sin(q*Math.PI*2)*9).toFixed(2)})`);
+    rings.forEach((e,i)=>{
+      const s = 1 + 0.045*Math.sin(q*Math.PI*4 - i*0.85);
+      e.setAttribute('transform', `translate(0,${(14*(1-s)).toFixed(2)}) scale(${s})`);
+    });
+  });
+};
+
+/* ============================================================== *
+ *  T.3 — three records, one lane each, lifting in turn
+ * ============================================================== */
+BUILD[2] = function(){
+  const root = cellG[2];
+  const deck = testimonialDeck(root, '#F2F2EF');
+
+  const LANES = [-125, 0, 125];
+  LANES.forEach(a =>
+    deck.appendChild(el('path',{d:dPath(rail(sRRect(a-52,-80,a+52,80,24))),
+                                fill:'none',stroke:'#DADAD6','stroke-width':3.4})));
+
+  const cards = LANES.map((a,i)=>{
+    const CARD = part('object','record'+(i+1)); root.appendChild(CARD);
+    const cw = g(); CARD.appendChild(cw);
+    cw.appendChild(prism(rail(sRRect(a-46,-72,a+46,72,20)), 24, 24,
+      {top:'#FBFBF7',left:'#E4E4DE',right:'#D8D8D2'}));
+    const f = g({transform:mRail(24)}); cw.appendChild(f);
+    f.appendChild(el('circle',{cx:a,cy:-38,r:22,fill:'#5E736A'}));
+    f.appendChild(personGlyph(a,-38,22,'#FBFBF7'));
+    [[-34,4,68],[-34,32,44]].forEach(([dx,dz,len])=>
+      f.appendChild(el('path',{d:dPath(sRRect(a+dx,dz-7,a+dx+len,dz+7,7)),fill:'#D9D9D3'})));
+    return cw;
+  });
+
+  const tally = parkedPlate(root, 'tally', (f, w)=>{
+    w.appendChild(f);
+    [-46,0,46].forEach(dx=>
+      f.appendChild(el('path',{d:dPath(sRRect(dx-16,-26,dx+16,26,12)),fill:'none',stroke:'#141414','stroke-width':6})));
+  });
+
+  onTick(t=>{
+    const p = wrap(t + 3.3, 5.0), q = p/5.0;
+    tally.setAttribute('transform', `translate(0,${(Math.sin(q*Math.PI*2)*9).toFixed(2)})`);
+    cards.forEach((c,i)=>{
+      const local = wrap(p - i*0.75, 5.0);
+      const lift = local < 0.7 ? easeIO(local/0.7)
+                 : local < 1.6 ? 1
+                 : local < 2.3 ? 1-easeIO((local-1.6)/0.7) : 0;
+      c.setAttribute('transform', `translate(0,${(-34*lift).toFixed(2)})`);
+    });
+  });
+};
+
+/* ---------------- mount + orbit + run loop -------------------- */
+/* one svg per [data-art] host; each host keeps its own camera so a
+   pointer over one figure never disturbs the others.             */
+const HOSTS = [...document.querySelectorAll('[data-art]')];
+const cellG = HOSTS.map((host)=>{
+  const svg = el('svg',{viewBox: host.dataset.view || '-547 -484.5 1094 969',
+                        preserveAspectRatio:'xMidYMid meet'});
+  host.appendChild(svg);
+  const n = g(null);
+  svg.appendChild(n);
+  return n;
+});
+
+const VIEWS = HOSTS.map(()=>({az:AZ0, el:EL0, taz:AZ0, tel:EL0}));
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function rebuild(i){
+  setCam(VIEWS[i].az, VIEWS[i].el);
+  BUILDING = i;
+  TICKS[i] = [];
+  const n = cellG[i];
+  while (n.firstChild) n.removeChild(n.firstChild);
+  BUILD[i]();
+}
+for (let i=0;i<HOSTS.length;i++) rebuild(i);
+
+if (!REDUCED) HOSTS.forEach((host,i)=>{
+  const zone = host.closest('[data-orbit]') || host;
+  zone.addEventListener('pointermove', e=>{
+    if (e.pointerType === 'touch') return;
+    const b = host.getBoundingClientRect();
+    if (!b.width || !b.height) return;
+    const nx = Math.max(-1, Math.min(1, ((e.clientX - b.left)/b.width  - .5)*2));
+    const ny = Math.max(-1, Math.min(1, ((e.clientY - b.top )/b.height - .5)*2));
+    VIEWS[i].taz = AZ0 - nx*0.175;             // ±10°
+    VIEWS[i].tel = Math.max(EL0-0.05, Math.min(EL0+0.05, EL0 + ny*0.05));
+  });
+  zone.addEventListener('pointerleave', ()=>{ VIEWS[i].taz = AZ0; VIEWS[i].tel = EL0; });
+});
+
+let t0 = null;
+const FREEZE = new URLSearchParams(location.search).get('p');
+function step(t){
+  for (let i=0;i<VIEWS.length;i++){
+    const v = VIEWS[i];
+    const da = v.taz - v.az, de = v.tel - v.el;
+    if (Math.abs(da) > 1e-4 || Math.abs(de) > 1e-4){
+      v.az += da*0.16; v.el += de*0.16;
+      rebuild(i);
+    }
+  }
+  for (const arr of TICKS) for (const f of arr) f(t);
+}
+if (FREEZE !== null){ step(parseFloat(FREEZE)); }
+else {
+  const frame = ts => {
+    if (t0===null) t0 = ts;
+    step((ts-t0)/1000);
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

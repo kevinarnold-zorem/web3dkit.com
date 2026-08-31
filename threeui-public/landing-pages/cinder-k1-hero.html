@@ -1,0 +1,1717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cinder K1 — Cinder behind the keyboard</title>
+<meta name="description" content="Hero section: a real-time three.js keyboard lit by a lamp that follows the pointer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #000;
+    -webkit-font-smoothing: antialiased;
+    font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+
+  /* Drop-in hero: the scene is full-bleed and sized by this section alone. */
+  .hero {
+    position: relative;
+    width: 100%;
+    height: 100svh;
+    min-height: 620px;
+    background: #000;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .hero > canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: default;
+  }
+  /* ---- hero content, laid over the scene ---- */
+  .layer {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: clamp(16px, 2.5vh, 32px) clamp(18px, 3.2vw, 56px) clamp(18px, 3vh, 40px);
+    pointer-events: none;
+    color: #f2ece6;
+  }
+  /* scrims so the copy holds up over the fire and the deck */
+  .layer::before, .layer::after {
+    content: ""; position: absolute; left: 0; right: 0; pointer-events: none;
+  }
+  .layer::before { top: 0; height: 26%; background: linear-gradient(180deg, rgba(8,4,2,.72), rgba(8,4,2,0)); }
+  .layer::after  { bottom: 0; height: 30%; background: linear-gradient(0deg, rgba(6,3,2,.52), rgba(6,3,2,.16) 46%, rgba(6,3,2,0)); }
+  .layer > * { position: relative; }
+  .layer a, .layer button { pointer-events: auto; }
+
+  .nav { display: flex; align-items: center; gap: clamp(16px, 3vw, 48px); }
+  .brand {
+    display: flex; align-items: center; gap: .58em;
+    font-size: clamp(13px, 1.15vw, 17px); font-weight: 500;
+    letter-spacing: .26em; text-transform: uppercase;
+    color: #f6efe8; text-decoration: none; white-space: nowrap;
+  }
+  .brand svg { width: 1.25em; height: 1.25em; fill: #ff7a33; filter: drop-shadow(0 0 .7em rgba(255,110,40,.65)); }
+  .links { display: flex; gap: clamp(14px, 2.2vw, 34px); margin-left: auto; }
+  .links a, .nav-cta {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: clamp(11px, .78vw, 13px); letter-spacing: .16em; text-transform: uppercase;
+    text-decoration: none;
+  }
+  .links a { color: #c2b4a9; transition: color .18s ease; }
+  .links a:hover, .links a:focus-visible { color: #ffb589; }
+  .nav-cta {
+    color: #ffd9bd; padding: .72em 1.35em; border-radius: 999px;
+    border: 1px solid rgba(255,140,70,.42);
+    background: rgba(255,110,45,.10);
+    transition: background .18s ease, border-color .18s ease;
+  }
+  .nav-cta:hover, .nav-cta:focus-visible { background: rgba(255,110,45,.20); border-color: rgba(255,150,90,.7); }
+
+  /* the visible headline is drawn in the scene, behind the keyboard */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px;
+    padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+
+  .foot {
+    align-self: end;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: clamp(20px, 5vw, 90px);
+  }
+  .pitch { max-width: 46ch; }
+  .pitch h2 {
+    margin: 0 0 .42em; color: #fff8f2;
+    font-size: clamp(24px, 3.1vw, 50px); font-weight: 400;
+    letter-spacing: -.018em; line-height: 1.05;
+  }
+  .pitch p {
+    margin: 0; max-width: 44ch;
+    font-size: clamp(13px, .93vw, 16px); line-height: 1.55; color: #e6ded7;
+  }
+  .act { display: flex; flex-direction: column; align-items: flex-end; gap: clamp(12px, 1.6vh, 20px); }
+  /* The CTA is a keycap off the board: same chamfer, same underglow, and it
+     travels when you press it. */
+  /* The light under the cap is two additive layers outside the button, not a
+     pseudo-element inside it: a transformed element makes its own stacking
+     context, and a blend mode trapped in there can only blend with the button
+     itself instead of with the scene behind it. */
+  .cta-wrap { position: relative; display: inline-block; }
+  .cta-glow, .cta-bloom {
+    position: absolute; pointer-events: none;
+    border-radius: 50%;
+    mix-blend-mode: plus-lighter;
+    transition: opacity .16s ease, transform .16s ease;
+  }
+  /* painted after the button so the light lands on the cap itself, and kept
+     below the label so it never washes the type out */
+  .cta-glow {            /* the lit band along the top border of the cap */
+    left: 6%; right: 6%; top: -9px; height: 16px;
+    background: radial-gradient(closest-side, rgba(255,222,182,.95), rgba(255,138,54,.62) 50%, rgba(255,96,24,0) 100%);
+    filter: blur(4px);
+    opacity: 1;
+  }
+  .cta-bloom {           /* the halo it throws around that edge */
+    left: -10%; right: -10%; top: -31px; height: 58px;
+    background: radial-gradient(closest-side, rgba(255,128,50,.55), rgba(255,92,24,.18) 58%, rgba(255,72,14,0) 100%);
+    filter: blur(12px);
+    opacity: .85;
+  }
+  .cta {
+    position: relative;
+    display: inline-flex; align-items: center; gap: .85em;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: clamp(12px, .88vw, 15px); font-weight: 500;
+    letter-spacing: .13em; text-transform: uppercase;
+    color: #fff1e2; text-decoration: none; white-space: nowrap;
+    padding: 1.05em 1.6em 1.1em; border-radius: 9px;
+    background: linear-gradient(178deg, #4a4d54 0%, #34373d 18%, #23262b 62%, #1a1c20 100%);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,238,225,.22),
+      inset 0 -1px 0 rgba(0,0,0,.75),
+      0 7px 0 -1px #101215,
+      0 12px 26px rgba(0,0,0,.62);
+    transform: translateY(0);
+    transition: transform .13s cubic-bezier(.3,.7,.3,1), box-shadow .13s ease;
+  }
+  .cta .spark { width: 1.1em; height: 1.1em; fill: #ff8a3d; flex: none;
+    filter: drop-shadow(0 0 .55em rgba(255,120,50,.9)); }
+  .cta .price { color: #b9ada3; }
+  .cta-wrap:hover .cta, .cta:focus-visible {
+    transform: translateY(5px);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255,238,225,.26),
+      inset 0 -1px 0 rgba(0,0,0,.75),
+      0 2px 0 -1px #101215,
+      0 5px 14px rgba(0,0,0,.6);
+  }
+  /* the cap travels, and the light it sits over travels with it */
+  /* the cap travels, and the light on its edge travels with it */
+  .cta-wrap:hover .cta-glow, .cta-wrap:focus-within .cta-glow { transform: translateY(5px) scaleX(1.05); }
+  .cta-wrap:hover .cta-bloom, .cta-wrap:focus-within .cta-bloom { opacity: 1; transform: translateY(5px) scale(1.05); }
+  .cta:active { transform: translateY(6px); }
+  .proof { display: flex; align-items: center; gap: .7em; }
+  .faces { display: flex; }
+  .faces img {
+    width: clamp(24px, 1.75vw, 32px); height: clamp(24px, 1.75vw, 32px);
+    border-radius: 50%; object-fit: cover; display: block;
+    border: 1.5px solid rgba(255,180,130,.35);
+    box-shadow: 0 2px 8px rgba(0,0,0,.55);
+    margin-left: -.5em; background: #241a14;
+  }
+  .faces img:first-child { margin-left: 0; }
+  .proof-text {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: clamp(11px, .76vw, 13px); letter-spacing: .1em; color: #ded5cd; white-space: nowrap;
+  }
+  .proof-text strong { color: #fff6ee; font-weight: 500; }
+
+  @media (max-width: 860px) {
+    .links { display: none; }
+    .nav-cta { margin-left: auto; }
+    .foot { flex-direction: column; align-items: flex-start; gap: 18px; }
+    .act { align-items: flex-start; width: 100%; }
+    .display { max-width: 14ch; }
+  }
+
+  .hero__fallback {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    margin: 0; color: #6d7075;
+    font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
+  }
+  body.nogl .hero__fallback { display: flex; }
+</style>
+</head>
+<body>
+
+<section class="hero" id="hero">
+  <canvas id="gl"></canvas>
+  <p class="hero__fallback">WebGL unavailable</p>
+
+  <div class="layer">
+    <header class="nav">
+      <a class="brand" href="#">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 4 L61 39 L96 50 L61 61 L50 96 L39 61 L4 50 L39 39 Z"/></svg>
+        <span>Cinder</span>
+      </a>
+      <nav class="links" aria-label="Primary">
+        <a href="#">Keyboards</a>
+        <a href="#">Switches</a>
+        <a href="#">Keycaps</a>
+        <a href="#">Support</a>
+      </nav>
+      <a class="nav-cta" href="#">Pre-order</a>
+    </header>
+
+    <h1 class="sr-only">Cinder behind the keyboard</h1>
+
+    <footer class="foot">
+      <div class="pitch">
+        <h2>Built for the long night</h2>
+        <p>Hot-swap ember switches on a machined deck, 8&#8202;000&#8239;Hz polling, and a
+           backlight you can read by when everything else has gone dark.</p>
+      </div>
+      <div class="act">
+        <span class="cta-wrap">
+          <a class="cta" href="#">
+            <svg class="spark" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 4 L61 39 L96 50 L61 61 L50 96 L39 61 L4 50 L39 39 Z"/></svg>
+            Pre-order <span class="price">$249</span>
+          </a>
+          <span class="cta-glow" aria-hidden="true"></span>
+          <span class="cta-bloom" aria-hidden="true"></span>
+        </span>
+        <div class="proof">
+          <span class="faces">
+            <img src="https://images.unsplash.com/photo-1570158268183-d296b2892211?w=128&amp;h=128&amp;fit=crop&amp;crop=faces&amp;auto=format&amp;q=70" alt="" width="128" height="128" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1508186225823-0963cf9ab0de?w=128&amp;h=128&amp;fit=crop&amp;crop=faces&amp;auto=format&amp;q=70" alt="" width="128" height="128" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1587064712555-6e206484699b?w=128&amp;h=128&amp;fit=crop&amp;crop=faces&amp;auto=format&amp;q=70" alt="" width="128" height="128" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1596205521983-9c372fb3d4f1?w=128&amp;h=128&amp;fit=crop&amp;crop=faces&amp;auto=format&amp;q=70" alt="" width="128" height="128" loading="lazy">
+          </span>
+          <span class="proof-text"><strong>3,812</strong> pre-orders &middot; 4.9 average</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+</section>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ------------------------------------------------------------------ *
+ *  Cinder K1 hero.
+ *  One key unit (U) = 1 world unit. The board is a 65% layout: 16U of
+ *  keys across, six rows deep. A soft lamp hangs over it and follows
+ *  the pointer, so hovering sweeps the light across the whole deck.
+ * ------------------------------------------------------------------ */
+
+const P = new URLSearchParams(location.search);
+const STATIC = P.has('static');               // freeze the lamp, for screenshots
+// with reduced motion the scene holds still until it is pointed at, and the
+// embers only smoulder rather than streaming
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const PPU     = 68.68;                        // px per key unit in the source render
+const TILT    = THREE.MathUtils.degToRad(25);   // resting view angle off vertical
+const CAM_DIST = 62;                          // long lens: near-orthographic, real perspective
+
+/* how far the board swings toward the pointer */
+const ORBIT_YAW  = THREE.MathUtils.degToRad(11);
+const ORBIT_TILT = THREE.MathUtils.degToRad(7);
+
+const KEYS_W = 16, KEYS_D = 6;
+const DECK_W = 16.70, DECK_D = 6.59;
+const DECK_H = 0.46;                          // case thickness
+const CAP_GAP = 0.200;                        // pitch minus cap footprint
+const CAP_H  = 0.26;                          // cap top above the plate
+const CASE_R = 0.20, CASE_BEV = 0.045;        // machined edge, not a soft pebble
+const PRESS  = 0.075;                         // key travel on hover
+const PLATE_Y = 0.0;
+// The plate only spans the key field. Between the caps it reads black, so its
+// albedo is zero and it exists purely to carry the function-row underglow.
+const PLATE_W = 16.12, PLATE_D = 6.12, PLATE_R = 0.10;
+
+/* Framing. On a landscape frame the deck sits at 88% of the frame width with
+   air around it; as the frame turns portrait that eases out to full bleed, so
+   the board never shrinks into a thin strip. Height is capped so an ultrawide
+   frame does not push it into the top and bottom edges. The board is framed
+   smaller than it would be alone, to leave the headline and the footer room. */
+const FILL_WIDE = 0.74, FILL_TALL = 0.94, FILL_H = 0.52;
+const FRAME_Z = -1.35;        // aim behind the deck centre, so it sits low in frame
+
+/* The accent, in one place: ember. Weighted so the core blows out to a hot
+   white-yellow and the falloff lands on orange rather than pink. */
+const ACCENT     = { r: 1.00, g: 0.34, b: 0.07 };
+const ACCENT_INK = '#ff9048';                 // printed ember legends on the function row
+const ACCENT_HEX = 0xff4d12;
+
+/* ---------- look, calibrated against the source render ---------- */
+const G = {
+  lamp:  98.0,    // candela of the pointer lamp
+  orb:   30.0,    // the orb itself, as a real light
+  halo:  0.72,    // its visible glow
+  bleed: 0.13,    // halation that carries over the board's silhouette
+  keyLit: 0.40,   // backlit legends
+  back:  0.15,    // wash painted on the backdrop under the orb
+  ember: 2.30,    // the cinders drifting off the fire
+  rays:  0.34,    // shafts thrown out of the doorway
+  rim3d: 26.0,    // weak ember from behind, for the rim on the case
+  fill:  0.34,    // wide top light so the board still reads outside the pool
+  amb:   0.055,
+  rim:   1.35,    // emissive light pipe running around the case edge
+  led:   0.85,    // switch underglow; the function row is the accent
+  strip: 0.90,    // indicator strips
+  brand: 0.90     // brand key
+};
+
+const smoothstep = (a, b, x) => { const t = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+const K = (w, o = {}) => Object.assign({ w }, o);
+const alpha = (c) => K(1, { lab: c, style: 'big' });
+const num   = (top, bot) => K(1, { two: [top, bot] });
+
+const ROWS = [
+  [ K(1, { lab: 'esc', style: 'tiny', align: 'l' }),
+    K(1, { lab: 'F1',  g: 'sunlow'  }), K(1, { lab: 'F2',  g: 'sunhigh' }),
+    K(1, { lab: 'F3',  g: 'grid'    }), K(1, { lab: 'F4',  g: 'search'  }),
+    K(1, { lab: 'F5',  g: 'spark'   }), K(1, { lab: 'F6',  g: 'moon'    }),
+    K(1, { lab: 'F7',  g: 'prev'    }), K(1, { lab: 'F8',  g: 'play'    }),
+    K(1, { lab: 'F9',  g: 'next'    }), K(1, { lab: 'F10', g: 'mute'    }),
+    K(1, { lab: 'F11', g: 'voldown' }), K(1, { lab: 'F12', g: 'volup'   }),
+    K(1, { g: 'eject', gc: true }),     K(1, { g: 'lock', gc: true }),
+    K(1, { brand: true }) ],
+
+  [ num('~','`'), num('!','1'), num('@','2'), num('#','3'), num('$','4'),
+    num('%','5'), num('^','6'), num('&','7'), num('*','8'), num('(','9'),
+    num(')','0'), num('_','-'), num('+','='),
+    K(2, { lab: 'delete', style: 'tiny', align: 'r' }),
+    K(1, { g: 'fwddel', gc: true, gw: true, white: true }) ],
+
+  [ K(1.5, { lab: 'tab', style: 'tiny', align: 'l' }),
+    alpha('Q'), alpha('W'), alpha('E'), alpha('R'), alpha('T'), alpha('Y'),
+    alpha('U'), alpha('I'), alpha('O'), alpha('P'), num('{','['), num('}',']'),
+    K(1.5, { two: ['|','\\'] }),
+    K(1, { lab: 'PG↑', style: 'tiny' }) ],
+
+  [ K(1.75, { lab: 'caps lock', style: 'tiny', align: 'l' }),
+    alpha('A'), alpha('S'), alpha('D'), alpha('F'), alpha('G'), alpha('H'),
+    alpha('J'), alpha('K'), alpha('L'), num(':',';'), num('"','\''),
+    K(2.25, { lab: 'return', style: 'tiny', align: 'r' }),
+    K(1, { lab: 'PG↓', style: 'tiny' }) ],
+
+  [ K(2.25, { lab: 'shift', style: 'tiny', align: 'l' }),
+    alpha('Z'), alpha('X'), alpha('C'), alpha('V'), alpha('B'), alpha('N'),
+    alpha('M'), num('<',','), num('>','.'), num('?','/'),
+    K(2.75, { lab: 'shift', style: 'tiny', align: 'r' }),
+    K(1, { g: 'up', gc: true, gw: true, white: true }) ],
+
+  [ K(1,    { lab: 'fn',   style: 'tiny', align: 'l' }),
+    K(1,    { lab: 'ctrl', style: 'tiny', align: 'l' }),
+    K(1.25, { lab: 'opt',  style: 'tiny', align: 'l' }),
+    K(1.5,  { lab: 'cmd',  style: 'tiny', align: 'l' }),
+    K(5.75, { space: true }),
+    K(1.5,  { lab: 'cmd',  style: 'tiny', align: 'r' }),
+    K(1,    { lab: 'opt',  style: 'tiny', align: 'r' }),
+    K(1, { g: 'left',  gc: true, gw: true, white: true }),
+    K(1, { g: 'down',  gc: true, gw: true, white: true }),
+    K(1, { g: 'right', gc: true, gw: true, white: true }) ]
+];
+
+// resolve every key to a world position
+const KEYS = [];
+ROWS.forEach((row, r) => {
+  let x = -KEYS_W / 2;
+  const z = -KEYS_D / 2 + 0.5 + r;
+  row.forEach((k) => {
+    KEYS.push(Object.assign({}, k, { cx: x + k.w / 2, cz: z, row: r }));
+    x += k.w;
+  });
+});
+
+/* ================================================================== *
+ *  Legend + glyph atlas
+ * ================================================================== */
+const ATLAS_PPU = 128;
+const ATLAS_W   = 2048;
+
+function packAtlas(keys) {
+  let x = 0, y = 0, rowH = ATLAS_PPU;
+  for (const k of keys) {
+    const w = Math.round(k.w * ATLAS_PPU);
+    if (x + w > ATLAS_W) { x = 0; y += rowH; }
+    k._cell = { x, y, w, h: rowH };
+    x += w;
+  }
+  return { w: ATLAS_W, h: y + rowH };
+}
+const ATLAS = packAtlas(KEYS);
+
+function rr(ctx, x, y, w, h, r) {
+  if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); return; }
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+/* --- vector glyph set, drawn centred in a box of side `s` --- */
+function drawGlyph(ctx, name, cx, cy, s) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.lineWidth = Math.max(1.4, s * 0.085);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const h = s / 2;
+  const tri = (x, w, hh) => { ctx.beginPath(); ctx.moveTo(x, -hh); ctx.lineTo(x + w, 0); ctx.lineTo(x, hh); ctx.closePath(); ctx.fill(); };
+  const speaker = (scale) => {
+    ctx.beginPath();
+    ctx.moveTo(-h * 0.95, -h * 0.28); ctx.lineTo(-h * 0.55, -h * 0.28);
+    ctx.lineTo(-h * 0.08, -h * 0.78); ctx.lineTo(-h * 0.08, h * 0.78);
+    ctx.lineTo(-h * 0.55, h * 0.28); ctx.lineTo(-h * 0.95, h * 0.28);
+    ctx.closePath(); ctx.fill();
+    for (let i = 0; i < scale; i++) {
+      const r = h * (0.34 + i * 0.30);
+      ctx.beginPath();
+      ctx.arc(-h * 0.05, 0, r, -0.72, 0.72);
+      ctx.stroke();
+    }
+  };
+  switch (name) {
+    case 'sunlow': case 'sunhigh': {
+      const rays = name === 'sunhigh' ? h * 0.98 : h * 0.72;
+      ctx.beginPath(); ctx.arc(0, 0, h * 0.34, 0, Math.PI * 2); ctx.fill();
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * h * 0.52, Math.sin(a) * h * 0.52);
+        ctx.lineTo(Math.cos(a) * rays, Math.sin(a) * rays);
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'grid': {
+      const c = h * 0.62, gap = h * 0.16;
+      for (const [sx, sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]) {
+        rr(ctx, sx > 0 ? gap : -gap - c, sy > 0 ? gap : -gap - c, c, c, c * 0.26);
+        ctx.fill();
+      }
+      break;
+    }
+    case 'search': {
+      ctx.beginPath(); ctx.arc(-h * 0.14, -h * 0.14, h * 0.52, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(h * 0.24, h * 0.24); ctx.lineTo(h * 0.82, h * 0.82); ctx.stroke();
+      break;
+    }
+    case 'spark': {
+      ctx.beginPath();
+      ctx.moveTo(0, -h);
+      ctx.quadraticCurveTo(h * 0.16, -h * 0.16, h, 0);
+      ctx.quadraticCurveTo(h * 0.16, h * 0.16, 0, h);
+      ctx.quadraticCurveTo(-h * 0.16, h * 0.16, -h, 0);
+      ctx.quadraticCurveTo(-h * 0.16, -h * 0.16, 0, -h);
+      ctx.fill();
+      break;
+    }
+    case 'moon': {
+      // crescent = outer disc minus an offset disc, traced as one path
+      const R = h * 0.88, Ri = h * 0.80, d = h * 0.42;
+      const a = Math.acos((R * R + d * d - Ri * Ri) / (2 * R * d));
+      const bx = R * Math.cos(a) - d, by = R * Math.sin(a);
+      const beta = Math.atan2(by, bx);
+      ctx.beginPath();
+      ctx.arc(0, 0, R, a, -a, false);
+      ctx.arc(d, 0, Ri, -beta, beta, true);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    }
+    case 'prev': tri(h * 0.10, -h * 0.72, h * 0.66); tri(h * 0.86, -h * 0.72, h * 0.66); break;
+    case 'next': tri(-h * 0.10, h * 0.72, h * 0.66); tri(-h * 0.86, h * 0.72, h * 0.66); break;
+    case 'play': tri(-h * 0.52, h * 1.04, h * 0.74); break;
+    case 'mute': {
+      speaker(0);
+      ctx.beginPath(); ctx.moveTo(h * 0.24, -h * 0.44); ctx.lineTo(h * 0.94, h * 0.44); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(h * 0.94, -h * 0.44); ctx.lineTo(h * 0.24, h * 0.44); ctx.stroke();
+      break;
+    }
+    case 'voldown': speaker(1); break;
+    case 'volup':   speaker(2); break;
+    case 'eject': {
+      ctx.beginPath(); ctx.moveTo(0, -h * 0.86); ctx.lineTo(h * 0.82, h * 0.10); ctx.lineTo(-h * 0.82, h * 0.10); ctx.closePath(); ctx.fill();
+      rr(ctx, -h * 0.82, h * 0.42, h * 1.64, h * 0.34, h * 0.14); ctx.fill();
+      break;
+    }
+    case 'lock': {
+      ctx.beginPath(); ctx.arc(0, -h * 0.26, h * 0.44, Math.PI, 0); ctx.stroke();
+      rr(ctx, -h * 0.62, -h * 0.24, h * 1.24, h * 1.0, h * 0.2); ctx.fill();
+      break;
+    }
+    case 'fwddel': {
+      ctx.beginPath();
+      ctx.moveTo(-h * 0.94, 0); ctx.lineTo(-h * 0.30, -h * 0.62); ctx.lineTo(h * 0.90, -h * 0.62);
+      ctx.lineTo(h * 0.90, h * 0.62); ctx.lineTo(-h * 0.30, h * 0.62); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-h * 0.02, -h * 0.28); ctx.lineTo(h * 0.52, h * 0.28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(h * 0.52, -h * 0.28); ctx.lineTo(-h * 0.02, h * 0.28); ctx.stroke();
+      break;
+    }
+    case 'up': case 'down': case 'left': case 'right': {
+      const rot = { up: -Math.PI / 2, down: Math.PI / 2, left: Math.PI, right: 0 }[name];
+      ctx.rotate(rot);
+      ctx.beginPath(); ctx.moveTo(-h * 0.72, 0); ctx.lineTo(h * 0.52, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(h * 0.06, -h * 0.50); ctx.lineTo(h * 0.60, 0); ctx.lineTo(h * 0.06, h * 0.50); ctx.stroke();
+      break;
+    }
+  }
+  ctx.restore();
+}
+
+function buildAtlases() {
+  const mk = () => {
+    const c = document.createElement('canvas');
+    c.width = ATLAS.w; c.height = ATLAS.h;
+    const x = c.getContext('2d');
+    x.clearRect(0, 0, c.width, c.height);
+    return { c, x };
+  };
+  const lg = mk();   // printed legends: white text, ember ink on the function row
+
+  const GLYPH_INK = ACCENT_INK;
+  const FONT = '"Inter Tight", -apple-system, "SF Pro Text", Helvetica, Arial, sans-serif';
+  const MONO = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+  // pad in from the *cap* edge, not the cell edge — the cap is inset by half the
+  // key gap, so measuring from the cell put small labels almost on the border
+  const inset = ATLAS_PPU * (CAP_GAP / 2 + 0.115);
+
+  for (const k of KEYS) {
+    const { x: ox, y: oy, w: cw, h: ch } = k._cell;
+    if (k.brand) continue;
+
+    const cx = ox + cw / 2, cy = oy + ch / 2;
+    const c = lg.x;
+    c.save();
+    c.fillStyle = '#eceef1';
+    c.strokeStyle = '#eceef1';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+
+    if (k.space) { /* blank */ }
+    else if (k.g) {
+      c.save();
+      const ink = k.white ? '#dfe2e6' : GLYPH_INK;
+      c.fillStyle = ink; c.strokeStyle = ink;
+      drawGlyph(c, k.g, cx, k.gc ? cy : cy - ch * 0.150, ch * (k.gw ? 0.30 : 0.225));
+      c.restore();
+      if (k.lab) {
+        c.font = `500 ${Math.round(ATLAS_PPU * 0.140)}px ${MONO}`;
+        c.fillStyle = '#aab4c0';
+        c.fillText(k.lab, cx, cy + ch * 0.200);
+      }
+    }
+    else if (k.two) {
+      c.font = `400 ${Math.round(ATLAS_PPU * 0.175)}px ${MONO}`;
+      c.fillStyle = '#98a3b0';
+      c.fillText(k.two[0], cx, cy - ch * 0.185);
+      c.font = `500 ${Math.round(ATLAS_PPU * 0.225)}px ${MONO}`;
+      c.fillStyle = '#e6ebf1';
+      c.fillText(k.two[1], cx, cy + ch * 0.180);
+    }
+    else if (k.style === 'big') {
+      c.font = `500 ${Math.round(ATLAS_PPU * 0.255)}px ${FONT}`;
+      c.letterSpacing = `${(ATLAS_PPU * 0.012).toFixed(2)}px`;
+      c.fillText(k.lab, cx, cy + ch * 0.012);
+      c.letterSpacing = '0px';
+    }
+    else {
+      c.font = `500 ${Math.round(ATLAS_PPU * 0.135)}px ${MONO}`;
+      c.fillStyle = '#c9d2dc';
+      if (k.align === 'l')      { c.textAlign = 'left';   c.fillText(k.lab, ox + inset, cy); }
+      else if (k.align === 'r') { c.textAlign = 'right';  c.fillText(k.lab, ox + cw - inset, cy); }
+      else                      { c.fillText(k.lab, cx, cy); }
+    }
+    c.restore();
+  }
+
+  const tex = (canvas) => {
+    const t = new THREE.CanvasTexture(canvas);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.generateMipmaps = true;
+    t.needsUpdate = true;
+    return t;
+  };
+  return { legend: tex(lg.c) };
+}
+
+/* ================================================================== *
+ *  Underglow map baked onto the switch plate
+ * ================================================================== */
+function buildUnderglow() {
+  const TW = 2560, TH = Math.round(TW * PLATE_D / PLATE_W);
+  const S = TW / PLATE_W;
+  const c = document.createElement('canvas');
+  c.width = TW; c.height = TH;
+  const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, TW, TH);
+
+  const toPx = (wx) => (wx + PLATE_W / 2) * S;
+  const toPy = (wz) => (wz + PLATE_D / 2) * S;
+  x.globalCompositeOperation = 'lighter';
+
+  for (const k of KEYS) {
+    const capW = (k.w - CAP_GAP) * S, capD = (1 - CAP_GAP) * S;
+    const px = toPx(k.cx), pz = toPy(k.cz);
+
+    if (k.brand) {
+      x.filter = `blur(${0.030 * S}px)`;
+      x.fillStyle = 'rgba(255,96,26,1.0)';
+      x.beginPath(); x.arc(px, pz, 0.375 * S, 0, Math.PI * 2); x.fill();
+      x.globalCompositeOperation = 'destination-out';
+      x.filter = `blur(${0.014 * S}px)`;
+      x.fillStyle = '#fff';
+      x.beginPath(); x.arc(px, pz, 0.30 * S, 0, Math.PI * 2); x.fill();
+      x.globalCompositeOperation = 'lighter';
+      continue;
+    }
+
+    const top = pz - capD / 2;
+    // every switch throws a little light into its gaps...
+    x.filter = `blur(${0.060 * S}px)`;
+    x.fillStyle = 'rgba(255,74,14,0.30)';
+    rr(x, px - capW / 2 - 0.055 * S, top - 0.055 * S, capW + 0.11 * S, capD + 0.11 * S, 0.09 * S);
+    x.fill();
+
+    // ...and the function row is the accent, with a hot bar at the far edge
+    if (k.row !== 0) continue;
+    x.filter = `blur(${0.026 * S}px)`;
+    x.fillStyle = 'rgba(255,138,52,1.0)';
+    rr(x, px - capW * 0.47, top - 0.092 * S, capW * 0.94, 0.105 * S, 0.045 * S);
+    x.fill();
+    x.filter = `blur(${0.070 * S}px)`;
+    x.fillStyle = 'rgba(255,88,20,0.55)';
+    rr(x, px - capW / 2 - 0.08 * S, top - 0.10 * S, capW + 0.16 * S, capD * 0.75, 0.10 * S);
+    x.fill();
+  }
+  x.filter = 'none';
+  x.globalCompositeOperation = 'source-over';
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
+  return t;
+}
+
+/* The headline lives in the scene rather than in the DOM, so the keyboard can
+   stand in front of it: it is drawn onto a canvas, hung on a plane turned to
+   face the camera's resting axis, and parked behind the deck. Depth testing
+   does the rest — the board cuts the letters off exactly where it crosses. */
+const HEAD_WORD = 'CINDER';
+const HEAD_SCALE = 1.30, HEAD_Y = -3.9, HEAD_Z = -6.2;
+function buildHeadlineTex() {
+  const W = 4096, PAD = 26;
+  const FONT = (px) => `400 ${px}px "Inter Tight", -apple-system, "SF Pro Display", Helvetica, Arial, sans-serif`;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = 200;
+  let x = c.getContext('2d');
+  x.font = FONT(200); x.letterSpacing = '-4px';
+  const size = Math.floor(200 * (W - PAD * 2) / x.measureText(HEAD_WORD).width);
+
+  // measure the real ink box so the canvas hugs the glyphs — a single word set
+  // this large wastes most of its height on line-box padding otherwise
+  c.height = 400;
+  x = c.getContext('2d');
+  x.font = FONT(size); x.letterSpacing = `${-size * 0.02}px`;
+  const m = x.measureText(HEAD_WORD);
+  const asc = m.actualBoundingBoxAscent, desc = m.actualBoundingBoxDescent;
+  const H = Math.ceil(asc + desc + PAD * 2);
+
+  c.height = H;
+  x = c.getContext('2d');
+  x.font = FONT(size); x.letterSpacing = `${-size * 0.02}px`;
+  x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  const g = x.createLinearGradient(0, PAD, 0, H - PAD);
+  g.addColorStop(0.00, '#fff8f0');
+  g.addColorStop(0.38, '#ffd7b2');
+  g.addColorStop(0.74, '#ff9a52');
+  g.addColorStop(1.00, '#e75a1c');
+  x.fillStyle = g;
+  x.fillText(HEAD_WORD, W / 2, PAD + asc);
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 16;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.needsUpdate = true;
+  return t;
+}
+
+/* Backdrop: a dark grey surface the board sits on, shaded so it falls away from
+   the keyboard. Its tooth comes from the film grain in post, which stays the
+   same size on screen instead of smearing into blotches at this world scale. */
+function buildDeskTex() {
+  const N = 512;
+  const c = document.createElement('canvas');
+  c.width = c.height = N;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(N * 0.5, N * 0.42, N * 0.02, N * 0.5, N * 0.42, N * 0.62);
+  g.addColorStop(0.00, '#7d7a78');
+  g.addColorStop(0.35, '#4b4846');
+  g.addColorStop(0.70, '#242220');
+  g.addColorStop(1.00, '#0c0b0a');
+  x.fillStyle = g; x.fillRect(0, 0, N, N);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
+  return t;
+}
+
+/* The backlight is painted onto the surface rather than cast by a light:
+   three filters lights by the camera's layers, so a light cannot be confined to
+   the backdrop, and any real coloured source strong enough to read here also tints
+   every keycap. A gaussian wash gives the same silhouette with none of that. */
+function buildBackGlowTex() {
+  const N = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = N;
+  const x = c.getContext('2d');
+  const img = x.createImageData(N, N);
+  const SX = 0.155, SZ = 0.105;             // sigmas in normalised plane units
+  for (let j = 0; j < N; j++) {
+    const v = j / (N - 1) - 0.5;
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1) - 0.5;
+      const g = Math.exp(-(u * u) / (2 * SX * SX) - (v * v) / (2 * SZ * SZ));
+      const o = (j * N + i) * 4;
+      img.data[o] = 255; img.data[o + 1] = 84; img.data[o + 2] = 22;
+      img.data[o + 3] = Math.round(Math.min(1, g) * 255);
+    }
+  }
+  x.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.needsUpdate = true;
+  return t;
+}
+
+/* Glow around the orb: a steep core with a long tail, which reads as a lamp
+   rather than the flat disc a plain radial gradient gives. */
+function buildHaloTex() {
+  const N = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = N;
+  const x = c.getContext('2d');
+  const img = x.createImageData(N, N);
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      const u = (i / (N - 1) - 0.5) * 2, v = (j / (N - 1) - 0.5) * 2;
+      const r = Math.min(1, Math.hypot(u, v));
+      const g = Math.pow(1 - r, 3.2) * 0.82 + Math.exp(-r * r * 26) * 0.55;
+      const o = (j * N + i) * 4;
+      img.data[o] = 255; img.data[o + 1] = 156; img.data[o + 2] = 78;
+      img.data[o + 3] = Math.round(Math.min(1, g) * 255);
+    }
+  }
+  x.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.needsUpdate = true;
+  return t;
+}
+
+/* soft contact shadow so the board sits on the surface rather than floating */
+function buildContactTex() {
+  const N = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = N;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(N / 2, N / 2, 0, N / 2, N / 2, N / 2);
+  g.addColorStop(0.00, 'rgba(0,0,0,0.92)');
+  g.addColorStop(0.42, 'rgba(0,0,0,0.70)');
+  g.addColorStop(0.72, 'rgba(0,0,0,0.22)');
+  g.addColorStop(1.00, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, N, N);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.needsUpdate = true;
+  return t;
+}
+
+/* segmented indicator strip */
+function buildStripTex() {
+  const W = 32, H = 256;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.clearRect(0, 0, W, H);
+  x.fillStyle = '#fff';
+  const n = 11, pad = 5;
+  const cell = (H - pad * 2) / n;
+  for (let i = 0; i < n; i++) {
+    rr(x, 6, pad + i * cell + cell * 0.16, W - 12, cell * 0.68, 3);
+    x.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.needsUpdate = true;
+  return t;
+}
+
+/* ================================================================== *
+ *  Geometry helpers
+ * ================================================================== */
+/** Rounded rectangle as an explicit polyline.
+    Path.absarc() inserts a zero-length lineTo whenever the arc's first point
+    does not land exactly on the current point — which depends on the width, so
+    only some key sizes were affected. ExtrudeGeometry then derives a bevel
+    direction from that zero-length segment and pinches the side walls. */
+function roundedRectShape(w, d, r) {
+  const hw = w / 2, hd = d / 2;
+  r = Math.max(1e-4, Math.min(r, Math.min(w, d) / 2 - 1e-4));
+  const seg = Math.max(2, Math.round(r * 46));
+  const pts = [];
+  const corner = (cx, cy, a0) => {
+    for (let i = 0; i <= seg; i++) {
+      const a = a0 + (i / seg) * (Math.PI / 2);
+      pts.push(new THREE.Vector2(cx + Math.cos(a) * r, cy + Math.sin(a) * r));
+    }
+  };
+  corner( hw - r, -hd + r, -Math.PI / 2);
+  corner( hw - r,  hd - r, 0);
+  corner(-hw + r,  hd - r, Math.PI / 2);
+  corner(-hw + r, -hd + r, Math.PI);
+  return new THREE.Shape(pts);
+}
+
+/** extrude a flat rounded slab upward in Y, bottom at y=0 */
+function slab(w, d, r, depth, bevelSize, bevelThickness, seg = 4) {
+  const shape = roundedRectShape(w - 2 * bevelSize, d - 2 * bevelSize, Math.max(0.01, r - bevelSize));
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth, bevelEnabled: true, bevelSize, bevelThickness,
+    bevelSegments: seg, curveSegments: 10, steps: 1
+  });
+  g.rotateX(-Math.PI / 2);
+  g.translate(0, bevelThickness, 0);
+  g.computeVertexNormals();
+  return g;
+}
+
+/* ================================================================== *
+ *  Scene
+ * ================================================================== */
+const heroEl = document.getElementById('hero');
+const canvas = document.getElementById('gl');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+} catch (e) {
+  document.body.classList.add('nogl');
+}
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+
+/* Camera on a pivot at the deck centre: orbiting is then a rotation of the
+   pivot, with no lookAt and no gimbal trouble from the near-top-down view.
+   `orbit.yaw` spins around the board, `orbit.tilt` raises the viewing angle. */
+const camera = new THREE.PerspectiveCamera(10, 16 / 9, 30, 140);
+const camPivot = new THREE.Group();
+camPivot.position.z = FRAME_Z;
+camera.position.set(0, 0, CAM_DIST);
+camPivot.add(camera);
+scene.add(camPivot);
+
+/* Orbit: set yaw/tilt (radians) and call applyOrbit(), or use __viz.setOrbit()
+   with degrees. Because the camera hangs off a pivot there is no lookAt to go
+   unstable, and fitCamera() re-frames the board so it can never swing off. */
+let headMesh;
+const orbit = { yaw: 0, tilt: 0 };
+function applyOrbit() {
+  camPivot.rotation.set(TILT - Math.PI / 2 + orbit.tilt, orbit.yaw, 0, 'YXZ');
+  camPivot.updateMatrixWorld(true);
+  fitCamera();
+}
+applyOrbit();
+
+/* --- materials --- */
+const matCase = new THREE.MeshStandardMaterial({
+  color: 0x33363c, metalness: 0.30, roughness: 0.50
+});
+const underglowTex = buildUnderglow();
+// Pure emission: no albedo and no specular of its own, so the gaps between the
+// caps stay black however hard the lamp is driven.
+const matPlate = new THREE.MeshBasicMaterial({
+  map: underglowTex, color: 0x000000, toneMapped: true
+});
+const matCap = new THREE.MeshStandardMaterial({
+  color: 0x34373b, metalness: 0.0, roughness: 0.66
+});
+const matLegend = new THREE.MeshStandardMaterial({
+  color: 0xffffff, roughness: 0.5, metalness: 0.0,
+  emissive: 0xffd9b4, emissiveIntensity: 0,   // the legends are lit from inside
+  transparent: true, depthWrite: false, alphaTest: 0.02,
+  polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3
+});
+
+/* --- the headline, standing behind the board --- */
+{
+  const tex = buildHeadlineTex();
+  // unit-width plane: fitCamera() scales it to the frame each layout
+  headMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, tex.image.height / tex.image.width),
+    // driven above 1 so the ash end of the gradient survives ACES instead of
+    // landing as flat grey
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
+  );
+  headMesh.material.color.setRGB(1.45, 1.34, 1.24);
+  headMesh.rotation.x = TILT - Math.PI / 2;   // square to the camera at rest
+  headMesh.position.set(0, HEAD_Y, HEAD_Z);
+  headMesh.scale.setScalar(DECK_W * HEAD_SCALE);
+  headMesh.name = 'headline';
+  scene.add(headMesh);
+}
+
+/* --- backdrop the board sits on --- */
+const DESK_Y = -DECK_H - 0.03;
+const matBackGlow = new THREE.MeshBasicMaterial({
+  map: buildBackGlowTex(), transparent: true, depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+{
+  // The lit pool stays the size it was; the plane around it is much larger so
+  // its far edge never crosses the frame, with the UVs clamped so everything
+  // past the gradient just samples the dark corner.
+  const DESK_W = 420, DESK_D = 300, POOL_W = 150, POOL_D = 110;
+  const deskTex = buildDeskTex();
+  deskTex.wrapS = deskTex.wrapT = THREE.ClampToEdgeWrapping;
+  deskTex.repeat.set(DESK_W / POOL_W, DESK_D / POOL_D);
+  deskTex.offset.set(-(DESK_W / POOL_W - 1) / 2, -(DESK_D / POOL_D - 1) / 2);
+  const desk = new THREE.Mesh(
+    new THREE.PlaneGeometry(DESK_W, DESK_D),
+    // no depth write: the headline leans back and its lower half passes under
+    // this surface, and it is the keyboard that should cut the letters, not the
+    // floor. Nothing else in the scene needs to be hidden by the desk.
+    new THREE.MeshStandardMaterial({ map: deskTex, roughness: 0.94, metalness: 0.0, depthWrite: false })
+  );
+  desk.rotation.x = -Math.PI / 2;
+  desk.position.y = DESK_Y;
+  desk.name = 'desk';
+  scene.add(desk);
+
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(34, 18), matBackGlow);
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.set(0, DESK_Y + 0.006, -6.2);
+  glow.name = 'backglow';
+  scene.add(glow);
+
+  const sh = new THREE.Mesh(
+    new THREE.PlaneGeometry(DECK_W + 3.4, DECK_D + 3.0),
+    new THREE.MeshBasicMaterial({ map: buildContactTex(), transparent: true, depthWrite: false, color: 0x000000 })
+  );
+  sh.rotation.x = -Math.PI / 2;
+  sh.position.set(0, DESK_Y + 0.004, 0.25);
+  sh.name = 'contact';
+  scene.add(sh);
+}
+
+/* --- case --- */
+{
+  const g = slab(DECK_W, DECK_D, CASE_R, DECK_H - 2 * CASE_BEV, 0.050, CASE_BEV, 5);
+  g.translate(0, -DECK_H - 0.03, 0);
+  const cm = new THREE.Mesh(g, matCase); cm.name = 'case';
+  scene.add(cm);
+}
+
+/* --- light pipe around the case edge --- */
+const matRim = new THREE.MeshBasicMaterial({
+  vertexColors: true, transparent: true, depthWrite: false,
+  blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+});
+{
+  // getPoints() collapses straight edges to two vertices, which would smear the
+  // fade along the whole rail — resample the outline at even arc length instead.
+  const pts = roundedRectShape(DECK_W - 0.050, DECK_D - 0.050, CASE_R - 0.015).getSpacedPoints(720);
+  const n = pts.length;
+  const pos = [], col = [], idx = [];
+  const HW = 0.014;                         // half width of the pipe
+  for (let i = 0; i < n; i++) {
+    const p = pts[i], q = pts[(i + 1) % n], o = pts[(i - 1 + n) % n];
+    let tx = q.x - o.x, ty = q.y - o.y;
+    const L = Math.hypot(tx, ty) || 1; tx /= L; ty /= L;
+    const nx = ty, ny = -tx;
+    for (const s of [-1, 1]) pos.push(p.x + nx * HW * s, -0.030, p.y + ny * HW * s);
+    // fades out as the pipe runs down the sides toward the viewer...
+    // ...and the side runs read hotter, since the camera sees them edge-on
+    const f = Math.pow(1 - smoothstep(-0.55, 1.25, p.y), 2.0) * (1 + 1.9 * Math.abs(nx));
+    for (let k = 0; k < 2; k++) col.push(f, f, f);
+  }
+  for (let i = 0; i < n; i++) {
+    const a = i * 2, b = a + 1, c = ((i + 1) % n) * 2, d = c + 1;
+    idx.push(a, b, c, b, d, c);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setIndex(idx);
+  const rimMesh = new THREE.Mesh(g, matRim);
+  rimMesh.name = 'rim';
+  rimMesh.renderOrder = 3;
+  scene.add(rimMesh);
+}
+
+/* --- switch plate --- */
+{
+  const geo = new THREE.ShapeGeometry(roundedRectShape(PLATE_W, PLATE_D, PLATE_R), 12);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    uv.setXY(i, (pos.getX(i) + PLATE_W / 2) / PLATE_W, 1 - (pos.getZ(i) + PLATE_D / 2) / PLATE_D);
+  }
+  uv.needsUpdate = true;
+  const plate = new THREE.Mesh(geo, matPlate);
+  plate.name = 'plate';
+  plate.position.y = PLATE_Y;
+  scene.add(plate);
+}
+
+/* --- keycaps and legends, merged into one draw each --- */
+const NKEYS = KEYS.length;
+const press = new Float32Array(NKEYS);      // 0..1 travel per key
+{
+  const caps = [], legs = [];
+  const tag = (g, id) => {
+    const n = g.attributes.position.count;
+    const a = new Float32Array(n);
+    a.fill(id);
+    g.setAttribute('keyId', new THREE.BufferAttribute(a, 1));
+    return g;
+  };
+  for (const k of KEYS) {
+    if (k.brand) continue;
+    const id = KEYS.indexOf(k);
+    const g = slab(k.w - CAP_GAP, 1 - CAP_GAP, 0.050, 0.155, 0.058, 0.042, 3);
+    g.translate(k.cx, PLATE_Y, k.cz);
+    caps.push(tag(g, id));
+
+    const cell = k._cell;
+    const u0 = cell.x / ATLAS.w, v0 = 1 - (cell.y + cell.h) / ATLAS.h;
+    const u1 = (cell.x + cell.w) / ATLAS.w, v1 = 1 - cell.y / ATLAS.h;
+    const q = new THREE.PlaneGeometry(k.w, 1);
+    q.rotateX(-Math.PI / 2);
+    const uv = q.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + uv.getX(i) * (u1 - u0), v0 + uv.getY(i) * (v1 - v0));
+    uv.needsUpdate = true;
+    q.translate(k.cx, PLATE_Y + CAP_H + 0.004, k.cz);
+    legs.push(tag(q, id));
+  }
+  const capMesh = new THREE.Mesh(mergeGeometries(caps, false), matCap);
+  capMesh.name = 'caps';
+  scene.add(capMesh);
+  const legendMesh = new THREE.Mesh(mergeGeometries(legs, false), matLegend);
+  legendMesh.name = 'legends';
+  legendMesh.renderOrder = 2;
+  scene.add(legendMesh);
+}
+
+/** One draw call for every cap, and still individually pressable: the key index
+    rides along as a vertex attribute and the travel comes from a uniform array,
+    so nothing has to be split out or re-uploaded per frame. */
+const uPress = { value: press };
+function pressable(mat) {
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uPress = uPress;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>',
+        `#include <common>
+         attribute float keyId;
+         varying float vPress;
+         uniform float uPress[${NKEYS}];`)
+      .replace('#include <begin_vertex>',
+        `#include <begin_vertex>
+         vPress = uPress[int(keyId + 0.5)];
+         transformed.y -= vPress * ${PRESS.toFixed(4)};`);
+    // a pressed key lights from underneath, so hovering reads as activation
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\nvarying float vPress;`)
+      .replace('#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+         totalEmissiveRadiance += vec3(${ACCENT.r}, ${ACCENT.g}, ${ACCENT.b}) * vPress * 0.20;`);
+  };
+  mat.customProgramCacheKey = () => 'pressable';
+  return mat;
+}
+pressable(matCap);
+pressable(matLegend);
+
+/* --- round brand key --- */
+let matSparkRef;
+const brandKey = KEYS.find(k => k.brand);
+const matBrandCap = new THREE.MeshStandardMaterial({
+  color: 0x2b1409, metalness: 0.0, roughness: 0.5,
+  emissive: ACCENT_HEX, emissiveIntensity: 0.30
+});
+{
+  const g = new THREE.CylinderGeometry(0.255, 0.275, 0.28, 56, 1, false);
+  g.translate(brandKey.cx, PLATE_Y + 0.14, brandKey.cz);
+  scene.add(new THREE.Mesh(g, matBrandCap));
+  scene.add(new THREE.Mesh(
+    new THREE.CircleGeometry(0.255, 56).rotateX(-Math.PI / 2)
+      .translate(brandKey.cx, PLATE_Y + 0.281, brandKey.cz), matBrandCap));
+
+  const sc = document.createElement('canvas'); sc.width = sc.height = 256;
+  const sx = sc.getContext('2d');
+  sx.fillStyle = '#fff'; sx.strokeStyle = '#fff';
+  drawGlyph(sx, 'spark', 128, 128, 150);
+  const stex = new THREE.CanvasTexture(sc);
+  stex.colorSpace = THREE.SRGBColorSpace;
+  matSparkRef = new THREE.MeshBasicMaterial({
+    map: stex, transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const spark = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.34, 0.34).rotateX(-Math.PI / 2)
+      .translate(brandKey.cx, PLATE_Y + 0.286, brandKey.cz), matSparkRef);
+  spark.renderOrder = 4;
+  scene.add(spark);
+}
+
+/* --- indicator strips flanking the function row --- */
+const matStrip = new THREE.MeshBasicMaterial({
+  map: buildStripTex(), transparent: true, depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+for (const sx of [-1, 1]) {
+  const g = new THREE.PlaneGeometry(0.17, 0.90);
+  g.rotateX(-Math.PI / 2);
+  g.translate(sx * 8.12, PLATE_Y + 0.006, -2.47);
+  const m = new THREE.Mesh(g, matStrip);
+  m.renderOrder = 3;
+  scene.add(m);
+}
+
+matBackGlow.color.setScalar(G.back);
+
+/* the emissive parts are always on now that there is no reveal to animate */
+matRim.color.setRGB(G.rim * ACCENT.r, G.rim * ACCENT.g, G.rim * ACCENT.b);
+matPlate.color.setScalar(G.led);
+matStrip.color.setRGB(G.strip, G.strip * 0.78, G.strip * 0.55);
+matSparkRef.color.setRGB(G.brand * ACCENT.r, G.brand * ACCENT.g, G.brand * ACCENT.b);
+
+/** Frames the board for the aspect and for the *widest* point of the swing, not
+    for the current angle — fitting live would make the zoom breathe as it
+    orbits. Only a programmatic orbit past the pointer's range re-fits. */
+function fitCamera() {
+  const yaw  = Math.max(ORBIT_YAW, Math.abs(orbit.yaw));
+  const tilt = Math.max(ORBIT_TILT, Math.abs(orbit.tilt));
+  const cy = Math.abs(Math.cos(yaw)), sy = Math.abs(Math.sin(yaw));
+  const effW = DECK_W * cy + DECK_D * sy;      // board extents as the camera sees them
+  // the height cap only guards against the swing, and a yawed board foreshortens
+  // as it turns, so its cross term is discounted — otherwise ultrawide over-shrinks
+  const effD = DECK_D * cy + DECK_W * sy * 0.6;
+  const cosT = Math.cos(TILT + tilt);          // depth foreshortening
+  const tall = THREE.MathUtils.clamp((1.25 - camera.aspect) / 0.55, 0, 1);
+  const fill = FILL_WIDE + (FILL_TALL - FILL_WIDE) * tall;
+  const visH = Math.max(effW / (fill * camera.aspect * cosT), effD / FILL_H);
+  camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(visH * cosT / (2 * CAM_DIST)));
+  camera.updateProjectionMatrix();
+  // the headline is sized off the frame, not the board, so it never runs off
+  // the edges when the viewport turns portrait and the board goes full bleed
+  if (headMesh) {
+    const frameW = visH * cosT * camera.aspect;
+    headMesh.scale.setScalar(Math.min(DECK_W * HEAD_SCALE, frameW * 0.92));
+  }
+}
+
+/* ================================================================== *
+ *  Lighting — a lamp that follows the pointer, over a dim top fill
+ * ================================================================== */
+
+/* The pool is shaped by a projected cookie rather than the cone: a gaussian
+   across the board and a tight core plus a broad halo along it, which keeps a
+   soft edge without the hard ring a plain spotlight leaves. Penumbra is ~0 —
+   three's cone falloff crushes the far rows much harder than distance alone,
+   so the cookie does all of the shaping. */
+const CONE   = THREE.MathUtils.degToRad(72);
+const LAMP_H = 3.40;                       // lamp height above the cap tops
+const REACH  = Math.tan(CONE) * LAMP_H;    // world radius the cone edge lands on
+const COOKIE = { sx: 0.175, zsig: 3.8, zcore: 2.30, zmix: 0.45, xf: 0.80 };
+
+function buildCookie() {
+  const N = 128;
+  const data = new Float32Array(N * N * 4);
+  const sh = COOKIE.zsig / REACH, sc = COOKIE.zcore / REACH, mx = COOKIE.zmix;
+  for (let j = 0; j < N; j++) {
+    const v = (j + 0.5) / N * 2 - 1;
+    const gz = (mx * Math.exp(-v * v / (2 * sc * sc)) + (1 - mx) * Math.exp(-v * v / (2 * sh * sh)))
+             * (1 - smoothstep(0.88, 1.0, Math.abs(v)));
+    for (let i = 0; i < N; i++) {
+      const u = (i + 0.5) / N * 2 - 1;
+      const gx = Math.exp(-u * u / (2 * COOKIE.sx * COOKIE.sx))
+               * (1 - smoothstep(COOKIE.xf, 1.0, Math.abs(u)));
+      const o = (j * N + i) * 4, g = gx * gz;
+      data[o] = g; data[o + 1] = g * 0.958; data[o + 2] = g * 0.912; data[o + 3] = 1;
+    }
+  }
+  const t = new THREE.DataTexture(data, N, N, THREE.RGBAFormat, THREE.FloatType);
+  t.colorSpace = THREE.NoColorSpace;
+  t.minFilter = t.magFilter = THREE.LinearFilter;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.needsUpdate = true;
+  return t;
+}
+
+const lamp = new THREE.SpotLight(0xffffff, G.lamp, 0, CONE, 0.02, 2);
+lamp.map = buildCookie();
+lamp.position.set(0, LAMP_H + PLATE_Y + CAP_H, 0);
+lamp.target.position.set(0, PLATE_Y, 0);
+scene.add(lamp, lamp.target);
+
+/* The orb: a real light behind the board, plus the glow you can see. Because it
+   is a light in the scene rather than a painted gradient, the rim it throws on
+   the case moves and strengthens as the board turns — which is the whole point
+   of putting it back there. */
+const ORB      = new THREE.Vector3(0, 0.02, -3.45);  // half hidden by the board's back edge
+const ORB_LIGHT = new THREE.Vector3(0, 1.45, -6.10);  // the body of the fire behind it
+const matHalo = new THREE.SpriteMaterial({
+  map: buildHaloTex(), transparent: true, depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+const matBleed = new THREE.SpriteMaterial({
+  map: matHalo.map, transparent: true, depthWrite: false, depthTest: false,
+  blending: THREE.AdditiveBlending
+});
+let coreMesh, haloMesh;
+const matCore = new THREE.SpriteMaterial({
+  map: buildHaloTex(), transparent: true, depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+matCore.color.setScalar(1);
+{
+  coreMesh = new THREE.Sprite(matCore);
+  coreMesh.position.copy(ORB);
+  coreMesh.scale.set(1.9, 1.9, 1);
+  coreMesh.name = 'orbCore';
+  scene.add(coreMesh);
+
+  haloMesh = new THREE.Sprite(matHalo);
+  haloMesh.position.copy(ORB);
+  haloMesh.scale.set(8.4, 6.0, 1);
+  haloMesh.name = 'orbHalo';
+  scene.add(haloMesh);
+
+  // drawn without depth so it carries across the board — the halation you get
+  // looking toward a light through an object in front of it
+  const bleed = new THREE.Sprite(matBleed);
+  bleed.position.copy(ORB);
+  bleed.scale.set(22, 15, 1);
+  bleed.renderOrder = 6;
+  bleed.name = 'orbBleed';
+  scene.add(bleed);
+}
+
+const orbLight = new THREE.PointLight(0xff7a2e, G.orb, 0, 2);
+orbLight.position.copy(ORB_LIGHT);
+scene.add(orbLight);
+
+matHalo.color.setScalar(G.halo);
+matBleed.color.setScalar(G.bleed);
+
+/* a weak ember from behind so the case's back edge picks up a rim of the fire */
+const rimEmber = new THREE.SpotLight(0xff6a22, G.rim3d, 0, THREE.MathUtils.degToRad(64), 1.0, 2);
+rimEmber.position.set(0, 3.0, -11.0);
+rimEmber.target.position.set(0, 0, -3.0);
+scene.add(rimEmber, rimEmber.target);
+
+const fill = new THREE.DirectionalLight(0x9aa6c4, G.fill);
+fill.position.set(-7, 16, -11);
+scene.add(fill);
+const amb = new THREE.AmbientLight(0xb08050, G.amb);
+scene.add(amb);
+
+/* ================================================================== *
+ *  Cinders
+ * ================================================================== *
+ *  Embers lifting off the fire behind the board. Position is a closed form
+ *  of time and a per-particle seed, so there is no simulation to step and
+ *  nothing to upload per frame — the whole field costs one draw call.
+ * ================================================================== */
+const matEmber = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: {
+    uTime: { value: 0 },
+    uGain: { value: G.ember },
+    uViewH: { value: 900 }
+  },
+  vertexShader: `
+    attribute vec4 seed;          // phase, speed, sway, size
+    uniform float uTime, uViewH;
+    varying float vHeat;
+    varying float vFade;
+    varying float vSize;
+    void main() {
+      float life = fract(uTime * (0.026 + 0.052 * seed.y) + seed.x);
+
+      // off the fire fast, then losing lift as it cools
+      float climb = 1.0 - pow(1.0 - life, 1.85);
+      vec3 p = position;
+      p.y += climb * (2.8 + 5.2 * seed.y);
+
+      // wind: a steady drift that builds with height, and two swirl frequencies
+      // beating against each other so no two embers travel the same line
+      float w1 = sin(life * 6.1 + seed.z * 41.0 + uTime * 0.55);
+      float w2 = sin(life * 2.3 + seed.z * 13.7 - uTime * 0.31);
+      float w3 = cos(life * 4.4 + seed.z * 23.3 + uTime * 0.19);
+      p.x += climb * (0.9 + 2.2 * seed.z) + w1 * (0.20 + 1.15 * climb) + w2 * (0.30 + 1.70 * climb);
+      p.z += climb * 0.35 + w3 * (0.18 + 0.85 * climb);
+
+      vec4 mv = modelViewMatrix * vec4(p, 1.0);
+      gl_Position = projectionMatrix * mv;
+
+      float flick = 0.60 + 0.40 * sin(uTime * (6.0 + 24.0 * seed.y) + seed.x * 61.0);
+      vFade = smoothstep(0.0, 0.04, life) * (1.0 - smoothstep(0.42, 1.0, life)) * flick;
+      vHeat = 1.0 - smoothstep(0.0, 0.62, life);
+      vSize = seed.w;
+      // world-space size, projected the way a sphere would be, so embers keep
+      // their scale as the camera moves
+      float world = (0.038 + 0.175 * seed.w) * (0.55 + 0.75 * vHeat);
+      gl_PointSize = world * projectionMatrix[1][1] * uViewH * 0.5 / max(0.001, -mv.z);
+    }`,
+  fragmentShader: `
+    uniform float uGain;
+    varying float vHeat;
+    varying float vFade;
+    varying float vSize;
+    void main() {
+      float d = length(gl_PointCoord - 0.5) * 2.0;
+      if (d > 1.0) discard;
+      // tight core with a short falloff: a spark, not a bokeh disc
+      float a = pow(1.0 - d, 3.4) + 0.7 * pow(max(0.0, 1.0 - d * 2.6), 2.0);
+      vec3 hot  = vec3(1.00, 0.78, 0.40);
+      vec3 warm = vec3(1.00, 0.34, 0.07);
+      vec3 cool = vec3(0.55, 0.06, 0.01);
+      vec3 col = mix(mix(cool, warm, smoothstep(0.0, 0.55, vHeat)), hot, smoothstep(0.55, 1.0, vHeat));
+      // the bigger embers carry more heat, so they burn brighter too
+      gl_FragColor = vec4(col * a * vFade * uGain * (0.75 + 0.85 * vSize), 1.0);
+    }`
+});
+
+{
+  const N = 900;
+  const pos = new Float32Array(N * 3), sd = new Float32Array(N * 4);
+  let r = 4;
+  const rnd = () => (r = (r * 1664525 + 1013904223) >>> 0) / 4294967296;
+  for (let i = 0; i < N; i++) {
+    // denser behind the board, where the fire is, thinning toward the viewer
+    const bias = Math.pow(rnd(), 0.6);
+    pos[i * 3]     = (rnd() * 2 - 1) * (4.5 + 6.0 * bias);
+    pos[i * 3 + 1] = DESK_Y + rnd() * 1.0;
+    pos[i * 3 + 2] = -7.0 + bias * 9.5;
+    sd[i * 4]     = rnd();
+    sd[i * 4 + 1] = rnd();
+    sd[i * 4 + 2] = rnd();
+    // bimodal: a field of fine sparks with a scattering of fat, slow embers
+    sd[i * 4 + 3] = rnd() < 0.14 ? 0.55 + 0.45 * rnd() : Math.pow(rnd(), 1.9) * 0.5;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('seed', new THREE.Float32BufferAttribute(sd, 4));
+  const embers = new THREE.Points(g, matEmber);
+  embers.name = 'embers';
+  embers.frustumCulled = false;
+  embers.renderOrder = 5;
+  scene.add(embers);
+}
+
+/* ================================================================== *
+ *  Post
+ * ================================================================== */
+let composer, bloom, grainPass, rayPass;
+const GrainShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime: { value: 0 },
+    uAmount: { value: 0.020 },
+    uVignette: { value: 0.22 },
+    uAberr: { value: 0.0004 }
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float uTime, uAmount, uVignette, uAberr;
+    varying vec2 vUv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+    void main(){
+      vec2 d = vUv - 0.5;
+      float r2 = dot(d, d);
+      vec2 off = d * uAberr * r2 * 4.0;
+      vec3 c;
+      c.r = texture2D(tDiffuse, vUv + off).r;
+      c.g = texture2D(tDiffuse, vUv).g;
+      c.b = texture2D(tDiffuse, vUv - off).b;
+      c *= 1.0 - uVignette * smoothstep(0.06, 0.62, r2);
+      float n = hash(vUv * vec2(1920.0, 1080.0) + uTime * 37.0) - 0.5;
+      c += n * uAmount * (0.22 + 1.5 * sqrt(max(c.r, max(c.g, c.b))));
+      gl_FragColor = vec4(max(c, 0.0), 1.0);
+    }`
+};
+
+/* Light shafts. Marches each pixel back toward the fire, accumulating whatever
+   is bright along the way — so the keyboard, being dark, cuts the shafts into
+   bands exactly where it stands in front of the light. Nothing to author: the
+   rays follow the orb and the silhouette on their own. */
+const RayShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uLight: { value: new THREE.Vector2(0.5, 0.86) },
+    uDensity: { value: 0.44 },
+    uWeight: { value: 0.105 },
+    uDecay: { value: 0.955 },
+    uThresh: { value: 0.80 },
+    uGain: { value: 0.85 }
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    #define STEPS 20
+    uniform sampler2D tDiffuse;
+    uniform vec2 uLight;
+    uniform float uDensity, uWeight, uDecay, uThresh, uGain;
+    varying vec2 vUv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+    void main(){
+      vec4 base = texture2D(tDiffuse, vUv);
+      if (uGain <= 0.0) { gl_FragColor = base; return; }
+      vec2 delta = (vUv - uLight) * (uDensity / float(STEPS));
+      // jitter the start so the march does not band
+      vec2 uv = vUv - delta * hash(vUv * 271.0);
+      float decay = 1.0;
+      vec3 acc = vec3(0.0);
+      for (int i = 0; i < STEPS; i++) {
+        uv -= delta;
+        acc += max(texture2D(tDiffuse, uv).rgb - uThresh, 0.0) * decay;
+        decay *= uDecay;
+      }
+      // tint the shafts to firelight: with a low threshold the lit keycaps feed
+      // the march too, and untinted that came out as white streaks off the keys
+      vec3 tint = vec3(1.0, 0.60, 0.28);
+      // The shafts only want to live around the fire: held back above it, and
+      // faded out well before the bottom of the frame so nothing floats loose
+      // under the keyboard.
+      float dy = vUv.y - uLight.y;
+      float up   = smoothstep(0.0, 0.26, dy);
+      float down = smoothstep(0.16, 0.46, -dy);
+      float dirW = mix(1.0, 0.20, up) * (1.0 - 0.93 * down);
+      gl_FragColor = vec4(base.rgb + acc * tint * uWeight * uGain * dirW, base.a);
+    }`
+};
+
+function buildComposer(w, h) {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.10, 0.50, 0.80);
+  composer.addPass(bloom);
+  rayPass = new ShaderPass(RayShader);
+  composer.addPass(rayPass);
+  grainPass = new ShaderPass(GrainShader);
+  composer.addPass(grainPass);
+  composer.addPass(new OutputPass());
+  composer.setSize(w, h);
+}
+
+/* ================================================================== *
+ *  Sizing
+ * ================================================================== */
+let vw = 0, vh = 0, forcedSize = null;
+
+function relayout() {
+  if (!renderer) return;
+  let w, h;
+  if (forcedSize) { w = forcedSize[0]; h = forcedSize[1]; }
+  else {
+    const r = heroEl.getBoundingClientRect();
+    // a background tab reports zero layout: keep the last good size and retry
+    if (r.width < 8 || r.height < 8) { if (composer) return; w = 1280; h = 720; }
+    else { w = Math.round(r.width); h = Math.round(r.height); }
+  }
+  if (composer && w === vw && h === vh) return;
+  vw = w; vh = h;
+  const dpr = forcedSize ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(w, h, !forcedSize);
+  camera.aspect = w / h;
+  fitCamera();
+  if (!composer) buildComposer(w * dpr, h * dpr);
+  else composer.setSize(w * dpr, h * dpr);
+}
+
+/* ================================================================== *
+ *  The lamp follows the pointer
+ * ================================================================== */
+const AIM_X = DECK_W / 2 + 0.6;            // let the pool run just past the case
+const AIM_Z = DECK_D / 2 + 0.8;
+const aim  = new THREE.Vector2(0, -1.2);   // where the pool is
+const want = new THREE.Vector2(0, -1.2);   // where it is heading
+
+const ray = new THREE.Raycaster();
+const capPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(PLATE_Y + CAP_H));
+const ndc = new THREE.Vector2(0, 0);       // last pointer, in clip space
+const hit = new THREE.Vector3();
+let lastPointer = -1e9;
+let pinned = false;          // set when the lamp is driven directly, e.g. from code
+
+const orbitWant = { yaw: 0, tilt: 0 };
+
+function readPointer(clientX, clientY) {
+  const r = heroEl.getBoundingClientRect();
+  if (r.width < 8) return;
+  ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+  orbitWant.yaw = ndc.x * ORBIT_YAW;
+  orbitWant.tilt = -ndc.y * ORBIT_TILT;
+  lastPointer = performance.now();
+  pinned = false;
+}
+
+/** Re-cast every frame rather than only on move: the camera is still easing
+    into its orbit, so the point under the cursor keeps shifting. */
+function aimFromPointer() {
+  ray.setFromCamera(ndc, camera);
+  if (!ray.ray.intersectPlane(capPlane, hit)) return;
+  want.set(THREE.MathUtils.clamp(hit.x, -AIM_X, AIM_X),
+           THREE.MathUtils.clamp(hit.z, -AIM_Z, AIM_Z));
+  hovered = keyAt(hit.x, hit.z);
+}
+
+/** Which key the pointer is over, or -1. Tested against the key's whole cell
+    rather than its cap: the caps tile with a fifth of a unit between them, and
+    hit-testing the cap alone made the press drop out every time the pointer
+    crossed a gap. */
+function keyAt(x, z) {
+  for (let i = 0; i < NKEYS; i++) {
+    const k = KEYS[i];
+    if (k.brand) continue;
+    if (Math.abs(x - k.cx) <= k.w / 2 && Math.abs(z - k.cz) <= 0.5) return i;
+  }
+  return -1;
+}
+let hovered = -1;
+
+/** slow wander so the board is alive before anyone touches it */
+function idleAim(t) {
+  want.set(Math.sin(t * 0.29) * 5.0 + Math.sin(t * 0.13 + 2.1) * 1.8,
+           Math.sin(t * 0.21 + 1.1) * 1.7 - 0.7);
+  orbitWant.yaw = Math.sin(t * 0.19) * ORBIT_YAW * 0.55;
+  orbitWant.tilt = Math.sin(t * 0.14 + 0.8) * ORBIT_TILT * 0.45;
+}
+
+if (!STATIC) {
+  heroEl.addEventListener('pointermove', (e) => readPointer(e.clientX, e.clientY), { passive: true });
+  heroEl.addEventListener('pointerdown', (e) => readPointer(e.clientX, e.clientY), { passive: true });
+  heroEl.addEventListener('pointerleave', () => { lastPointer = -1e9; hovered = -1; });
+}
+
+/** How much the board sits between the camera and the fire. Traces the sight
+    line to the orb and asks where it crosses the key plane: if that crossing
+    lands on the board, the fire is behind it and the glow should halate around
+    the silhouette instead of reading as a clean source. This is what makes the
+    backlight strengthen as the view drops toward edge-on. */
+const _c = new THREE.Vector3(), _d = new THREE.Vector3(), _p = new THREE.Vector3();
+function orbOcclusion() {
+  camera.getWorldPosition(_c);
+  _d.copy(ORB).sub(_c);
+  if (Math.abs(_d.y) < 1e-5) return 0;
+  const t = (PLATE_Y + CAP_H - _c.y) / _d.y;
+  if (t <= 0 || t >= 1) return 0;
+  _p.copy(_d).multiplyScalar(t).add(_c);
+  return (1 - smoothstep(DECK_W / 2 - 0.7, DECK_W / 2 + 1.0, Math.abs(_p.x)))
+       * (1 - smoothstep(DECK_D / 2 - 0.7, DECK_D / 2 + 1.0, Math.abs(_p.z)));
+}
+let occ = 0;
+
+/* ================================================================== *
+ *  Loop
+ * ================================================================== */
+let last = performance.now();
+
+function tick(now) {
+  requestAnimationFrame(tick);
+  if (!renderer || !composer) return;
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  relayout();
+
+  const idle = !pinned && now - lastPointer > 1500;
+  if (idle) { if (!REDUCED) idleAim(now / 1000); hovered = -1; }
+
+  if (!pinned) {
+    const ko = 1 - Math.exp(-dt * (idle ? 1.6 : 4.5));
+    orbit.yaw += (orbitWant.yaw - orbit.yaw) * ko;
+    orbit.tilt += (orbitWant.tilt - orbit.tilt) * ko;
+    applyOrbit();
+    if (!idle) aimFromPointer();
+  }
+
+  // the hovered key sinks, everything else springs back
+  const down = 1 - Math.exp(-dt * 22), up = 1 - Math.exp(-dt * 11);
+  for (let i = 0; i < NKEYS; i++) {
+    const t = i === hovered ? 1 : 0;
+    press[i] += (t - press[i]) * (t > press[i] ? down : up);
+  }
+
+  const k = 1 - Math.exp(-dt * 8);
+  aim.x += (want.x - aim.x) * k;
+  aim.y += (want.y - aim.y) * k;
+  lamp.position.set(aim.x, LAMP_H + PLATE_Y + CAP_H, aim.y);
+  lamp.target.position.set(aim.x, PLATE_Y, aim.y);
+  lamp.target.updateMatrixWorld();
+
+  occ += (orbOcclusion() - occ) * (1 - Math.exp(-dt * 6));
+
+  /* Looking down on the board you see the whole pool behind it, so the glow is
+     broad and soft; drop toward eye level and the back edge rises across it,
+     leaving a narrow blade of light that reads much hotter. Real doorway
+     behaviour, amplified — the pointer's tilt range is only 14 degrees. */
+  const graze = THREE.MathUtils.clamp((orbit.tilt + ORBIT_TILT) / (2 * ORBIT_TILT), 0, 1);
+  haloMesh.scale.set(8.4, 7.6 - 4.4 * graze, 1);
+  coreMesh.scale.setScalar(2.1 - 0.7 * graze);
+  matHalo.color.setScalar(G.halo * (0.82 + 0.75 * graze) * (1 - 0.35 * occ));
+  matBleed.color.setScalar(G.bleed * (1 + 2.4 * occ) * (0.7 + 0.9 * graze));
+  matCore.color.setScalar((0.9 + 0.7 * graze) * (1 - 0.55 * occ));
+
+  // the shafts follow the fire on screen, and fade out when it leaves the frame
+  _p.copy(ORB).project(camera);
+  rayPass.uniforms.uLight.value.set(_p.x * 0.5 + 0.5, _p.y * 0.5 + 0.5);
+  const off = Math.max(Math.abs(_p.x), Math.abs(_p.y));
+  rayPass.uniforms.uGain.value = G.rays * (1 - smoothstep(1.0, 1.9, off)) * (0.75 + 0.6 * graze);
+
+  grainPass.uniforms.uTime.value = now / 1000;
+  matEmber.uniforms.uTime.value = (now / 1000) * (REDUCED ? 0.12 : 1);
+  matEmber.uniforms.uViewH.value = renderer.domElement.height;
+  composer.render();
+}
+
+new ResizeObserver(() => relayout()).observe(document.documentElement);
+window.addEventListener('resize', relayout);
+
+/* ================================================================== *
+ *  Boot
+ * ================================================================== */
+async function boot() {
+  if (!renderer) return;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+
+  try { await document.fonts.ready; } catch (e) {}
+  const atlas = buildAtlases().legend;
+  matLegend.map = atlas;
+  matLegend.emissiveMap = atlas;
+  matLegend.emissiveIntensity = G.keyLit;
+  matLegend.needsUpdate = true;
+
+  relayout();
+  composer.render();                 // paint synchronously, don't wait for rAF
+  requestAnimationFrame(tick);
+  window.__ready = true;
+}
+
+/* Hooks. `orbit` is left at zero — set yaw/tilt (radians) and call applyOrbit()
+   to swing the camera around the board; the pivot makes that a plain rotation. */
+window.__viz = {
+  THREE, scene, camera, camPivot, renderer, lamp, orbit, G, COOKIE,
+  applyOrbit,
+  setCookie(o) { Object.assign(COOKIE, o); lamp.map.dispose(); lamp.map = buildCookie(); },
+  setLights(o) {
+    Object.assign(G, o);
+    lamp.intensity = G.lamp; fill.intensity = G.fill; amb.intensity = G.amb;
+    rimEmber.intensity = G.rim3d;
+    orbLight.intensity = G.orb;
+    matHalo.color.setScalar(G.halo);
+    matBleed.color.setScalar(G.bleed);
+    matLegend.emissiveIntensity = G.keyLit;
+    matBackGlow.color.setScalar(G.back);
+    matEmber.uniforms.uGain.value = G.ember;
+    if (rayPass) rayPass.uniforms.uGain.value = G.rays;
+    matRim.color.setRGB(G.rim * ACCENT.r, G.rim * ACCENT.g, G.rim * ACCENT.b);
+    matPlate.color.setScalar(G.led);
+    matStrip.color.setRGB(G.strip, G.strip * 0.78, G.strip * 0.55);
+    matSparkRef.color.setRGB(G.brand * ACCENT.r, G.brand * ACCENT.g, G.brand * ACCENT.b);
+  },
+  setOrbit(yawDeg, tiltDeg) {
+    orbit.yaw = THREE.MathUtils.degToRad(yawDeg || 0);
+    orbit.tilt = THREE.MathUtils.degToRad(tiltDeg || 0);
+    applyOrbit();
+  },
+  aim(x, z) { pinned = true; hovered = keyAt(x, z); want.set(x, z); aim.set(x, z); lamp.position.set(x, LAMP_H + PLATE_Y + CAP_H, z); lamp.target.position.set(x, PLATE_Y, z); lamp.target.updateMatrixWorld(); },
+  size(w, h) { forcedSize = [w, h]; relayout(); },
+  render() { relayout(); composer.render(); },
+  pressArray: press, keys: KEYS,
+  get info() { return { fov: camera.fov, aspect: camera.aspect, canvas: [canvas.width, canvas.height], keys: KEYS.length }; }
+};
+
+boot();
+</script>
+</body>
+</html>

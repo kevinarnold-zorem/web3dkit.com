@@ -1,0 +1,4107 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Anteroom Studio® — a spatial, brand and motion studio. We build the quiet part.">
+<meta name="theme-color" content="#EDDEDB">
+<meta property="og:title" content="Anteroom Studio® — Spatial, Brand &amp; Motion">
+<meta property="og:description" content="A spatial, brand and motion studio. We build the quiet part.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23EDDEDB'/%3E%3Cpath d='M8 24V15a8 8 0 0 1 16 0v9' fill='none' stroke='%23141414' stroke-width='2.4'/%3E%3Cpath d='M6 24h20' stroke='%23141414' stroke-width='2.4'/%3E%3C/svg%3E">
+<title>Anteroom Studio® — Spatial, Brand &amp; Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1A1310;
+  --paper:#EFE0CC;
+  --ui: clamp(12px, 1vw, 18px);
+  --pad: clamp(18px, 2vw, 36px);
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;scroll-behavior:auto}
+body{
+  background:var(--paper);
+  font-family:"Switzer","Neue Montreal",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  color:var(--ink);
+  overscroll-behavior-y:none;
+  cursor:none;
+}
+/* the scroll track — the canvas is fixed, this only supplies distance */
+#track{height:560vh}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- shared ---------- */
+.pill{
+  display:inline-flex;align-items:center;gap:.7em;
+  height:calc(var(--ui) * 2.55);
+  padding:0 calc(var(--ui) * 1.3);
+  border-radius:999px;
+  font-size:var(--ui);line-height:1;
+  white-space:nowrap;text-decoration:none;
+  transition:background .45s var(--ease), color .45s var(--ease), border-color .45s var(--ease), opacity .6s var(--ease), transform .6s var(--ease);
+}
+.pill .arr{width:.72em;height:.72em;flex:none;transition:transform .45s var(--ease)}
+.pill:hover .arr{transform:translate(.16em,.16em)}
+.pill--solid{background:#fff;color:var(--ink);box-shadow:0 1px 22px rgba(90,60,60,.10)}
+.pill--solid:hover{background:#111;color:#fff}
+.pill--ghost{border:1px solid rgba(255,255,255,.85);color:#fff}
+.pill--ghost:hover{background:#fff;color:var(--ink)}
+
+/* ---------- header ---------- */
+header{
+  position:fixed;top:0;left:0;right:0;z-index:55;color:#F6EBDC;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(var(--ui)) var(--pad);
+  pointer-events:none;
+}
+header > *{pointer-events:auto}
+.wordmark{display:block;width:clamp(115px,10.9vw,202px);height:auto;color:#F6EBDC;text-decoration:none;transition:color .8s var(--ease)}
+.wordmark svg{display:block;width:100%;height:auto;fill:currentColor}
+nav{display:flex;align-items:center;gap:0}
+nav a{
+  position:relative;display:block;overflow:hidden;
+  padding:.15em .75em;
+  font-size:var(--ui);line-height:1.35;color:currentColor;text-decoration:none;
+}
+nav a span{display:block;transition:transform .55s var(--ease)}
+nav a span.b{position:absolute;inset:.15em .75em auto;font-family:"Instrument Serif",Georgia,serif;font-style:italic;transform:translateY(105%)}
+nav a:hover span.a{transform:translateY(-105%)}
+nav a:hover span.b{transform:translateY(0)}
+/* two rules, no plate: they cross into a close mark once the menu is open */
+.burger{
+  position:relative;display:block;border:0;background:none;padding:0;
+  width:clamp(22px,1.75vw,30px);height:clamp(14px,1.05vw,18px);
+  margin-left:calc(var(--ui) * 1.1);color:inherit;cursor:none;
+}
+.burger i{
+  position:absolute;left:0;right:0;height:1.4px;border-radius:1px;
+  background:currentColor;display:block;
+  transition:transform .55s var(--ease), width .55s var(--ease), opacity .3s var(--ease);
+}
+.burger i:nth-child(1){top:22%}
+.burger i:nth-child(2){top:calc(78% - 1.4px);width:66%}
+.burger:hover i:nth-child(2){width:100%}
+body.menu-open .burger i:nth-child(1){transform:translateY(calc(0.5 * (0.56 * clamp(14px,1.05vw,18px)))) rotate(13deg)}
+body.menu-open .burger i:nth-child(2){width:100%;transform:translateY(calc(-0.5 * (0.56 * clamp(14px,1.05vw,18px)))) rotate(-13deg)}
+/* the chrome inverts once we are under water */
+body.deep,body.deep .wordmark,body.deep nav,body.deep .corner-br{color:#DCEEF2}
+
+/* ---------- hero chrome (the headline itself lives in WebGL) ---------- */
+.cta-layer{
+  position:fixed;inset:0;z-index:12;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.cta{
+  position:absolute;left:50%;transform:translate(-50%,0);
+  pointer-events:auto;
+}
+.cta[data-hidden="1"]{opacity:0;transform:translate(-50%,10px);pointer-events:none}
+
+/* ---------- corners ---------- */
+.corner{position:fixed;z-index:20;display:flex;align-items:center;gap:clamp(8px,.9vw,16px);pointer-events:none}
+.corner > *{pointer-events:auto}
+.corner-bl{left:var(--pad);bottom:calc(var(--ui) * 1.4)}
+.corner-br{right:var(--pad);bottom:calc(var(--ui) * 1.4);color:#F6EBDC;font-size:var(--ui)}
+/* the pill's fill is a shader plate in the HUD scene, so the border and the
+   label stay in the DOM and the light behind them goes through the page's bloom */
+/* the shader plate already gives the pill its shape, so the border only has to
+   hint at the edge — at .85 it drew a hard ring around the light */
+.pill--ghost#notes{background:transparent;border-color:rgba(255,255,255,.26)}
+/* the shader handles the hover, so the fill stays out of the label's way */
+.pill--ghost#notes:hover{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
+
+/* ---------- scroll cue ---------- */
+.hint{
+  position:fixed;left:50%;bottom:calc(var(--ui) * 1.4);transform:translateX(-50%);
+  z-index:20;color:rgba(255,255,255,.92);font-size:clamp(11px,.76vw,14px);
+  letter-spacing:.09em;text-transform:uppercase;pointer-events:none;
+  display:flex;align-items:center;gap:.8em;
+  opacity:0;transition:opacity 1s var(--ease);
+}
+body.ready .hint{opacity:.9}
+body.scrolled .hint{opacity:0}
+.hint i{display:block;width:1px;height:26px;background:currentColor;opacity:.5;position:relative;overflow:hidden}
+.hint i::after{content:"";position:absolute;inset:0;background:#fff;animation:drip 2.2s var(--ease) infinite}
+@keyframes drip{0%{transform:translateY(-100%)}60%,100%{transform:translateY(100%)}}
+
+/* ---------- the contact form under the page ---------- */
+#contact{
+  position:fixed;inset:0;z-index:14;display:flex;align-items:flex-end;justify-content:center;
+  padding:0 var(--pad) calc(var(--ui) * 4.6);
+  background:linear-gradient(180deg, #12212A 0%, #0C1A22 62%, #091620 100%);
+  color:#EFE0CC;pointer-events:none;visibility:hidden;
+  /* --peel is the height the sheet has lifted, in px, written from the loop */
+  --peel:0px;
+  clip-path:inset(calc(100% - var(--peel)) 0 0 0);
+}
+body.peeled #contact{visibility:visible;pointer-events:auto}
+/* two columns, because the strip the fold uncovers is only as tall as `reveal`
+   and a stacked form does not fit inside it without clipping its own heading */
+#contactForm{
+  position:relative;width:min(1100px,100%);
+  display:grid;grid-template-columns:1fr 1.15fr;gap:0 5vw;align-items:end;
+}
+.c-said{display:flex;flex-direction:column;gap:calc(var(--ui)*.7)}
+.c-fields{display:flex;flex-direction:column;gap:calc(var(--ui)*1.0)}
+/* a <button> carries a UA border, and .pill never zeroes it — which drew a grey
+   ring around the solid pill */
+#contactForm button.pill{border:0;cursor:none;font-family:inherit}
+.c-eye{font-size:var(--ui);letter-spacing:.09em;text-transform:uppercase;opacity:.55}
+.c-x{
+  /* anchored to the strip the fold uncovers, using the same --peel the clip
+     uses, so it always clears the fold no matter how far the sheet has lifted */
+  position:absolute;right:var(--pad);top:calc(100% - var(--peel) + var(--ui) * 1.5);
+  display:grid;place-items:center;flex:none;
+  width:clamp(34px,2.6vw,44px);height:clamp(34px,2.6vw,44px);
+  border:1px solid rgba(239,224,204,.28);border-radius:50%;
+  background:transparent;color:inherit;cursor:none;
+  transition:border-color .4s var(--ease),background .4s var(--ease),transform .5s var(--ease);
+}
+.c-x svg{width:46%;height:46%;display:block}
+.c-x:hover{border-color:rgba(239,224,204,.85);background:rgba(239,224,204,.08);transform:rotate(90deg)}
+.c-h{
+  font-family:"Instrument Serif",Georgia,serif;font-weight:400;
+  font-size:clamp(26px,3.0vw,48px);line-height:1.05;letter-spacing:-.01em;
+}
+.c-h em{font-style:italic;opacity:.72}
+.c-grid{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--ui)*.85) calc(var(--ui)*1.6)}
+.c-grid .c-wide{grid-column:1 / -1}
+.c-grid label{display:flex;flex-direction:column;gap:.45em}
+.c-grid span{font-size:calc(var(--ui)*.82);letter-spacing:.08em;text-transform:uppercase;opacity:.55}
+.c-grid input,.c-grid textarea{
+  font:inherit;font-size:var(--ui);color:inherit;background:transparent;
+  border:0;border-bottom:1px solid rgba(239,224,204,.28);
+  padding:.5em 0;resize:none;transition:border-color .4s var(--ease);
+}
+.c-grid input::placeholder,.c-grid textarea::placeholder{color:rgba(239,224,204,.34)}
+.c-grid input:focus,.c-grid textarea:focus{outline:0;border-bottom-color:rgba(239,224,204,.85)}
+.c-foot{display:flex;align-items:center;gap:calc(var(--ui)*1.2);flex-wrap:wrap}
+.c-note{font-size:calc(var(--ui)*.86);opacity:.45}
+@media (max-width:900px){
+  #contactForm{grid-template-columns:1fr;gap:calc(var(--ui)*1.2) 0}
+  .c-grid{grid-template-columns:1fr}
+}
+
+/* ---------- progress rail ---------- */
+.rail{
+  position:fixed;right:calc(var(--pad) * .55);top:50%;transform:translateY(-50%);
+  z-index:20;width:1px;height:22vh;background:rgba(20,20,20,.14);pointer-events:none;
+  transition:background .8s var(--ease), opacity .8s var(--ease);opacity:0;
+}
+body.ready .rail{opacity:1}
+body.deep .rail{background:rgba(255,255,255,.18)}
+.rail b{position:absolute;left:-1px;top:0;width:3px;height:0;background:var(--ink);transition:background .8s var(--ease)}
+body.deep .rail b{background:#EAF3F5}
+
+/* ---------- menu overlay ---------- */
+/* the paper itself is a sheet in WebGL that unrolls from the top; this layer
+   only carries the content that rides on it */
+#menuOverlay{
+  /* padding mirrors MENU_FIT in the script: the page is 78% wide and hangs from
+     7.5% down, so the content has to stay inside that or it falls off the paper */
+  /* the card prints its own content, so this layer is only here for keyboard
+     and screen readers — visually hidden, still focusable */
+  position:fixed;inset:0;z-index:50;background:transparent;
+  clip-path:inset(50%);pointer-events:none;
+  color:#F4EADB;
+  opacity:0;visibility:hidden;
+  transition:opacity .5s var(--ease) .42s, visibility .5s .42s;
+}
+body.menu-open #menuOverlay{opacity:1;visibility:visible}
+body.menu-open nav a{opacity:0;pointer-events:none;transition:opacity .3s var(--ease)}
+.menu-list{list-style:none;margin:auto 0 auto 12%}
+.menu-list li{overflow:hidden}
+.menu-list a{
+  display:flex;align-items:flex-start;gap:.55em;
+  text-decoration:none;color:inherit;
+  transform:translateY(105%);
+  transition:transform .9s var(--ease);
+}
+body.menu-open .menu-list a{transform:translateY(0)}
+body.menu-open .menu-list li:nth-child(1) a{transition-delay:.06s}
+body.menu-open .menu-list li:nth-child(2) a{transition-delay:.13s}
+body.menu-open .menu-list li:nth-child(3) a{transition-delay:.20s}
+body.menu-open .menu-list li:nth-child(4) a{transition-delay:.27s}
+.menu-list .w{
+  font-family:"Instrument Serif","Saol Display",Georgia,serif;
+  font-size:clamp(46px,6.08vw,116px);line-height:1.03;letter-spacing:-.012em;
+}
+.menu-list .n{font-size:calc(var(--ui) * 1.3);line-height:1.35;opacity:.42;transition:opacity .4s var(--ease)}
+.menu-list li:nth-child(2) a{margin-left:2.9vw}
+.menu-list li:nth-child(3) a{margin-left:5.0vw}
+.menu-list li:nth-child(4) a{margin-left:7.3vw}
+.menu-list a:hover .w{font-style:italic}
+.menu-list a:hover .n{opacity:1}
+.menu-foot{
+  display:flex;justify-content:flex-end;align-items:flex-end;gap:min(14vw,220px);
+  margin-top:auto;
+  opacity:0;transform:translateY(14px);
+  transition:opacity .7s var(--ease) .34s, transform .7s var(--ease) .34s;
+}
+body.menu-open .menu-foot{opacity:1;transform:none}
+.menu-foot a{display:block;color:inherit;text-decoration:none;font-size:var(--ui);line-height:1.55}
+.menu-foot a::before{content:"\21B3";display:inline-block;margin-right:.5em;opacity:.45}
+.menu-foot .soc a{font-size:calc(var(--ui)*.7);letter-spacing:.08em;text-transform:uppercase;line-height:1.5}
+.menu-foot a:hover{opacity:.55}
+
+/* ---------- cursor ---------- */
+#cur{
+  position:fixed;top:0;left:0;z-index:90;pointer-events:none;
+  width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.92);
+  /* a dark halo either side of the ring keeps it readable on pale stone and on
+     dark water alike, without a blend mode that goes strange over the sunset */
+  box-shadow:0 0 0 1px rgba(20,12,8,.38), inset 0 0 0 1px rgba(20,12,8,.30), 0 2px 12px rgba(0,0,0,.28);
+  background:rgba(255,244,228,.06);
+  transition:width .35s var(--ease),height .35s var(--ease),margin .35s var(--ease),background .35s var(--ease),border-color .5s var(--ease),opacity .3s;
+  opacity:0;
+}
+#cur::after{
+  content:"";position:absolute;left:50%;top:50%;
+  width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;
+  background:rgba(255,255,255,.95);
+  box-shadow:0 0 0 1px rgba(20,12,8,.42);
+  transition:transform .35s var(--ease),opacity .35s var(--ease);
+}
+#cur.on{opacity:1}
+#cur.big{width:62px;height:62px;margin:-31px 0 0 -31px;background:rgba(255,244,228,.14);border-color:#fff}
+#cur.big::after{transform:scale(2.1);opacity:.85}
+#cur.pick{width:62px;height:62px;margin:-31px 0 0 -31px;background:rgba(255,244,228,.14);border-color:#fff}
+#cur.pick::after{transform:scale(2.1);opacity:.85}
+#cur.grab{width:50px;height:50px;margin:-25px 0 0 -25px;background:rgba(255,244,228,.10)}
+body.deep #cur{border-color:rgba(240,252,255,.95);box-shadow:0 0 0 1px rgba(2,18,26,.45), inset 0 0 0 1px rgba(2,18,26,.35), 0 2px 14px rgba(0,0,0,.35)}
+body.deep #cur.big,body.deep #cur.pick{background:rgba(210,244,252,.16)}
+
+header,.corner,.cta-layer{opacity:0;transition:opacity 1.6s var(--ease) .35s}
+body.ready header,body.ready .corner,body.ready .cta-layer{opacity:1}
+/* the paper covers the canvas but not the DOM, so everything riding on top of
+   it has to stand down. these must sit after the body.ready rules above: same
+   specificity, and source order is what decides it */
+body.menu-open .cta-layer,body.menu-open .corner-bl,body.menu-open .corner-br,
+body.menu-open .hint,body.menu-open .rail,
+body.peeled .cta-layer,body.peeled .corner-bl,body.peeled .corner-br,body.peeled .rail{
+  opacity:0;pointer-events:none;transition:opacity .3s var(--ease)
+}
+
+@media (hover:none){ body{cursor:auto} #cur{display:none} }
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.08s!important}
+}
+@media (max-width:760px){
+  :root{--ui:13px;--pad:18px}
+  nav a{display:none}
+  .rail{right:10px;height:20vh}
+  .menu-list{margin-left:0}
+  .menu-list li:nth-child(n) a{margin-left:0}
+  .menu-foot{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:1.2em}
+}
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+<div id="track"></div>
+
+<h1 class="sr">Anteroom Studio — a spatial, brand and motion studio. Beneath the surface.</h1>
+
+<header>
+  <a class="wordmark" href="#" aria-label="Anteroom Studio home">
+    <!-- the box ends just past the ink now that the ® is gone; the css width below
+         is scaled by the same 400/520 so the wordmark renders at its old size -->
+    <svg viewBox="0 0 400 62" role="img" aria-hidden="true">
+      <text x="0" y="46" font-family="Switzer, Helvetica Neue, Arial" font-size="54" letter-spacing="-1.4" fill="currentColor">anteroom</text>
+      <text x="272" y="46" font-family="Instrument Serif, Georgia, serif" font-size="56" letter-spacing="-0.5" fill="currentColor">studio</text>
+    </svg>
+  </a>
+  <nav>
+    <a href="#" data-cursor="big"><span class="a">Work</span><span class="b">Work</span></a>
+    <a href="#" data-cursor="big"><span class="a">Studio</span><span class="b">Studio</span></a>
+    <a href="#" data-cursor="big"><span class="a">Contacts</span><span class="b">Contacts</span></a>
+    <button class="burger" id="menu" aria-label="Toggle menu" aria-expanded="false" data-cursor="big">
+      <i></i><i></i>
+    </button>
+  </nav>
+</header>
+
+<div class="cta-layer">
+  <a class="pill pill--solid cta" id="cta" href="#" data-cursor="big"><span id="ctaLabel">See the work</span>
+    <svg class="arr" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M9.5 2.5v7h-7"/><path d="M2.5 2.5 9.5 9.5"/></svg>
+  </a>
+</div>
+
+<div class="corner corner-bl">
+  <a class="pill pill--ghost" id="notes" href="#" data-cursor="big">Field Notes 2026</a>
+</div>
+<div class="corner corner-br"><span>©2026</span></div>
+<div class="hint" id="hint"><i></i>Scroll to descend</div>
+<div class="rail"><b id="railFill"></b></div>
+
+<!-- what is under the page. it is clipped to whatever the peel has lifted, so
+     it only exists in the strip the sheet has pulled away from -->
+<div id="contact" aria-hidden="true">
+  <!-- outside the form: #contactForm is position:relative, so an absolute child
+       would anchor to the form's box rather than to the uncovered strip -->
+  <button type="button" id="contactClose" class="c-x" aria-label="Close" data-cursor="big">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+      <path d="M5 5l14 14M19 5L5 19"/>
+    </svg>
+  </button>
+  <form id="contactForm" novalidate>
+    <div class="c-said">
+      <p class="c-eye">04 — Start a project</p>
+      <h2 class="c-h">Tell us<br><em>what you are making.</em></h2>
+    </div>
+    <div class="c-fields">
+      <div class="c-grid">
+        <label><span>Name</span><input name="name" type="text" autocomplete="name" placeholder="Your name"></label>
+        <label><span>Email</span><input name="email" type="email" autocomplete="email" placeholder="you@studio.com"></label>
+        <label class="c-wide"><span>The project</span><input name="brief" type="text" placeholder="A sentence is plenty to start."></label>
+      </div>
+      <div class="c-foot">
+        <button type="submit" class="pill pill--solid" data-cursor="big">Send it over</button>
+        <span class="c-note">or just say hello@anteroom.studio</span>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div id="menuOverlay">
+  <ul class="menu-list">
+    <li><a href="#" data-cursor="big"><span class="w">Index</span><span class="n">01</span></a></li>
+    <li><a href="#" data-cursor="big"><span class="w">Work</span><span class="n">02</span></a></li>
+    <li><a href="#" data-cursor="big"><span class="w">Studio</span><span class="n">03</span></a></li>
+    <li><a href="#" data-cursor="big"><span class="w">Contacts</span><span class="n">04</span></a></li>
+  </ul>
+  <div class="menu-foot">
+    <div>
+      <a href="mailto:hello@anteroom.studio" data-cursor="big">hello@anteroom.studio</a>
+      <a href="tel:+442079460000" data-cursor="big">(+44) 20 7946 0000</a>
+    </div>
+    <div class="soc">
+      <a href="#" data-cursor="big">Instagram</a>
+      <a href="#" data-cursor="big">Are.na</a>
+      <a href="#" data-cursor="big">LinkedIn</a>
+      <a href="#" data-cursor="big">Vimeo</a>
+    </div>
+  </div>
+</div>
+
+<div id="cur"></div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}
+</script>
+<script type="module">
+
+
+
+
+import * as THREE from 'three';
+
+/* =====================================================================
+   Anteroom Studio — a flooded anteroom you scroll down into.
+   One three.js scene: plaster room above, water column and seabed below.
+   The headline is typeset into canvas atlases and drawn as quads inside
+   the WebGL frame, so it takes the grain, the bloom and the refraction.
+   ===================================================================== */
+
+const canvas = document.getElementById('gl');
+const dbg = {};
+window.__a = dbg;
+
+function vp(){
+  const w = window.innerWidth  || document.documentElement.clientWidth  || 1440;
+  const h = window.innerHeight || document.documentElement.clientHeight || 810;
+  return { w: Math.max(1, w), h: Math.max(1, h) };
+}
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- renderer ---------- */
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, alpha:false, stencil:false, powerPreference:'high-performance' });
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;   // the composite pass encodes
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+let DPR = Math.min(window.devicePixelRatio || 1, 1.75);
+
+const scene = new THREE.Scene();
+const FOG_AIR   = new THREE.Color(0xdb8f63);
+const FOG_WATER = new THREE.Color(0x123240);
+scene.fog = new THREE.Fog(FOG_AIR.clone(), 28, 250);
+
+const camera = new THREE.PerspectiveCamera(42, 16/9, 0.1, 600);
+camera.position.set(0, 2.50, 0);
+
+/* =====================================================================
+   procedural textures
+   ===================================================================== */
+function fbmCanvas(size, opts={}){
+  const { octaves=5, base=4, gain=0.5, lac=2, contrast=1, seed=1, ridged=false } = opts;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const img = ctx.createImageData(size, size);
+  const hash = (x,y,s)=>{ let h = x*374761393 + y*668265263 + s*1442695040888963407; h = (h ^ (h>>13)) * 1274126177; return ((h ^ (h>>16)) >>> 0) / 4294967295; };
+  const fade = t => t*t*t*(t*(t*6-15)+10);
+  function vnoise(x, y, per, s){
+    const xi = Math.floor(x), yi = Math.floor(y);
+    const xf = x-xi, yf = y-yi;
+    const m = v => ((v % per) + per) % per;
+    const a = hash(m(xi),m(yi),s), b = hash(m(xi+1),m(yi),s);
+    const cc= hash(m(xi),m(yi+1),s), d = hash(m(xi+1),m(yi+1),s);
+    const u = fade(xf), v = fade(yf);
+    return a*(1-u)*(1-v) + b*u*(1-v) + cc*(1-u)*v + d*u*v;
+  }
+  for (let y=0; y<size; y++) for (let x=0; x<size; x++){
+    let amp=1, sum=0, norm=0, freq=base;
+    for (let o=0;o<octaves;o++){
+      let n = vnoise(x/size*freq, y/size*freq, freq, seed+o*17);
+      if (ridged) n = 1 - Math.abs(n*2-1);
+      sum += n*amp; norm += amp; amp *= gain; freq *= lac;
+    }
+    let v = Math.min(1, Math.max(0, (sum/norm - 0.5)*contrast + 0.5));
+    const i = (y*size+x)*4, b8 = v*255;
+    img.data[i]=img.data[i+1]=img.data[i+2]=b8; img.data[i+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  return c;
+}
+function texFrom(cv, rep=1){
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(rep, rep);
+  t.anisotropy = 8;
+  return t;
+}
+
+/* =====================================================================
+   sky — a low sun, most of the way down
+   ===================================================================== */
+const SUN_POS = new THREE.Vector3(12.6, 22.7, -44.4);
+const SUN_TGT = new THREE.Vector3(-6, 0, -2);
+const LDIR = SUN_TGT.clone().sub(SUN_POS).normalize();   // direction of travel
+
+const skyUniforms = {
+  uZen:   { value: new THREE.Color(0x2a2f5c).convertSRGBToLinear() },
+  uMid:   { value: new THREE.Color(0x8d5f86).convertSRGBToLinear() },
+  uHor:   { value: new THREE.Color(0xe8804a).convertSRGBToLinear() },
+  uLow:   { value: new THREE.Color(0xffc27a).convertSRGBToLinear() },
+  uSunC:  { value: new THREE.Color(0xfff0c8).convertSRGBToLinear() },
+  uSunDir:{ value: LDIR.clone().negate() },              // toward the sun
+  uTime:  { value: 0 },
+  uUnder: { value: 0 },
+  uDeepC: { value: new THREE.Color(0x123240).convertSRGBToLinear() }
+};
+const SKY_FN = /* glsl */`
+  float h21(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+  float vn(vec2 p){
+    vec2 i = floor(p), f = fract(p);
+    f = f*f*(3.0-2.0*f);
+    return mix(mix(h21(i),h21(i+vec2(1,0)),f.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x), f.y);
+  }
+  float fbm2d(vec2 p){ float s=0.0,a=0.5; for(int i=0;i<5;i++){ s+=a*vn(p); p*=2.02; a*=0.5; } return s; }
+  vec3 skyColor(vec3 d){
+    float y = clamp(d.y, -0.35, 1.0);
+    float sd = max(dot(normalize(d), uSunDir), 0.0);
+    // the band structure of a low sun: hot near the horizon, violet above
+    vec3 col = mix(uLow, uHor, smoothstep(-0.06, 0.055, y));
+    col = mix(col, uMid, smoothstep(0.03, 0.30, y));
+    col = mix(col, uZen, smoothstep(0.22, 0.85, y));
+    // the sun's own glow, warmest along the horizon toward it
+    float haze = pow(sd, 2.4) * exp(-max(y,0.0)*4.5);
+    col += uSunC * haze * 0.85;
+    col += uSunC * pow(sd, 300.0) * 3.2;
+    col += vec3(1.0,0.55,0.28) * pow(sd, 22.0) * 0.55;
+    // cloud bars, lit from beneath
+    vec2 cp = d.xz / max(abs(d.y) + 0.13, 0.13);
+    float cl = fbm2d(cp*vec2(0.34, 1.15) + vec2(uTime*0.004, uTime*0.0016));
+    float band = smoothstep(0.50, 0.86, cl) * smoothstep(0.015, 0.30, y) * smoothstep(0.86, 0.42, y);
+    vec3 cloudLit = mix(vec3(0.30,0.16,0.26), vec3(1.25,0.62,0.34), pow(sd, 1.6));
+    col = mix(col, cloudLit, band*0.78);
+    // ground haze below the horizon
+    col = mix(col, uLow*0.55, smoothstep(-0.02, -0.26, y));
+    return col;
+  }
+`;
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite:false, fog:false, uniforms: skyUniforms,
+  vertexShader: `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: `precision highp float; varying vec3 vDir;
+    uniform vec3 uZen,uMid,uHor,uLow,uSunC,uSunDir,uDeepC; uniform float uTime, uUnder;
+    ${SKY_FN}
+    void main(){
+      vec3 c = skyColor(normalize(vDir));
+      gl_FragColor = vec4(mix(c, uDeepC, uUnder), 1.0);   // match the fog, or the sky reads as a hole
+    }`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 48, 32), skyMat);
+sky.frustumCulled = false;
+scene.add(sky);
+
+let envTex = null;
+{
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const probeScene = new THREE.Scene();
+  probeScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 24), skyMat));
+  envTex = pmrem.fromScene(probeScene, 0, 1, 120).texture;
+  pmrem.dispose();
+}
+
+/* =====================================================================
+   procedural surfaces — grain, mottle, veining and patina are evaluated
+   per fragment from world position, so nothing tiles and the detail
+   holds all the way to the camera
+   ===================================================================== */
+const NOISE_GLSL = /* glsl */`
+  float h31(vec3 p){ p = fract(p*0.1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y)*p.z); }
+  float n31(vec3 p){
+    vec3 i = floor(p), f = fract(p);
+    f = f*f*f*(f*(f*6.0-15.0)+10.0);
+    return mix(mix(mix(h31(i), h31(i+vec3(1,0,0)), f.x),
+                   mix(h31(i+vec3(0,1,0)), h31(i+vec3(1,1,0)), f.x), f.y),
+               mix(mix(h31(i+vec3(0,0,1)), h31(i+vec3(1,0,1)), f.x),
+                   mix(h31(i+vec3(0,1,1)), h31(i+vec3(1,1,1)), f.x), f.y), f.z);
+  }
+  float fbm31(vec3 p, int oct){
+    float s = 0.0, a = 0.5;
+    for (int i = 0; i < 6; i++){ if (i >= oct) break; s += a*n31(p); p = p*2.03 + 7.1; a *= 0.5; }
+    return s;
+  }
+`;
+const CAUSTIC_GLSL = /* glsl */`
+  float causticCell(vec2 uv, float t){
+    vec2 p = mod(uv*6.28318, 6.28318) - 250.0;
+    vec2 i = p;
+    float c = 1.0;
+    const float inten = 0.0048;
+    for (int n = 0; n < 5; n++){
+      float ti = t * (1.0 - (3.5/float(n+1)));
+      i = p + vec2(cos(ti - i.x) + sin(ti + i.y), sin(ti - i.y) + cos(ti + i.x));
+      c += 1.0/length(vec2(p.x/(sin(i.x+ti)/inten), p.y/(cos(i.y+ti)/inten)));
+    }
+    c /= 5.0;
+    c = 1.17 - pow(c, 1.4);
+    return pow(abs(c), 8.0);
+  }
+`;
+/* height fields — one per material family, all in world units */
+const SURF_GLSL = /* glsl */`
+  // rings around the grain axis, warped, plus the fine streaks along it
+  float sWood(vec3 p, vec3 grain, float scale){
+    vec3 q = p*scale;
+    float along = dot(q, grain);
+    vec3 perp = q - grain*along;
+    float r = length(perp)*1.9 + fbm31(q*0.42, 3)*2.6 + along*0.06;
+    float rings = fract(r);
+    float ring = smoothstep(0.02, 0.34, rings) * smoothstep(0.92, 0.46, rings);
+    vec3 sq = q - grain*along*0.90;            // squash across the grain
+    float streak = fbm31(sq*6.5 + grain*along*0.7, 3);
+    float pore = n31(q*34.0);
+    float fine = n31(q*96.0);
+    return ring*0.49 + streak*0.34 + pore*0.11 + fine*0.06;
+  }
+  float sStone(vec3 p, float scale){
+    vec3 q = p*scale;
+    float base  = fbm31(q*0.85, 4);
+    float speck = n31(q*19.0);
+    float vein  = abs(fbm31(q*1.6 + 11.0, 3)*2.0 - 1.0);
+    vein = smoothstep(0.19, 0.0, vein);
+    float grit = n31(q*74.0);
+    return base*0.56 + speck*0.16 + vein*0.28 + grit*0.10;
+  }
+  float sPlaster(vec3 p, float scale){
+    vec3 q = p*scale;
+    return fbm31(q*2.6, 4)*0.60 + n31(q*23.0)*0.22 + n31(q*61.0)*0.11 + n31(q*148.0)*0.07;
+  }
+  float sPatina(vec3 p, float scale){
+    vec3 q = p*scale;
+    return fbm31(q*1.9, 4)*0.75 + n31(q*12.0)*0.25;
+  }
+  // bump from an arbitrary height field, via screen-space derivatives
+  vec3 bumpFrom(vec3 pos, vec3 N, float h, float k){
+    vec3 dpx = dFdx(pos), dpy = dFdy(pos);
+    float dhx = dFdx(h),  dhy = dFdy(h);
+    vec3 r1 = cross(dpy, N), r2 = cross(N, dpx);
+    float det = dot(dpx, r1);
+    vec3 g = (dhx*r1 + dhy*r2) / (abs(det) + 1e-8);
+    return normalize(N - g*k);
+  }
+`;
+
+const shared = {
+  uTime:     { value: 0 },
+  uCaustic:  { value: 1.0 },
+  uCausticC: { value: new THREE.Color(0xffd9a0).convertSRGBToLinear() }
+};
+
+const SURF_KIND = { wood:0, stone:1, plaster:2, patina:3, lacquer:4, gold:5, tile:6 };
+function surface(opts){
+  const {
+    kind = 'stone', color = 0xb0a89a, color2 = null, roughness = 0.9, metalness = 0.0,
+    scale = 1.0, grain = [1,0,0], bump = 0.02, rough2 = null, emissive = 0x000000,
+    emissiveIntensity = 0
+  } = opts;
+  const m = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(color), roughness, metalness,
+    emissive: new THREE.Color(emissive), emissiveIntensity
+  });
+  const c2 = new THREE.Color(color2 === null ? color : color2);
+  m.userData.kind = kind;
+  m.onBeforeCompile = (sh)=>{
+    sh.uniforms.uTime      = shared.uTime;
+    sh.uniforms.uCaustic   = shared.uCaustic;
+    sh.uniforms.uCausticC  = shared.uCausticC;
+    sh.uniforms.uKind      = { value: SURF_KIND[kind] };
+    sh.uniforms.uScale     = { value: scale };
+    sh.uniforms.uGrain     = { value: new THREE.Vector3(...grain).normalize() };
+    sh.uniforms.uBump      = { value: bump };
+    sh.uniforms.uCol2      = { value: c2.clone().convertSRGBToLinear() };
+    sh.uniforms.uRough2    = { value: rough2 === null ? roughness : rough2 };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos; varying vec3 vWNrm;')
+      .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\n  vWNrm = normalize(mat3(modelMatrix) * objectNormal);')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n  vWPos = (modelMatrix * vec4(transformed,1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vWPos; varying vec3 vWNrm;
+        uniform float uTime, uCaustic, uScale, uBump, uRough2;
+        uniform int uKind; uniform vec3 uCausticC, uGrain, uCol2;
+        ${NOISE_GLSL}
+        ${SURF_GLSL}
+        ${CAUSTIC_GLSL}
+        float surfH(vec3 p){
+          if (uKind == 0 || uKind == 4) return sWood(p, uGrain, uScale);
+          if (uKind == 1 || uKind == 6) return sStone(p, uScale);
+          if (uKind == 3 || uKind == 5) return sPatina(p, uScale);
+          return sPlaster(p, uScale);
+        }`)
+      // colour and roughness ride the same height field, so the surface holds together
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        float sh_h = surfH(vWPos);
+        {
+          float k = smoothstep(0.22, 0.78, sh_h);
+          diffuseColor.rgb = mix(diffuseColor.rgb, uCol2, k);
+          if (uKind == 0) diffuseColor.rgb *= 0.80 + 0.34*sh_h;          // grain darkens
+          if (uKind == 1) diffuseColor.rgb *= 0.84 + 0.30*sh_h;
+          if (uKind == 2) diffuseColor.rgb *= 0.88 + 0.22*sh_h;
+          if (uKind == 4) diffuseColor.rgb *= 0.90 + 0.16*sh_h;          // lacquer hides the grain
+          if (uKind == 5) diffuseColor.rgb *= 0.86 + 0.26*sh_h;
+        }`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = clamp(mix(roughnessFactor, uRough2, smoothstep(0.25, 0.75, sh_h)), 0.03, 1.0);`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        normal = bumpFrom(-vViewPosition, normal, sh_h, uBump*1.35);`)
+      .replace('#include <fog_fragment>', `
+        {
+          float depth = -vWPos.y;
+          if (depth > 0.0 && uCaustic > 0.001) {
+            float up = clamp(vWNrm.y*0.75 + 0.25, 0.0, 1.0);
+            float caus = causticCell(vWPos.xz*0.20 + vec2(depth*0.03), uTime*0.42);
+            caus = caus*0.72 + causticCell(vWPos.zx*0.115 - vec2(depth*0.02), uTime*0.27 + 11.0)*0.45;
+            float atten = exp(-depth*0.115) * smoothstep(0.0, 0.7, depth);
+            gl_FragColor.rgb += uCausticC * caus * atten * up * uCaustic * 1.25;
+            float ab = 1.0 - exp(-depth*0.055);
+            gl_FragColor.rgb *= mix(vec3(1.0), vec3(0.26, 0.58, 0.74), ab);
+          }
+        }
+        #include <fog_fragment>`);
+  };
+  m.customProgramCacheKey = ()=> 'surf-' + kind;
+  return m;
+}
+
+/* the palette of the building */
+const matStone   = surface({ kind:'stone',   color:0x8f8375, color2:0xb6a894, roughness:0.94, rough2:0.82, scale:0.55, bump:0.035 });
+const matStoneL  = surface({ kind:'stone',   color:0xa89a88, color2:0xcdbfa8, roughness:0.90, rough2:0.78, scale:0.7,  bump:0.030 });
+const matPlaster = surface({ kind:'plaster', color:0xb09a7e, color2:0xd6c3a6, roughness:0.96, rough2:0.90, scale:1.5,  bump:0.020 });
+const matWood    = surface({ kind:'wood',    color:0x53341f, color2:0x8a5c33, roughness:0.72, rough2:0.52, scale:0.9, grain:[0,1,0], bump:0.030 });
+const matWoodH   = surface({ kind:'wood',    color:0x4a2f1c, color2:0x7d5330, roughness:0.70, rough2:0.50, scale:0.9, grain:[1,0,0], bump:0.030 });
+const matWoodZ   = surface({ kind:'wood',    color:0x4a2f1c, color2:0x7d5330, roughness:0.70, rough2:0.50, scale:0.9, grain:[0,0,1], bump:0.030 });
+const matLacq    = surface({ kind:'lacquer', color:0x9d2b1c, color2:0xd4472c, roughness:0.34, rough2:0.20, scale:0.8, grain:[0,1,0], bump:0.012 });
+const matLacqH   = surface({ kind:'lacquer', color:0x9d2b1c, color2:0xd4472c, roughness:0.34, rough2:0.20, scale:0.8, grain:[1,0,0], bump:0.012 });
+const matCopper  = surface({ kind:'patina',  color:0x3f6b5c, color2:0x8a6a3e, roughness:0.55, rough2:0.35, metalness:0.65, scale:1.6, bump:0.030 });
+const matGold    = surface({ kind:'gold',    color:0x9a7326, color2:0xe8c268, roughness:0.34, rough2:0.16, metalness:0.9,  scale:2.2, bump:0.014 });
+const matTile    = surface({ kind:'tile',    color:0x3b4048, color2:0x606a74, roughness:0.62, rough2:0.42, scale:1.2, bump:0.030 });
+const matBed     = surface({ kind:'stone',   color:0x6f6a5c, color2:0x98907c, roughness:1.0,  rough2:0.92, scale:0.35, bump:0.06 });
+const matSand    = surface({ kind:'stone',   color:0x8a7f6c, color2:0xb5a78d, roughness:0.96, rough2:0.88, scale:0.8, bump:0.05 });
+
+// everything ceremonial sits on one axis, a touch right of the camera's centre
+const AXIS = 0.70;
+
+/* =====================================================================
+   lights — the sun is outside and low, so the room lives on what comes
+   through the openings
+   ===================================================================== */
+const hemi = new THREE.HemisphereLight(0x3d4f86, 0x4a3222, 0.18);
+scene.add(hemi);
+const amb = new THREE.AmbientLight(0x5a4a5e, 0.15);
+scene.add(amb);
+
+const sun = new THREE.DirectionalLight(0xffb867, 5.4);
+sun.position.copy(SUN_POS);
+sun.target.position.copy(SUN_TGT);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 12;
+sun.shadow.camera.far = 108;
+sun.shadow.camera.left = -32; sun.shadow.camera.right = 32;
+sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -16;
+sun.shadow.bias = -0.0006;
+sun.shadow.normalBias = 0.03;
+sun.shadow.radius = 3.0;
+scene.add(sun, sun.target);
+
+// the bounce off a lit stone floor, and a cool fill from the open side
+const bounce = new THREE.DirectionalLight(0xff9a52, 0.22);
+bounce.position.set(-4, -6, 2);
+scene.add(bounce);
+const fill = new THREE.DirectionalLight(0x6d7fce, 0.30);
+fill.position.set(-14, 9, 18);
+scene.add(fill);
+// warm spill just inside the openings
+const spill = new THREE.PointLight(0xffb070, 6, 22, 1.9);
+spill.position.set(4.6, 4.4, -14.2);
+scene.add(spill);
+
+const deepKey = new THREE.DirectionalLight(0x7fc8dc, 0.0);
+deepKey.position.set(-2, 30, 4);
+scene.add(deepKey);
+
+/* =====================================================================
+   the monument
+   ===================================================================== */
+const WATER_Y  = 0.0;
+const LEFT_Z   = -11.0;
+const BACK_Z   = -16.5;
+const CORNER_X = -3.55;
+const WALL_T   = 0.85;
+const TERR_Y   = 1.55;
+const TERR_Z   = -12.60;
+const BED_Y    = -11.4;
+const DEEP     = BED_Y - 2.0;
+
+const ARCH_1 = { cx: -7.62, w: 1.52, top: 5.24 };
+const ARCH_2 = { cx: -5.06, w: 1.52, top: 5.24 };
+const GATE   = { x0: AXIS-2.40, x1: AXIS+2.40, y0: TERR_Y, y1: 6.05 };
+const WIN_A  = { x0: 4.30, x1: 6.10, y0: 3.10, y1: 8.30 };
+const WIN_B  = { x0: 7.30, x1: 9.10, y0: 3.10, y1: 8.30 };
+const STAIR  = { x0: AXIS-2.00, x1: AXIS+2.00, rise: 0.2214, tread: 0.30, up: 7, down: 0 };
+const CLERE  = [4.60, 8.00, 11.40].map(cx => ({ x0: cx-0.85, x1: cx+0.85, y0: 9.40, y1: 12.60 }));
+
+const room = new THREE.Group();
+scene.add(room);
+
+function panel(outline, holes, thickness, mat){
+  const shape = new THREE.Shape(outline);
+  holes.forEach(h => shape.holes.push(new THREE.Path(h)));
+  const g = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled:false, curveSegments: 34 });
+  g.computeVertexNormals();
+  const m = new THREE.Mesh(g, mat);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+const rectPts = (x0,y0,x1,y1)=>[new THREE.Vector2(x0,y0), new THREE.Vector2(x1,y0), new THREE.Vector2(x1,y1), new THREE.Vector2(x0,y1)];
+function archPts(cx, w, yBase, yTop, seg=34){
+  const r = w/2, spring = yTop - r;
+  const p = [new THREE.Vector2(cx-r, yBase), new THREE.Vector2(cx-r, spring)];
+  for (let i=0;i<=seg;i++){ const a = Math.PI - i/seg*Math.PI; p.push(new THREE.Vector2(cx + Math.cos(a)*r, spring + Math.sin(a)*r)); }
+  p.push(new THREE.Vector2(cx+r, yBase));
+  return p;
+}
+function box(w,h,d,mat,x,y,z,rx=0,ry=0,rz=0){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  m.position.set(x,y,z); m.rotation.set(rx,ry,rz);
+  m.castShadow = true; m.receiveShadow = true;
+  room.add(m); return m;
+}
+
+/* a post with a little belly, turned rather than extruded — cylinders read flat */
+function taperedPost(rBase, rTop, h, seg = 48, belly = 0.035){
+  const pts = [], N = 16;
+  for (let i = 0; i <= N; i++){
+    const t = i/N;
+    const r = THREE.MathUtils.lerp(rBase, rTop, t) * (1 + belly*Math.sin(Math.PI*t));
+    pts.push(new THREE.Vector2(r, t*h));
+  }
+  return new THREE.LatheGeometry(pts, seg);
+}
+
+/* --- kumiko: a real lattice, so the shadow it throws is the real grid --- */
+const barGeo = new THREE.BoxGeometry(1, 1, 1);
+function kumiko(x0, y0, x1, y1, pitch, barW, depth, z, mat){
+  const cols = Math.max(1, Math.round((x1-x0)/pitch));
+  const rows = Math.max(1, Math.round((y1-y0)/pitch));
+  const px = (x1-x0)/cols, py = (y1-y0)/rows;
+  const bars = [];
+  for (let i=1;i<cols;i++) bars.push([x0+i*px, (y0+y1)/2, barW, y1-y0]);
+  for (let j=1;j<rows;j++) bars.push([(x0+x1)/2, y0+j*py, x1-x0, barW]);
+  bars.push([(x0+x1)/2, y0, x1-x0, barW*2.2]);
+  bars.push([(x0+x1)/2, y1, x1-x0, barW*2.2]);
+  bars.push([x0, (y0+y1)/2, barW*2.2, y1-y0]);
+  bars.push([x1, (y0+y1)/2, barW*2.2, y1-y0]);
+  const inst = new THREE.InstancedMesh(barGeo, mat, bars.length);
+  const mtx = new THREE.Matrix4();
+  bars.forEach((b,i)=>{ mtx.makeScale(b[2], b[3], depth); mtx.setPosition(b[0], b[1], z); inst.setMatrixAt(i, mtx); });
+  inst.instanceMatrix.needsUpdate = true;
+  inst.castShadow = true; inst.receiveShadow = true;
+  room.add(inst);
+  return { pitchX: px, pitchY: py, barW };
+}
+/* renji: vertical bars trimmed to an arch head */
+function renji(cx, w, yBase, yTop, pitch, barW, depth, z, mat){
+  const r = w/2, spring = yTop - r;
+  const n = Math.max(2, Math.round(w/pitch));
+  const bars = [];
+  for (let i=1;i<n;i++){
+    const x = cx - r + i*(w/n);
+    const dx = Math.abs(x - cx);
+    const top = dx >= r ? spring : (dx > r*0.999 ? spring : spring + Math.sqrt(Math.max(0, r*r - dx*dx)));
+    bars.push([x, (yBase+top)/2, barW, top-yBase]);
+  }
+  for (const yy of [yBase + (yTop-yBase)*0.30, yBase + (yTop-yBase)*0.58]){
+    const dyy = yy - spring;
+    const half = dyy > 0 ? Math.sqrt(Math.max(0, r*r - dyy*dyy)) : r;
+    bars.push([cx, yy, half*2, barW*1.3]);
+  }
+  const inst = new THREE.InstancedMesh(barGeo, mat, bars.length);
+  const mtx = new THREE.Matrix4();
+  bars.forEach((b,i)=>{ mtx.makeScale(b[2], b[3], depth); mtx.setPosition(b[0], b[1], z); inst.setMatrixAt(i, mtx); });
+  inst.instanceMatrix.needsUpdate = true;
+  inst.castShadow = true; inst.receiveShadow = true;
+  room.add(inst);
+}
+
+/* --- the arched screen wall, Western openings with a Japanese screen --- */
+{
+  const w = panel(rectPts(-34, DEEP, CORNER_X, 9.6),
+    [ archPts(ARCH_1.cx, ARCH_1.w, DEEP, ARCH_1.top), archPts(ARCH_2.cx, ARCH_2.w, DEEP, ARCH_2.top) ],
+    WALL_T, matPlaster);
+  w.position.z = LEFT_Z - WALL_T;
+  room.add(w);
+  for (const a of [ARCH_1, ARCH_2]) renji(a.cx, a.w, 0.35, a.top, 0.17, 0.045, 0.10, LEFT_Z - 0.12, matWood);
+  // a stone band at the springing, and the archivolt
+  box(30.5, 0.34, WALL_T + 0.22, matStoneL, -18.9, ARCH_1.top - ARCH_1.w/2, LEFT_Z - WALL_T/2);
+}
+/* return wall */
+{
+  const depth = LEFT_Z - BACK_Z;
+  const TOP = 9.2;                                  // low enough for the shafts to cross above it
+  const m = new THREE.Mesh(new THREE.BoxGeometry(WALL_T, TOP - DEEP, depth), matPlaster);
+  m.position.set(CORNER_X - WALL_T/2, (TOP + DEEP)/2, (LEFT_Z + BACK_Z)/2 - WALL_T/2);
+  m.castShadow = true; m.receiveShadow = true;
+  room.add(m);
+}
+/* --- the far wall: the gateway and two lattice windows --- */
+{
+  const w = panel(rectPts(CORNER_X - WALL_T, DEEP, 34, 19),
+    [ rectPts(GATE.x0, GATE.y0, GATE.x1, GATE.y1),
+      rectPts(WIN_A.x0, WIN_A.y0, WIN_A.x1, WIN_A.y1),
+      rectPts(WIN_B.x0, WIN_B.y0, WIN_B.x1, WIN_B.y1),
+      ...CLERE.map(c => rectPts(c.x0, c.y0, c.x1, c.y1)) ],
+    0.95, matPlaster);
+  w.position.z = BACK_Z - 0.95;
+  room.add(w);
+}
+const LAT = kumiko(WIN_A.x0, WIN_A.y0, WIN_A.x1, WIN_A.y1, 0.30, 0.042, 0.09, BACK_Z - 0.12, matWood);
+let CLAT = null;
+for (const c of CLERE){
+  CLAT = kumiko(c.x0, c.y0, c.x1, c.y1, 0.265, 0.040, 0.09, BACK_Z - 0.12, matWood);
+  box(c.x1-c.x0+0.40, 0.20, 0.30, matWoodH, (c.x0+c.x1)/2, c.y0-0.13, BACK_Z+0.06);
+  box(c.x1-c.x0+0.40, 0.22, 0.32, matWoodH, (c.x0+c.x1)/2, c.y1+0.14, BACK_Z+0.06);
+}
+kumiko(WIN_B.x0, WIN_B.y0, WIN_B.x1, WIN_B.y1, 0.30, 0.042, 0.09, BACK_Z - 0.12, matWood);
+
+/* window surrounds and the nageshi that ties the wall together */
+for (const w of [WIN_A, WIN_B]){
+  box(w.x1-w.x0+0.46, 0.20, 0.30, matWoodH, (w.x0+w.x1)/2, w.y0-0.14, BACK_Z+0.06);
+  box(w.x1-w.x0+0.46, 0.24, 0.34, matWoodH, (w.x0+w.x1)/2, w.y1+0.16, BACK_Z+0.08);
+  box(0.22, w.y1-w.y0+0.6, 0.28, matWood, w.x0-0.16, (w.y0+w.y1)/2, BACK_Z+0.05);
+  box(0.22, w.y1-w.y0+0.6, 0.28, matWood, w.x1+0.16, (w.y0+w.y1)/2, BACK_Z+0.05);
+}
+box(31, 0.26, 0.34, matWoodH, 18.5, 8.85, BACK_Z + 0.10);          // nageshi
+box(31, 0.20, 0.26, matWoodH, 18.5, 1.42, BACK_Z + 0.08);          // skirting rail
+
+/* --- the gateway, crowned with a karahafu --- */
+function gableShape(cx, halfW, base, rise, thick){
+  // a chidori-hafu: essentially a triangle, with a soft bow in the rake and
+  // the eaves tips flicked up. Reads as a triangle from across the hall.
+  const prof = (u)=>{
+    const a = 1 - Math.abs(u);
+    const rake = Math.pow(a, 1.04) + 0.075*Math.sin(Math.PI*a);
+    const tip  = 0.16 * Math.pow(THREE.MathUtils.smoothstep(Math.abs(u), 0.78, 1.0), 1.25);
+    return rise * (rake*0.94 + tip);
+  };
+  const N = 108, pts = [];
+  for (let i=0;i<=N;i++){ const u = -1 + 2*i/N; pts.push(new THREE.Vector2(cx + u*halfW, base + prof(u))); }
+  for (let i=N;i>=0;i--){ const u = -1 + 2*i/N; pts.push(new THREE.Vector2(cx + u*halfW*0.992, base + prof(u) - thick)); }
+  return pts;
+}
+
+/* --- one leaf of the gate: framed, panelled, with a ring pull --- */
+function doorLeaf(w, h, t, mat, side){
+  const g = new THREE.Group();
+  const add = (gw, gh, gd, x, y, z, m)=>{
+    const b = new THREE.Mesh(new THREE.BoxGeometry(gw, gh, gd), m || mat);
+    b.position.set(x, y, z); b.castShadow = true; b.receiveShadow = true; g.add(b); return b;
+  };
+  const sx = side;                          // +1 hinge on the left, -1 on the right
+  const cx = sx * w/2;
+  add(w, h, t*0.55, cx, h/2, 0);            // the leaf itself
+  const st = 0.17;
+  add(st, h, t, sx*st/2, h/2, 0);           // hinge stile
+  add(st, h, t, sx*(w-st/2), h/2, 0);       // meeting stile
+  add(w, 0.20, t, cx, 0.10, 0);             // bottom rail
+  add(w, 0.20, t, cx, h-0.10, 0);           // top rail
+  add(w, 0.16, t, cx, h*0.62, 0);           // lock rail
+  add(w, 0.14, t, cx, h*0.31, 0);           // frieze rail
+  // vertical battens between the rails
+  const nb = 4;
+  for (let i=1;i<nb;i++) add(0.085, h*0.28, t*0.9, sx*(w*i/nb), h*0.455, 0);
+  for (let i=1;i<nb;i++) add(0.085, h*0.20, t*0.9, sx*(w*i/nb), h*0.155, 0);
+  // ring pull and its boss, near the meeting stile
+  const boss = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.16, 0.07, 32), matGold);
+  boss.rotation.x = Math.PI/2;
+  boss.position.set(sx*(w-0.42), h*0.50, t*0.42);
+  boss.castShadow = true; g.add(boss);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.032, 16, 40), matGold);
+  ring.position.set(sx*(w-0.42), h*0.50-0.16, t*0.42);
+  ring.castShadow = true; g.add(ring);
+  // strap hinges
+  for (const hy of [h*0.16, h*0.84]){
+    const strap = add(w*0.42, 0.09, t*0.5, sx*w*0.21, hy, t*0.36, matCopper);
+    strap.castShadow = true;
+  }
+  return g;
+}
+
+{
+  const cx = (GATE.x0+GATE.x1)/2;
+  const halfW = (GATE.x1-GATE.x0)/2;
+
+  // the gable over the gate
+  const g = new THREE.Shape(gableShape(cx, halfW + 2.30, GATE.y1 + 0.40, 1.45, 0.44));
+  const geo = new THREE.ExtrudeGeometry(g, { depth: 0.62, bevelEnabled:false, curveSegments: 24 });
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, matWoodH);
+  m.position.z = BACK_Z + 0.02;
+  m.castShadow = true; m.receiveShadow = true;
+  room.add(m);
+  // copper capping over the rake, and the gegyo hung at the apex
+  const g2 = new THREE.Shape(gableShape(cx, halfW + 2.38, GATE.y1 + 0.72, 1.45, 0.14));
+  const geo2 = new THREE.ExtrudeGeometry(g2, { depth: 0.76, bevelEnabled:false, curveSegments: 24 });
+  geo2.computeVertexNormals();
+  const m2 = new THREE.Mesh(geo2, matCopper);
+  m2.position.z = BACK_Z - 0.05;
+  m2.castShadow = true; m2.receiveShadow = true;
+  room.add(m2);
+  const gegyo = new THREE.Mesh(new THREE.SphereGeometry(0.30, 40, 28), matGold);
+  gegyo.scale.set(1.0, 1.25, 0.45);
+  gegyo.position.set(cx, GATE.y1 + 1.64, BACK_Z + 0.38);
+  gegyo.castShadow = true; room.add(gegyo);
+  const boss = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.085, 22, 56), matGold);
+  boss.position.set(cx, GATE.y1 + 1.32, BACK_Z + 0.36);
+  boss.castShadow = true; room.add(boss);
+
+  // jambs, lintel and threshold
+  box(0.36, GATE.y1-GATE.y0+0.26, 0.52, matLacq, GATE.x0-0.16, (GATE.y0+GATE.y1)/2, BACK_Z+0.12);
+  box(0.36, GATE.y1-GATE.y0+0.26, 0.52, matLacq, GATE.x1+0.16, (GATE.y0+GATE.y1)/2, BACK_Z+0.12);
+  box(GATE.x1-GATE.x0+1.05, 0.34, 0.56, matLacqH, cx, GATE.y1+0.10, BACK_Z+0.12);
+  box(GATE.x1-GATE.x0+1.05, 0.18, 0.46, matWoodH, cx, GATE.y0+0.06, BACK_Z+0.10);
+
+  // the two leaves, standing open into the hall
+  const leafW = 2.10, leafH = GATE.y1 - GATE.y0 - 0.16, swing = 52 * Math.PI/180;
+  const L = doorLeaf(leafW, leafH, 0.16, matWood, +1);
+  L.position.set(GATE.x0 + 0.05, GATE.y0 + 0.08, BACK_Z + 0.02);
+  L.rotation.y = -swing;
+  room.add(L);
+  const R = doorLeaf(leafW, leafH, 0.16, matWood, -1);
+  R.position.set(GATE.x1 - 0.05, GATE.y0 + 0.08, BACK_Z + 0.02);
+  R.rotation.y = swing;
+  room.add(R);
+  // a lamp just inside the threshold, so the open leaves have something to catch
+  const gateGlow = new THREE.PointLight(0xffcf98, 11, 13, 1.8);
+  gateGlow.position.set(cx, GATE.y0 + 1.9, BACK_Z + 2.1);
+  scene.add(gateGlow);
+  dbg.doors = [L, R];
+}
+
+/* --- terrace, stair and the stone platform --- */
+{
+  const d = Math.abs(BACK_Z - TERR_Z);
+  const right = new THREE.Mesh(new THREE.BoxGeometry(34 - STAIR.x1, 13.6, d), matStone);
+  right.position.set((STAIR.x1 + 34)/2, TERR_Y - 6.8, (BACK_Z + TERR_Z)/2);
+  right.castShadow = true; right.receiveShadow = true;
+  room.add(right);
+  const left = new THREE.Mesh(new THREE.BoxGeometry(STAIR.x0 - (CORNER_X - WALL_T), 13.6, d), matStone);
+  left.position.set((CORNER_X - WALL_T + STAIR.x0)/2, TERR_Y - 6.8, (BACK_Z + TERR_Z)/2);
+  left.castShadow = true; left.receiveShadow = true;
+  room.add(left);
+  // the landing between the head of the flight and the threshold
+  const landing = new THREE.Mesh(new THREE.BoxGeometry(STAIR.x1 - STAIR.x0, 13.6, d), matStone);
+  landing.position.set((STAIR.x0 + STAIR.x1)/2, TERR_Y - 6.8, (BACK_Z + TERR_Z)/2);
+  landing.castShadow = true; landing.receiveShadow = true;
+  room.add(landing);
+  // a lighter capping course, so the terrace edge catches the low sun
+  box(34 - STAIR.x1, 0.18, d, matStoneL, (STAIR.x1 + 34)/2, TERR_Y - 0.09, (BACK_Z + TERR_Z)/2);
+  box(STAIR.x0 - (CORNER_X - WALL_T), 0.18, d, matStoneL, (CORNER_X - WALL_T + STAIR.x0)/2, TERR_Y - 0.09, (BACK_Z + TERR_Z)/2);
+  box(STAIR.x1 - STAIR.x0, 0.18, d, matStoneL, (STAIR.x0 + STAIR.x1)/2, TERR_Y - 0.09, (BACK_Z + TERR_Z)/2);
+}
+{
+  const total = STAIR.up + STAIR.down;
+  const wSt = STAIR.x1 - STAIR.x0, cxSt = (STAIR.x0+STAIR.x1)/2;
+  const noseGeo = new THREE.CylinderGeometry(0.055, 0.055, wSt, 20, 1);
+  for (let i=0;i<total;i++){
+    const topY = TERR_Y - (i+1)*STAIR.rise;
+    const zF = TERR_Z + STAIR.tread + i*STAIR.tread;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(wSt, 1.15, STAIR.tread + 0.001), matStoneL);
+    m.position.set(cxSt, topY - 1.15/2, zF - STAIR.tread/2);
+    m.castShadow = true; m.receiveShadow = true;
+    room.add(m);
+    // a worn nosing on every tread, so the flight catches the low sun on a curve
+    const n = new THREE.Mesh(noseGeo, matStoneL);
+    n.rotation.z = Math.PI/2;
+    n.position.set(cxSt, topY - 0.045, zF - 0.045);
+    n.castShadow = true; n.receiveShadow = true;
+    room.add(n);
+  }
+  // cheek walls
+  box(0.42, 2.2, 2.3, matStone, STAIR.x0 - 0.21, 0.60, TERR_Z + 1.05);
+  box(0.42, 2.2, 2.3, matStone, STAIR.x1 + 0.21, 0.60, TERR_Z + 1.05);
+}
+
+/* --- columns, bracket clusters and the beams they carry --- */
+function bracketCluster(x, y, z, s, mat){
+  box(1.55*s, 0.20*s, 0.55*s, mat, x, y, z);
+  box(0.42*s, 0.30*s, 1.50*s, mat, x, y + 0.24*s, z);
+  box(2.10*s, 0.20*s, 0.48*s, mat, x, y + 0.48*s, z);
+  box(0.36*s, 0.26*s, 1.95*s, mat, x, y + 0.70*s, z);
+  box(2.55*s, 0.22*s, 0.44*s, mat, x, y + 0.92*s, z);
+}
+const COLS = [10.15, 13.35];
+for (const cx of COLS){
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.50, 0.26, 48), matStoneL);
+  base.position.set(cx, TERR_Y + 0.13, -13.35);
+  base.castShadow = true; base.receiveShadow = true;
+  room.add(base);
+  const col = new THREE.Mesh(taperedPost(0.345, 0.30, 6.6, 56, 0.030), matLacq);
+  col.position.set(cx, TERR_Y + 0.26, -13.35);
+  col.castShadow = true; col.receiveShadow = true;
+  room.add(col);
+  // copper collars
+  for (const yy of [TERR_Y+0.45, TERR_Y+6.55]){
+    const r = new THREE.Mesh(new THREE.CylinderGeometry(0.345, 0.345, 0.12, 48), matCopper);
+    r.position.set(cx, yy, -13.35); r.castShadow = true; room.add(r);
+  }
+  bracketCluster(cx, TERR_Y + 6.86, -13.35, 1.0, matWoodH);
+}
+box(31, 0.42, 0.62, matWoodH, 17, TERR_Y + 8.05, -13.35);          // architrave over the columns
+box(31, 0.30, 0.46, matWoodH, 17, TERR_Y + 8.62, -13.35);
+/* rafters running out toward the camera, and the eave they carry */
+for (let i=0;i<15;i++){
+  const x = 3.6 + i*0.92;
+  box(0.16, 0.20, 7.4, matWoodZ, x, TERR_Y + 8.95, -10.2, -0.09, 0, 0);
+}
+box(31, 0.34, 0.5, matWoodH, 16, TERR_Y + 9.62, -6.9);
+/* eave tiles */
+{
+  const tileGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.9, 12, 1, false, 0, Math.PI);
+  const n = 30;
+  const inst = new THREE.InstancedMesh(tileGeo, matTile, n);
+  const mtx = new THREE.Matrix4(), q = new THREE.Quaternion();
+  q.setFromEuler(new THREE.Euler(Math.PI/2, 0, 0));
+  for (let i=0;i<n;i++){
+    mtx.compose(new THREE.Vector3(3.2 + i*0.92, TERR_Y + 9.90, -6.9), q, new THREE.Vector3(1,1,1));
+    inst.setMatrixAt(i, mtx);
+  }
+  inst.instanceMatrix.needsUpdate = true;
+  inst.castShadow = true; inst.receiveShadow = true;
+  room.add(inst);
+}
+
+/* --- the torii, standing in the flood --- */
+{
+  const t = new THREE.Group();
+  const PX = 2.05, H = 6.30;
+  for (const sx of [-1, 1]){
+    const leg = new THREE.Mesh(taperedPost(0.255, 0.195, H, 56, 0.028), matLacq);
+    leg.position.set(sx*PX, -0.55, 0);
+    leg.rotation.z = -sx*0.028;
+    leg.castShadow = true; leg.receiveShadow = true;
+    t.add(leg);
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.30, 48), matStoneL);
+    foot.position.set(sx*PX, -0.45, 0);
+    foot.castShadow = true; foot.receiveShadow = true;
+    t.add(foot);
+  }
+  // nuki, the lower tie
+  const nuki = new THREE.Mesh(new THREE.BoxGeometry(PX*2 + 1.15, 0.26, 0.34), matLacqH);
+  nuki.position.set(0, H - 1.55, 0);
+  nuki.castShadow = true; nuki.receiveShadow = true;
+  t.add(nuki);
+  const gaku = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.90, 0.14), matWood);
+  gaku.position.set(0, H - 1.00, 0.16);
+  gaku.castShadow = true;
+  t.add(gaku);
+  // shimaki and kasagi — the doubled lintel, with upturned ends
+  const shimaki = new THREE.Mesh(new THREE.BoxGeometry(PX*2 + 1.9, 0.20, 0.42), matLacqH);
+  shimaki.position.set(0, H - 0.62, 0);
+  shimaki.castShadow = true; t.add(shimaki);
+  {
+    const halfW = PX + 1.05, N = 92, pts = [];
+    const prof = (u)=> 0.30*Math.pow(Math.abs(u), 2.1);
+    for (let i=0;i<=N;i++){ const u=-1+2*i/N; pts.push(new THREE.Vector2(u*halfW, prof(u)+0.30)); }
+    for (let i=N;i>=0;i--){ const u=-1+2*i/N; pts.push(new THREE.Vector2(u*halfW, prof(u))); }
+    const geo = new THREE.ExtrudeGeometry(new THREE.Shape(pts), { depth:0.60, bevelEnabled:false, curveSegments:24 });
+    geo.computeVertexNormals();
+    const kasagi = new THREE.Mesh(geo, matLacqH);
+    kasagi.position.set(0, H - 0.42, -0.28);
+    kasagi.castShadow = true; kasagi.receiveShadow = true;
+    t.add(kasagi);
+  }
+  t.position.set(AXIS, 0, -9.90);
+  t.rotation.y = 0.02;
+  scene.add(t);
+  dbg.torii = t;
+}
+
+/* --- stone lanterns --- */
+function lantern(x, y, z, s){
+  const g = new THREE.Group();
+  const add = (geo, mat, yy, cast=true)=>{ const m = new THREE.Mesh(geo, mat); m.position.y = yy; m.castShadow=cast; m.receiveShadow=true; g.add(m); return m; };
+  add(new THREE.CylinderGeometry(0.34,0.40,0.22,10), matStone, 0.11);
+  add(new THREE.CylinderGeometry(0.13,0.15,0.86,10), matStone, 0.64);
+  add(new THREE.CylinderGeometry(0.36,0.26,0.16,10), matStone, 1.14);
+  const fire = add(new THREE.CylinderGeometry(0.30,0.32,0.44,8), matStoneL, 1.44);
+  add(new THREE.ConeGeometry(0.52, 0.34, 8), matStone, 1.82);
+  add(new THREE.SphereGeometry(0.10, 14, 12), matStone, 2.05);
+  const glow = new THREE.PointLight(0xffb268, 5.5, 6.5, 2.0);
+  glow.position.y = 1.44;
+  g.add(glow);
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffd9a0 }));
+  core.position.y = 1.44; g.add(core);
+  g.position.set(x, y, z); g.scale.setScalar(s);
+  scene.add(g);
+  return g;
+}
+lantern(7.90, TERR_Y, -14.0, 0.95);
+lantern(-6.30, -0.50, -8.60, 1.05);
+
+/* =====================================================================
+   light rays — one sheared prism per opening, additively blended,
+   striped by the same lattice pitch that casts the shadows
+   ===================================================================== */
+const shafts = [];
+const shaftU = {
+  uTime: { value: 0 },
+  uCam:  { value: new THREE.Vector3() },
+  uGain: { value: 1.0 },
+  uSx:   { value: LDIR.x / LDIR.z },
+  uSy:   { value: LDIR.y / LDIR.z },
+  uCol:  { value: new THREE.Color(0xffb168).convertSRGBToLinear() }
+};
+function lightShaft(shapePts, z0, throwLen, opts={}){
+  const { pitchX = 0, pitchY = 0, barW = 0, soft = 0.42, gain = 1.0 } = opts;
+  // the prism is extruded in z and then sheared, so its depth is the z
+  // component of the throw — otherwise an oblique sun gives a stubby beam
+  const len = throwLen * LDIR.z;
+  const shape = new THREE.Shape(shapePts);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: len, bevelEnabled:false, curveSegments: 26 });
+  // shear the extrusion so it follows the sun instead of the wall normal
+  const sx = LDIR.x / LDIR.z, sy = LDIR.y / LDIR.z;
+  const m = new THREE.Matrix4().set(1,0,sx,0,  0,1,sy,0,  0,0,1,0,  0,0,0,1);
+  geo.applyMatrix4(m);
+  // the cross-section box is the opening itself — the swept bounding box spans
+  // the whole throw, which collapses the edge falloff to nothing
+  let cx0 = Infinity, cy0 = Infinity, cx1 = -Infinity, cy1 = -Infinity;
+  for (const p of shapePts){
+    cx0 = Math.min(cx0, p.x); cx1 = Math.max(cx1, p.x);
+    cy0 = Math.min(cy0, p.y); cy1 = Math.max(cy1, p.y);
+  }
+  const mat = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, depthTest:true,
+    // premultiplied, or AdditiveBlending multiplies by alpha a second time and
+    // every beam comes out as a squared — about seven times too faint
+    blending: THREE.AdditiveBlending, premultipliedAlpha: true,
+    side: THREE.BackSide, fog:false,
+    uniforms: Object.assign({
+      uZ0:{ value: z0 }, uLen:{ value: len },
+      uC0:{ value: new THREE.Vector2(cx0, cy0) },
+      uC1:{ value: new THREE.Vector2(cx1, cy1) },
+      uPitch:{ value: new THREE.Vector2(pitchX, pitchY) },
+      uBarW:{ value: barW }, uSoft:{ value: soft }, uLocalGain:{ value: gain }
+    }, shaftU),
+    vertexShader: `
+      varying vec3 vW;
+      void main(){
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vW = wp.xyz;
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }`,
+    fragmentShader: `
+      precision highp float;
+      varying vec3 vW;
+      uniform float uTime, uZ0, uLen, uBarW, uSoft, uGain, uLocalGain, uSx, uSy;
+      uniform vec2 uC0, uC1, uPitch;
+      uniform vec3 uCam, uCol;
+      ${NOISE_GLSL}
+
+      // the prism is a sheared box; un-shear it and the volume is axis aligned,
+      // which makes the ray/box intersection a plain slab test
+      vec3 toShaft(vec3 p){
+        float dz = p.z - uZ0;
+        return vec3(p.x - uSx*dz, p.y - uSy*dz, dz);
+      }
+      float latticeAt(vec2 c, float t){
+        if (uPitch.x <= 0.0) return 1.0;
+        vec2 g = abs(fract(c / uPitch - 0.5) - 0.5) * uPitch;
+        float bw = uBarW * (0.55 + 1.5*t);          // the bars blur out along the throw
+        float m = smoothstep(bw*0.30, bw*1.7, g.x) * smoothstep(bw*0.30, bw*1.7, g.y);
+        return mix(1.0, m, 0.78);
+      }
+      float hash12(vec2 p){ p = fract(p*vec2(443.897,441.423)); p += dot(p,p+19.19); return fract(p.x*p.y); }
+
+      void main(){
+        // march the segment of the view ray that lies inside the volume —
+        // sampling the prism's surface can't work, every side face sits exactly
+        // on the cross-section boundary
+        vec3 o = toShaft(uCam);
+        vec3 e = toShaft(vW);
+        vec3 d = e - o;
+        vec3 lo = vec3(uC0, 0.0), hi = vec3(uC1, uLen);
+        vec3 ds = sign(d) * max(abs(d), vec3(1e-6));   // guard the axis-parallel case
+        vec3 inv = 1.0 / ds;
+        vec3 ta = (lo - o) * inv, tb = (hi - o) * inv;
+        vec3 tmin = min(ta, tb), tmax = max(ta, tb);
+        float tN = max(max(tmin.x, tmin.y), tmin.z);
+        float tF = min(min(tmax.x, tmax.y), tmax.z);
+        tN = max(tN, 0.0); tF = min(tF, 1.0);
+        if (tF <= tN) discard;
+
+        vec3 pA = mix(uCam, vW, tN);
+        vec3 pB = mix(uCam, vW, tF);
+        float seg = length(pB - pA);
+        if (seg < 0.001) discard;
+
+        const int STEPS = 6;
+        float jitter = hash12(gl_FragCoord.xy + fract(uTime)*13.0);
+        vec3 drift = vec3(uTime*0.030, uTime*0.020, -uTime*0.048);
+        float acc = 0.0;
+        for (int i = 0; i < STEPS; i++){
+          float f = (float(i) + jitter) / float(STEPS);
+          vec3 p = mix(pA, pB, f);
+          float dzp = p.z - uZ0;
+          float tt = clamp(dzp / uLen, 0.0, 1.0);
+          vec2 c = vec2(p.x - uSx*dzp, p.y - uSy*dzp);
+          float dust = 0.46 + 0.84*n31(p*0.40 + drift);
+          float att  = exp(-tt*1.45) * smoothstep(0.0, 0.05, tt);
+          float nearF = smoothstep(1.4, 6.5, distance(p, uCam));   // not the air you stand in
+          // fade toward the walls of the prism — the slab test alone ends the beam on
+          // a hard plane, which reads as a ruled line drawn over the rock it crosses
+          vec2 q = (c - uC0) / max(uC1 - uC0, vec2(1e-4));
+          vec2 ew = smoothstep(vec2(0.0), vec2(uSoft), q) * smoothstep(vec2(0.0), vec2(uSoft), 1.0 - q);
+          float edge = ew.x * ew.y;
+          acc += latticeAt(c, tt) * dust * att * nearF * edge;
+        }
+        acc *= seg / float(STEPS);
+        // a soft knee: a glancing pass stays linear, a long run down the beam's own
+        // axis rolls off instead of stacking into a solid wedge
+        acc = acc / (1.0 + acc*0.30);
+
+        float a = min(acc * uGain * uLocalGain * 0.062, 1.7);
+        if (a < 0.002) discard;
+        gl_FragColor = vec4(uCol * a, a);
+      }`
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.z = z0;
+  mesh.renderOrder = 6;
+  mesh.frustumCulled = false;
+  scene.add(mesh);
+  shafts.push(mesh);
+  return mesh;
+}
+
+for (const c of CLERE)
+  lightShaft(rectPts(c.x0, c.y0, c.x1, c.y1), BACK_Z, 26,
+    { pitchX: CLAT.pitchX, pitchY: CLAT.pitchY, barW: CLAT.barW, soft: 0.34, gain: 1.15 });
+lightShaft(rectPts(WIN_A.x0, WIN_A.y0, WIN_A.x1, WIN_A.y1), BACK_Z, 20,
+  { pitchX: LAT.pitchX, pitchY: LAT.pitchY, barW: LAT.barW, soft: 0.40, gain: 1.00 });
+lightShaft(rectPts(WIN_B.x0, WIN_B.y0, WIN_B.x1, WIN_B.y1), BACK_Z, 20,
+  { pitchX: LAT.pitchX, pitchY: LAT.pitchY, barW: LAT.barW, soft: 0.40, gain: 0.85 });
+lightShaft(rectPts(GATE.x0, GATE.y0, GATE.x1, GATE.y1), BACK_Z, 16, { soft: 0.38, gain: 0.92 });
+
+/* =====================================================================
+   noise helpers shared by the terrain and the boulders
+   ===================================================================== */
+function n2(x,y){ const s = Math.sin(x*12.9898 + y*78.233)*43758.5453; return s - Math.floor(s); }
+const quintic = t => t*t*t*(t*(t*6-15)+10);
+function smoothNoise(x,y){
+  const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi;
+  const u=quintic(xf), v=quintic(yf);
+  return n2(xi,yi)*(1-u)*(1-v) + n2(xi+1,yi)*u*(1-v) + n2(xi,yi+1)*(1-u)*v + n2(xi+1,yi+1)*u*v;
+}
+function fbm2(x,y,oct=5){ let s=0,a=0.5,f=1; for(let i=0;i<oct;i++){ s+=a*smoothNoise(x*f,y*f); a*=0.5; f*=2.03; } return s; }
+function noise3(x,y,z,s){
+  return (fbm2(x+s, z+s*1.7, 4) + fbm2(y+s*2.3, x+s*0.7, 4) + fbm2(z+s*3.1, y+s*1.3, 4)) / 3.0;
+}
+
+/* =====================================================================
+   seabed — the floor of the water column
+   ===================================================================== */
+function bedH(x, z){
+  const dune = fbm2(x*0.055 + 4, z*0.055 + 9, 4);
+  const big  = fbm2(x*0.018 + 1, z*0.018 + 3, 3);
+  return BED_Y + (big - 0.5)*2.6 + (dune - 0.5)*0.9;
+}
+{
+  const SEG = 150, SPAN = 90;
+  const g = new THREE.PlaneGeometry(SPAN, SPAN, SEG, SEG);
+  const p = g.attributes.position;
+  for (let i=0;i<p.count;i++){
+    const lx = p.getX(i), ly = p.getY(i);
+    p.setZ(i, bedH(lx, -ly - 12) - BED_Y);
+  }
+  g.computeVertexNormals();
+  const bed = new THREE.Mesh(g, matBed);
+  bed.rotation.x = -Math.PI/2;
+  bed.position.set(0, BED_Y, -12);
+  bed.receiveShadow = true;
+  room.add(bed);
+  dbg.bed = bed;
+  // a flat skirt beyond the modelled bed: fogged out, but it closes the world
+  const skirt = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), matBed);
+  skirt.rotation.x = -Math.PI/2;
+  skirt.position.set(0, BED_Y - 0.6, -12);
+  room.add(skirt);
+}
+
+/* =====================================================================
+   landscape beyond the arches
+   ===================================================================== */
+const outside = new THREE.Group();
+scene.add(outside);
+const HILL_ORIGIN = new THREE.Vector3(-40, 0, -58);
+function hillH(wx, wz){
+  const lx = wx - HILL_ORIGIN.x, lz = wz - HILL_ORIGIN.z;
+  const shore = THREE.MathUtils.smoothstep(-lz, 5, 44);
+  const west  = THREE.MathUtils.smoothstep(-wx, -46, 26);
+  const mask  = shore * west;
+  const ridge = fbm2(lx*0.023 + 13, lz*0.023 + 7, 5);
+  const big   = fbm2(lx*0.0072 + 3, lz*0.0072 + 1, 3);
+  // outside its mask the ground plunges below the seabed — otherwise this
+  // 300-unit plane sits flat at -0.5 straight through the room, invisible
+  // above the water and a pink sheet across everything once you dip under
+  return (big*1.15 + ridge*0.42) * 19.0 * mask - 0.5 - (1 - mask) * 16.0;
+}
+{
+  const SEG = 230, SPAN = 300;
+  const g = new THREE.PlaneGeometry(SPAN, SPAN, SEG, SEG);
+  const p = g.attributes.position;
+  for (let i=0;i<p.count;i++) p.setZ(i, hillH(p.getX(i) + HILL_ORIGIN.x, -p.getY(i) + HILL_ORIGIN.z));
+  g.computeVertexNormals();
+  const hills = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x4a3f42, roughness: 1.0, metalness: 0 }));
+  hills.receiveShadow = false; hills.castShadow = false;
+  hills.rotation.x = -Math.PI/2;
+  hills.position.copy(HILL_ORIGIN);
+  outside.add(hills);
+}
+{ // grass so the near hillside reads as fur, not a smooth ramp
+  const N = 120000, H = 0.40, Wd = 0.022;
+  const blade = new THREE.BufferGeometry();
+  blade.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+    -Wd,0,0,  Wd,0,0,  -Wd*0.6,H*0.6,0,  Wd*0.6,H*0.6,0,  0,H,0 ]),3));
+  blade.setIndex([0,1,2, 1,3,2, 2,3,4]);
+  blade.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({ color: 0x6f5334, roughness:1, metalness:0, side:THREE.DoubleSide });
+  mat.onBeforeCompile = (sh)=>{
+    sh.uniforms.uTime = { value: 0 };
+    dbg.grassU = sh.uniforms;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>
+        uniform float uTime; attribute vec3 iPos; attribute vec3 iRnd;`)
+      .replace('#include <begin_vertex>', `
+        vec3 transformed = position;
+        transformed.x *= 0.7 + iRnd.x*0.8;
+        transformed.y *= 0.5 + iRnd.y*1.5;
+        float ang = iRnd.z*6.2831;
+        float ca=cos(ang), sa=sin(ang);
+        transformed.xz = mat2(ca,-sa,sa,ca)*transformed.xz;
+        float sway = sin(uTime*0.8 + iPos.x*0.6 + iPos.z*0.4)*0.10 + sin(uTime*1.6 + iPos.z*1.1)*0.045;
+        float k = pow(max(position.y,0.0)/${H.toFixed(3)}, 1.6);
+        transformed.x += sway*k; transformed.z += sway*0.4*k;
+        transformed += iPos;`);
+  };
+  const inst = new THREE.InstancedBufferGeometry();
+  inst.index = blade.index;
+  inst.attributes.position = blade.attributes.position;
+  inst.attributes.normal = blade.attributes.normal;
+  const iPos = new Float32Array(N*3), iRnd = new Float32Array(N*3);
+  let k = 0, guard = 0;
+  while (k < N && guard < N*6){
+    guard++;
+    const x = -100 + Math.random()*96, z = -118 + Math.random()*72;
+    const y = hillH(x, z);
+    if (y < 0.05) continue;
+    iPos[k*3]=x; iPos[k*3+1]=y-0.06; iPos[k*3+2]=z;
+    iRnd[k*3]=Math.random(); iRnd[k*3+1]=Math.random(); iRnd[k*3+2]=Math.random();
+    k++;
+  }
+  inst.setAttribute('iPos', new THREE.InstancedBufferAttribute(iPos,3));
+  inst.setAttribute('iRnd', new THREE.InstancedBufferAttribute(iRnd,3));
+  inst.instanceCount = k;
+  const grass = new THREE.Mesh(inst, mat);
+  grass.frustumCulled = false;
+  outside.add(grass);
+}
+
+/* =====================================================================
+   objects
+   ===================================================================== */
+const pearlMat = new THREE.ShaderMaterial({
+  fog: true,
+  uniforms: Object.assign(THREE.UniformsUtils.clone(THREE.UniformsLib.fog), {
+    uSun:{ value: new THREE.Vector3() }, uCam:{ value: new THREE.Vector3() },
+    uTime:{ value: 0 }, uUnder:{ value: 0 }
+  }),
+  vertexShader: `
+    #include <fog_pars_vertex>
+    varying vec3 vN; varying vec3 vW;
+    void main(){
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      vW = wp.xyz; vN = normalize(mat3(modelMatrix) * normal);
+      vec4 mvPosition = viewMatrix * wp;
+      gl_Position = projectionMatrix * mvPosition;
+      #include <fog_vertex>
+    }`,
+  fragmentShader: `
+    precision highp float;
+    #include <fog_pars_fragment>
+    varying vec3 vN; varying vec3 vW;
+    uniform vec3 uSun, uCam; uniform float uTime, uUnder;
+    vec3 hsv(vec3 c){
+      vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+      vec3 p = abs(fract(c.xxx + K.xyz)*6.0 - K.www);
+      return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
+    void main(){
+      vec3 N = normalize(vN), V = normalize(uCam - vW), L = normalize(uSun);
+      float fres = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 1.7);
+      float h = 0.06 + 0.22*N.y - 0.26*N.x + 0.08*N.z - 0.26*fres;
+      vec3 iri = hsv(vec3(fract(h), 0.27 + 0.24*fres, 1.0));
+      float lam  = clamp(dot(N, L)*0.5 + 0.62, 0.0, 1.4);
+      float wrap = clamp(dot(N, vec3(0.0,1.0,0.0))*0.4 + 0.7, 0.0, 1.3);
+      vec3 base = vec3(0.95, 0.86, 0.74) * lam * wrap;
+      vec3 col = base * mix(vec3(1.06), iri*1.20, 0.50 + 0.34*fres);
+      vec3 H = normalize(L + V);
+      col += vec3(1.0,0.98,0.95) * pow(max(dot(N,H),0.0), 220.0) * 1.2;
+      col += vec3(1.0,0.97,0.99) * pow(max(dot(N,H),0.0), 14.0) * 0.16;
+      col += iri * pow(fres, 3.0) * 0.28;
+      float depth = max(0.0, -vW.y);
+      col *= mix(vec3(1.0), vec3(0.34,0.66,0.78), 1.0 - exp(-depth*0.06));
+      // steep views look into the water, grazing ones mirror it — which is
+      // also what lets the submerged half of a rock show through
+      float surfA = mix(0.66, 1.0, clamp(fres*1.15, 0.0, 1.0));
+      gl_FragColor = vec4(col, mix(surfA, 1.0, uUnder));
+      #include <fog_fragment>
+    }`
+});
+const pearl = new THREE.Mesh(new THREE.SphereGeometry(0.95, 160, 120), pearlMat);
+pearl.position.set(5.20, 2.62, -13.60);
+pearl.castShadow = true;
+scene.add(pearl);
+dbg.pearl = pearl;
+{
+  const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 1.00, 0.36, 64), matStoneL);
+  pl.position.set(5.20, TERR_Y + 0.18, -13.60);
+  pl.castShadow = true; pl.receiveShadow = true;
+  scene.add(pl);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.045, 18, 64), matCopper);
+  band.rotation.x = Math.PI/2;
+  band.position.set(5.20, TERR_Y + 0.34, -13.60);
+  band.castShadow = true; scene.add(band);
+}
+
+function boulder(rx, ry, rz, seedX, detail=4){
+  // an indexed sphere: PolyhedronGeometry is non-indexed, so computeVertexNormals facets it
+  const g = new THREE.SphereGeometry(1, 24 + detail*16, 16 + detail*11);
+  const p = g.attributes.position, v = new THREE.Vector3();
+  for (let i=0;i<p.count;i++){
+    v.fromBufferAttribute(p, i);
+    const a = noise3(v.x*1.35, v.y*1.35, v.z*1.35, seedX);
+    const b = noise3(v.x*4.6,  v.y*4.6,  v.z*4.6,  seedX*2.1);
+    const c = 1 - Math.abs(noise3(v.x*11.0, v.y*11.0, v.z*11.0, seedX*3.7)*2 - 1);
+    v.multiplyScalar(1 + (a-0.5)*0.40 + (b-0.5)*0.11 + (c-0.5)*0.045);
+    p.setXYZ(i, v.x*rx, v.y*ry, v.z*rz);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+function addRock(rx,ry,rz,seed,x,y,z,rot=0,detail=5){
+  const m = new THREE.Mesh(boulder(rx,ry,rz,seed,detail), matSand);
+  m.position.set(x,y,z); m.rotation.set(0.04, rot, -0.03);
+  m.castShadow = true; m.receiveShadow = true;
+  scene.add(m); return m;
+}
+// the boulders keep going under the surface rather than sitting on it —
+// the pool is see-through at steep angles, so the submerged mass reads
+addRock(1.95, 2.30, 1.55, 5.2,   4.55, -1.15, -11.30, 0.9, 6);
+addRock(3.10, 1.90, 2.35, 12.7, 10.20, -1.35,  -7.20, 0.4, 6);
+addRock(1.15, 1.45, 0.95, 31.1, -4.60, -0.95,  -8.60, 0.0, 5);
+addRock(0.95, 1.30, 0.85, 58.9, -2.55, -0.80, -11.60, 1.7, 5);
+/* sunken company, only met on the way down */
+addRock(1.9, 1.1, 1.6,  77.3, -5.2, bedH(-5.2,-10.5)+0.7, -10.5, 1.2, 5);
+addRock(2.6, 1.5, 2.2,  91.7,  6.1, bedH(6.1,-13.0)+1.0, -13.0, 0.4, 5);
+addRock(1.2, 0.7, 1.0, 123.4, -5.2, bedH(-5.2,-5.5)+0.45, -5.5, 2.1, 4);
+{ // a second pearl, long since dropped
+  const p2 = new THREE.Mesh(new THREE.SphereGeometry(0.95, 96, 72), pearlMat);
+  p2.position.set(-1.6, bedH(-1.6,-9.2) + 0.72, -9.2);
+  p2.castShadow = true;
+  scene.add(p2);
+  dbg.pearl2 = p2;
+}
+{ // a toppled column half-buried in the bed
+  const col = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 6.4, 40, 1), matStoneL);
+  col.position.set(4.6, bedH(4.6,-9.6) + 0.35, -9.6);
+  col.rotation.set(Math.PI/2 - 0.12, 0.6, 0.2);
+  col.castShadow = true; col.receiveShadow = true;
+  scene.add(col);
+}
+
+/* =====================================================================
+   motes and bubbles
+   ===================================================================== */
+const moteU = { uTime:{value:0}, uPx:{value:1}, uUnder:{value:0} };
+{
+  const N = 520;
+  const g = new THREE.BufferGeometry();
+  const pos = new Float32Array(N*3), rnd = new Float32Array(N);
+  for (let i=0;i<N;i++){
+    pos[i*3]   = (Math.random()-0.5)*30;
+    pos[i*3+1] = -12 + Math.random()*20;
+    pos[i*3+2] = -18 + Math.random()*16;
+    rnd[i] = Math.random();
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aRnd', new THREE.BufferAttribute(rnd,1));
+  const m = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, uniforms: moteU,
+    vertexShader:`
+      attribute float aRnd; uniform float uTime, uPx, uUnder; varying float vA;
+      void main(){
+        vec3 p = position;
+        p.y = mod(p.y + uTime*(0.10 + uUnder*0.16) + aRnd*9.0 + 12.0, 22.0) - 12.0;
+        p.x += sin(uTime*0.13 + aRnd*17.0)*(1.1 + uUnder*0.9);
+        p.z += sin(uTime*0.09 + aRnd*23.0)*uUnder*0.8;
+        vec4 mv = modelViewMatrix * vec4(p,1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = (1.1 + aRnd*2.6) * (1.0 + uUnder*0.9) * uPx * (16.0 / -mv.z);
+        vA = (0.11 + aRnd*0.30) * (1.0 + uUnder*1.5);
+      }`,
+    fragmentShader:`
+      varying float vA; uniform float uUnder;
+      void main(){
+        float a = smoothstep(0.5, 0.06, length(gl_PointCoord - 0.5));
+        vec3 c = mix(vec3(1.6,1.54,1.5), vec3(1.30,1.62,1.70), uUnder);
+        gl_FragColor = vec4(c, a*vA);
+      }`
+  });
+  const pts = new THREE.Points(g, m);
+  pts.frustumCulled = false;
+  scene.add(pts);
+}
+{ // bubbles: only worth drawing once you are under
+  const N = 260;
+  const g = new THREE.BufferGeometry();
+  const pos = new Float32Array(N*3), rnd = new Float32Array(N*2);
+  for (let i=0;i<N;i++){
+    pos[i*3]   = (Math.random()-0.5)*22;
+    pos[i*3+1] = BED_Y + Math.random()*12;
+    pos[i*3+2] = -20 + Math.random()*18;
+    rnd[i*2] = Math.random(); rnd[i*2+1] = 0.4 + Math.random();
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aRnd', new THREE.BufferAttribute(rnd,2));
+  const m = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, blending: THREE.NormalBlending, uniforms: moteU,
+    vertexShader:`
+      attribute vec2 aRnd; uniform float uTime, uPx, uUnder; varying float vA; varying float vR;
+      void main(){
+        vec3 p = position;
+        float rise = mod(uTime*(0.55 + aRnd.y*0.7) + aRnd.x*30.0, 15.0);
+        p.y += rise;
+        p.x += sin(uTime*1.4 + aRnd.x*40.0)*0.12;
+        if (p.y > 0.0) p.y = -14.0;              // pop at the surface
+        vec4 mv = modelViewMatrix * vec4(p,1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = (2.0 + aRnd.y*7.0) * uPx * (16.0 / -mv.z);
+        vA = uUnder * (0.10 + aRnd.x*0.20);
+        vR = aRnd.x;
+      }`,
+    fragmentShader:`
+      varying float vA; varying float vR;
+      void main(){
+        vec2 d = gl_PointCoord - 0.5;
+        float r = length(d);
+        if (r > 0.5) discard;
+        float rim = smoothstep(0.34, 0.5, r) * (1.0 - smoothstep(0.48, 0.5, r));
+        float body = smoothstep(0.5, 0.2, r) * 0.25;
+        gl_FragColor = vec4(vec3(1.5,1.8,1.9), (rim*1.3 + body) * vA);
+      }`
+  });
+  const pts = new THREE.Points(g, m);
+  pts.frustumCulled = false;
+  scene.add(pts);
+}
+
+/* =====================================================================
+   water — planar reflection above, Snell's window below
+   ===================================================================== */
+const reflectRT = new THREE.WebGLRenderTarget(1,1,{ type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+const reflectCam = new THREE.PerspectiveCamera();
+const textureMatrix = new THREE.Matrix4();
+
+const waterMat = new THREE.ShaderMaterial({
+  fog:true, side: THREE.DoubleSide, transparent: true, depthWrite: true,
+  uniforms: Object.assign(THREE.UniformsUtils.clone(THREE.UniformsLib.fog), {
+    tReflect:{ value: reflectRT.texture },
+    uTexMat:{ value: textureMatrix },
+    uTime:{ value: 0 },
+    uRip:{ value: Array.from({length:6}, ()=>new THREE.Vector4(0,0,-1e3,0)) },
+    uPtr:{ value: new THREE.Vector3(0,0,0) },
+    uDeep:{ value: new THREE.Color(0x14131f).convertSRGBToLinear() },
+    uShallow:{ value: new THREE.Color(0x40303a).convertSRGBToLinear() },
+    uCam:{ value: new THREE.Vector3() },
+    uUnder:{ value: 0 },
+    uZen: skyUniforms.uZen, uMid: skyUniforms.uMid, uHor: skyUniforms.uHor,
+    uLow: skyUniforms.uLow, uSunC: skyUniforms.uSunC, uSunDir: skyUniforms.uSunDir
+  }),
+  vertexShader:`
+    #include <fog_pars_vertex>
+    uniform mat4 uTexMat;
+    varying vec4 vRef; varying vec3 vW;
+    void main(){
+      vec4 wp = modelMatrix * vec4(position,1.0);
+      vW = wp.xyz;
+      vRef = uTexMat * vec4(position,1.0);
+      vec4 mvPosition = viewMatrix * wp;
+      gl_Position = projectionMatrix * mvPosition;
+      #include <fog_vertex>
+    }`,
+  fragmentShader:`
+    precision highp float;
+    #include <fog_pars_fragment>
+    uniform sampler2D tReflect;
+    uniform float uTime, uUnder; uniform vec3 uDeep, uShallow, uCam;
+    uniform vec4 uRip[6]; uniform vec3 uPtr;
+    uniform vec3 uZen,uMid,uHor,uLow,uSunC,uSunDir;
+    varying vec4 vRef; varying vec3 vW;
+    ${SKY_FN}
+    ${CAUSTIC_GLSL}
+
+    // pointer rings, in world XZ. They ride inside wave() so waveNormal's
+    // finite differences give them real normals without any extra code.
+    float ripples(vec2 p, float t){
+      float s = 0.0;
+      for (int i = 0; i < 6; i++){
+        vec4 r = uRip[i];
+        if (r.w <= 0.001) continue;
+        float age = t - r.z;
+        if (age < 0.0 || age > 5.5) continue;
+        float d = length(p - r.xy);
+        float front = age * 2.35;
+        float band  = exp(-pow((d - front)*0.95, 2.0));
+        float decay = exp(-age*0.78) * exp(-d*0.085);
+        s += sin(d*4.4 - age*10.5) * band * decay * r.w;
+      }
+      float dp = length(p - uPtr.xy);
+      s += sin(dp*3.0 - t*4.2) * exp(-dp*0.62) * 0.42 * uPtr.z;
+      return s;
+    }
+    float wave(vec2 p, float t){
+      float s = ripples(p, t) * 0.62;
+      s += sin(p.x*0.55 + p.y*0.22 + t*0.62)*0.55;
+      s += sin(p.x*-0.31 + p.y*0.78 + t*0.47)*0.42;
+      s += sin(p.x*1.25 + p.y*-0.62 + t*0.93)*0.16;
+      s += sin(p.x*2.35 + p.y*1.85 + t*1.42)*0.075;
+      s += sin(p.x*4.6  + p.y*3.1  + t*2.05)*0.034;
+      s += sin(p.x*8.1  + p.y*6.4  + t*3.10)*0.015;
+      return s;
+    }
+    vec3 waveNormal(vec2 p, float t, float k){
+      float e = 0.16;
+      float h = wave(p,t), hx = wave(p+vec2(e,0.0),t), hz = wave(p+vec2(0.0,e),t);
+      return normalize(vec3(-(hx-h)/e*k, 1.0, -(hz-h)/e*k));
+    }
+
+    void main(){
+      float dist = length(vW.xz - uCam.xz);
+      float atten = 1.0/(1.0 + dist*0.030);
+      vec3 n = waveNormal(vW.xz, uTime, 0.085*atten + 0.010);
+
+      if (!gl_FrontFacing) {
+        /* ---- seen from underneath: Snell's window ---- */
+        vec3 dir = normalize(vW - uCam);                 // travelling up toward the surface
+        float ci = clamp(dir.y, 0.0, 1.0);
+        float si = sqrt(max(0.0, 1.0 - ci*ci));
+        vec3 refr = refract(dir, -n, 1.0/1.333);
+        vec3 skyC = skyColor(length(refr) > 0.0001 ? refr : vec3(dir.x, 1.0, dir.z));
+        // total internal reflection outside the window: the water column mirrored back down
+        // outside the window the surface is a rippling mirror of the water column
+        float shimmer = clamp(causticCell(vW.xz*0.085, uTime*0.30)*1.4
+                            + causticCell(vW.zx*0.048 + 7.0, uTime*0.19)*0.8, 0.0, 1.6);
+        vec3 tir = mix(vec3(0.022,0.085,0.120), vec3(0.14,0.34,0.42), shimmer*0.75 + 0.25*max(n.y,0.0));
+        tir *= 1.0 + 0.55*pow(max(n.y,0.0), 18.0);
+        float win = smoothstep(0.762, 0.720, si);
+        float ring = smoothstep(0.694, 0.750, si) * smoothstep(0.796, 0.752, si);
+        vec3 col = mix(tir, skyC*1.10, win);
+        col += vec3(1.0,0.95,0.86) * ring * 0.70;          // the caustic rim of the window
+        col += vec3(0.6,0.95,1.0) * pow(max(n.y,0.0), 60.0) * 0.16;
+        gl_FragColor = vec4(col, 1.0);
+        #include <fog_fragment>
+        return;
+      }
+
+      vec3 V = normalize(uCam - vW);
+      float fres = pow(1.0 - clamp(dot(V, n), 0.0, 1.0), 3.0);
+      fres = clamp(0.055 + fres*0.94, 0.0, 1.0);
+
+      vec2 uvr = vRef.xy / max(vRef.w, 1e-4);
+      vec2 off = n.xz * (0.070 + 0.16*atten);
+      off.y *= 2.4;
+      vec2 base = clamp(uvr + off, 0.002, 0.998);
+      vec2 smear = vec2(0.0, 0.0085 * (0.35 + atten));
+      vec2 dsp = normalize(off + vec2(1e-5)) * (0.0026 + 0.0050*atten);
+
+      vec3 refl = vec3(0.0);
+      for (int i = -1; i <= 1; i++){
+        vec2 s = smear * float(i);
+        float w = (i == 0) ? 0.44 : 0.28;
+        refl.r += texture2D(tReflect, clamp(base + s + dsp, 0.002, 0.998)).r * w;
+        refl.g += texture2D(tReflect, clamp(base + s,       0.002, 0.998)).g * w;
+        refl.b += texture2D(tReflect, clamp(base + s - dsp, 0.002, 0.998)).b * w;
+      }
+      refl *= vec3(0.90, 0.92, 0.99);
+
+      vec3 body = mix(uDeep, uShallow, smoothstep(3.0, 20.0, dist));
+      float mirror = mix(0.46, 1.0, smoothstep(4.0, 15.0, dist));
+      vec3 col = mix(body, refl, fres*0.96*mirror);
+      // glitter has to key on the sun, not on how flat the water is:
+      // pow(n.y, 90) is ~1 across a calm surface, i.e. a flat veil over the whole pool
+      vec3 Ls = normalize(uSunDir);
+      vec3 Hs = normalize(Ls + V);
+      col += vec3(1.0, 0.66, 0.34) * pow(max(dot(n, Hs), 0.0), 620.0) * 9.0;
+      col += vec3(1.0, 0.78, 0.52) * pow(max(dot(n, Hs), 0.0), 40.0) * 0.06;
+
+      // steep views look into the water, grazing ones mirror it — which is
+      // also what lets the submerged half of a rock show through
+      float surfA = mix(0.66, 1.0, clamp(fres*1.15, 0.0, 1.0));
+      gl_FragColor = vec4(col, mix(surfA, 1.0, uUnder));
+      #include <fog_fragment>
+    }`
+});
+const water = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 1, 1), waterMat);
+water.rotation.x = -Math.PI/2;
+water.position.y = WATER_Y;
+scene.add(water);
+
+/* =====================================================================
+   the archive — four sheets suspended in the water at the foot of the
+   descent. The bend is integrated along the sheet rather than pushed in
+   z, so arc length is conserved and the silhouette really pulls in where
+   the paper turns away (technique from nocturne-award.html).
+   ===================================================================== */
+// 4:3, landscape — the sheets are site mock-ups now, not portrait plates
+const SHEET_W = 2.82, SHEET_H = SHEET_W * 3/4;
+const sheetU = {
+  uTime:{ value:0 }, uReveal:{ value:0 }, uCamP:{ value:new THREE.Vector3() },
+  uSize:{ value:new THREE.Vector2(SHEET_W, SHEET_H) }
+};
+const SHEET_WAVE = /* glsl */`
+  uniform float uTime, uPhase, uAmp, uFreq, uTwist;
+  uniform vec2  uSize;
+  // water pushes the whole sheet, so the curl is broad and slow and the
+  // amplitude grows toward the free edge rather than toward a hanging top
+  float sAmp(float u, float v){ return uAmp*(0.22 + pow(u,1.15))*(0.62 + 0.48*v); }
+  float sAmpV(float u){         return uAmp*(0.22 + pow(u,1.15))*0.48; }
+  float sTheta(float u, float v){
+    float a  = sAmp(u,v);
+    float ph = uFreq*u + uTwist*v + uTime*0.34 + uPhase;
+    return a*sin(ph) + a*0.34*sin(ph*2.05 - uTime*0.52);
+  }
+  float sThetaV(float u, float v){
+    float a = sAmp(u,v), da = sAmpV(u);
+    float ph = uFreq*u + uTwist*v + uTime*0.34 + uPhase;
+    float f  = ph*2.05 - uTime*0.52;
+    return da*sin(ph) + a*cos(ph)*uTwist
+         + 0.34*(da*sin(f) + a*cos(f)*uTwist*2.05);
+  }
+  float sYoff(float u, float v){
+    float w = 1.0 - 0.5*v;
+    return 0.030*uSize.y*sin(1.85*u + uTime*0.41 + uPhase)
+         + 0.018*uSize.y*sin(3.05*u - 1.35*v + uTime*0.55 + uPhase)*w;
+  }
+  float sYdU(float u, float v){
+    float w = 1.0 - 0.5*v;
+    return 0.0555*uSize.y*cos(1.85*u + uTime*0.41 + uPhase)
+         + 0.0549*uSize.y*cos(3.05*u - 1.35*v + uTime*0.55 + uPhase)*w;
+  }
+  float sYdV(float u, float v){
+    float ph = 3.05*u - 1.35*v + uTime*0.55 + uPhase;
+    return 0.018*uSize.y*(-1.35*cos(ph)*(1.0-0.5*v) - 0.5*sin(ph));
+  }
+  void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
+    float u = q.x, v = q.y;
+    float x=0.0, z=0.0, xe=0.0, ze=0.0, dxv=0.0, dzv=0.0, dxe=0.0, dze=0.0;
+    const int NS = 14;
+    float h = 1.0/float(NS);
+    for (int i=0;i<NS;i++){
+      float uu = (float(i)+0.5)*h;
+      float w  = clamp((u-(uu-0.5*h))/h, 0.0, 1.0);
+      float th = sTheta(uu,v);
+      float dt = sThetaV(uu,v);
+      float c = cos(th), sn = sin(th);
+      xe += c*h;         ze += sn*h;
+      dxe += -sn*dt*h;   dze +=  c*dt*h;
+      x   += c*h*w;      z   += sn*h*w;
+      dxv += -sn*dt*h*w; dzv +=  c*dt*h*w;
+    }
+    float W = uSize.x, H = uSize.y;
+    float th0 = sTheta(u,v);
+    P  = vec3((x - xe*0.5)*W, (v-0.5)*H + sYoff(u,v), (z - ze*0.5)*W);
+    vec3 Tu = vec3(W*cos(th0), sYdU(u,v), W*sin(th0));
+    vec3 Tv = vec3((dxv - dxe*0.5)*W, H + sYdV(u,v), (dzv - dze*0.5)*W);
+    NN = normalize(cross(Tu, Tv));
+  }`;
+
+/* the four sheets, drawn on canvas: a browser window around a placeholder site */
+const SITE_W = 1160, SITE_H = 870;                 // 4:3, matching SHEET_W/SHEET_H
+const PAGE_BG = '#f5eee2', CHROME_BG = '#dbcfb9', INK = '#15100a';
+function rr(x, a, b, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  x.beginPath();
+  x.moveTo(a+r, b); x.lineTo(a+w-r, b); x.quadraticCurveTo(a+w, b, a+w, b+r);
+  x.lineTo(a+w, b+h-r); x.quadraticCurveTo(a+w, b+h, a+w-r, b+h);
+  x.lineTo(a+r, b+h); x.quadraticCurveTo(a, b+h, a, b+h-r);
+  x.lineTo(a, b+r); x.quadraticCurveTo(a, b, a+r, b);
+  x.closePath();
+}
+const ink = (a)=>`rgba(21,16,10,${a})`;
+function plateTexture(index, title, sub, url, accent, draw){
+  const W = SITE_W, H = SITE_H;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.textBaseline = 'alphabetic';
+
+  /* --- window chrome --- */
+  const BAR = 66;
+  x.fillStyle = CHROME_BG; x.fillRect(0, 0, W, BAR);
+  [0,1,2].forEach(i=>{
+    x.fillStyle = ['rgba(150,74,52,0.55)','rgba(152,116,50,0.5)','rgba(96,120,84,0.5)'][i];
+    x.beginPath(); x.arc(34 + i*26, BAR/2, 7.5, 0, 7); x.fill();
+  });
+  rr(x, 168, 15, W - 336, 36, 18);
+  x.fillStyle = 'rgba(248,243,234,0.92)'; x.fill();
+  x.strokeStyle = ink(0.10); x.lineWidth = 1.4; x.stroke();
+  x.fillStyle = ink(0.55);
+  x.font = '400 18px "Switzer", system-ui, sans-serif';
+  x.textAlign = 'center'; x.fillText(url, W/2, BAR/2 + 6);
+  x.textAlign = 'left';
+  x.fillStyle = ink(0.14); x.fillRect(0, BAR-1.5, W, 1.5);
+
+  /* --- the page inside --- */
+  x.fillStyle = PAGE_BG; x.fillRect(0, BAR, W, H - BAR);
+  const M = 62, top = BAR;
+
+  // site nav
+  x.fillStyle = INK; x.font = '600 25px "Switzer", system-ui, sans-serif';
+  x.fillText('anteroom', M, top + 56);
+  x.fillStyle = ink(0.72); x.font = '400 17px "Switzer", system-ui, sans-serif';
+  x.textAlign = 'right';
+  ['Studio','Work','Index'].forEach((l,i)=> x.fillText(l, W - M - i*92, top + 55));
+  x.textAlign = 'left';
+  x.fillStyle = ink(0.12); x.fillRect(M, top + 84, W - M*2, 1.4);
+
+  // hero: copy on the left, a plate of art on the right
+  const hy = top + 150;
+  x.fillStyle = accent; x.font = '500 15px "Switzer", system-ui, sans-serif';
+  x.fillText(index + ' — CASE STUDY', M, hy);
+  x.fillStyle = INK;
+  x.font = 'italic 400 62px "Instrument Serif", Georgia, serif';
+  x.fillText(title, M - 2, hy + 74);
+  x.fillStyle = ink(0.74); x.font = '400 21px "Switzer", system-ui, sans-serif';
+  x.fillText(sub, M, hy + 120);
+  rr(x, M, hy + 152, 196, 54, 27); x.fillStyle = INK; x.fill();
+  x.fillStyle = PAGE_BG; x.font = '500 18px "Switzer", system-ui, sans-serif';
+  x.textAlign = 'center'; x.fillText('View project', M + 98, hy + 186); x.textAlign = 'left';
+
+  const bx = 560, by = top + 104, bw = W - M - bx, bh = 300;
+  rr(x, bx, by, bw, bh, 14);
+  x.save(); x.clip();
+  const g0 = x.createLinearGradient(bx, by, bx + bw, by + bh);
+  g0.addColorStop(0, 'rgba(21,16,10,0.15)'); g0.addColorStop(1, 'rgba(21,16,10,0.05)');
+  x.fillStyle = g0; x.fillRect(bx, by, bw, bh);
+  x.translate(bx + bw/2, by + bh/2); x.scale(0.78, 0.78);
+  draw(x, bw, bh);
+  x.restore();
+  x.strokeStyle = ink(0.12); x.lineWidth = 1.4; rr(x, bx, by, bw, bh, 14); x.stroke();
+
+  // three cards along the bottom
+  const cy = top + 470, cw = (W - M*2 - 44) / 3, ch = 214;
+  ['Approach','Identity','Motion'].forEach((lab, i)=>{
+    const cx0 = M + i*(cw + 22);
+    rr(x, cx0, cy, cw, ch, 12); x.fillStyle = 'rgba(21,16,10,0.06)'; x.fill();
+    x.strokeStyle = ink(0.10); x.lineWidth = 1.2; x.stroke();
+    x.fillStyle = i === 0 ? accent : ink(0.30);
+    rr(x, cx0 + 20, cy + 20, cw - 40, 96, 8); x.fill();
+    x.fillStyle = INK; x.font = '500 19px "Switzer", system-ui, sans-serif';
+    x.fillText(lab, cx0 + 20, cy + 148);
+    x.fillStyle = ink(0.30);
+    x.fillRect(cx0 + 20, cy + 168, cw - 62, 7);
+    x.fillRect(cx0 + 20, cy + 184, cw - 96, 7);
+  });
+
+  // footer
+  x.fillStyle = ink(0.12); x.fillRect(M, H - 62, W - M*2, 1.4);
+  x.fillStyle = ink(0.45); x.font = '400 15px "Switzer", system-ui, sans-serif';
+  x.fillText('Anteroom Studio © 2026', M, H - 32);
+  x.textAlign = 'right'; x.fillText(index + ' / 04', W - M, H - 32); x.textAlign = 'left';
+
+  // the screen is still a sheet of something adrift down here: a little tooth,
+  // then a vignette so it has body under the caustics
+  for (let i=0;i<520;i++){
+    const px = Math.random()*W, py = Math.random()*H, r = Math.random()*40 + 8;
+    x.fillStyle = `rgba(${170+Math.random()*50|0},${152+Math.random()*45|0},${126+Math.random()*40|0},${0.008+Math.random()*0.012})`;
+    x.beginPath(); x.arc(px, py, r, 0, 7); x.fill();
+  }
+  const g = x.createRadialGradient(W/2, H/2, H*0.20, W/2, H/2, H*0.86);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(58,42,26,0.15)');
+  x.fillStyle = g; x.fillRect(0,0,W,H);
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return t;
+}
+const ring = (x,r,w,a)=>{ x.strokeStyle=`rgba(42,33,26,${a})`; x.lineWidth=w; x.beginPath(); x.arc(0,0,r,0,7); x.stroke(); };
+const PLATES = [
+  ['01','Tidal Commons','Brand & spatial identity','anteroom.studio/work/tidal-commons','#a8412a', (x)=>{
+    x.strokeStyle='rgba(42,33,26,0.62)'; x.lineWidth=2.4;
+    x.beginPath(); x.moveTo(-190,44); x.lineTo(190,44); x.stroke();
+    ring(x,112,2.4,0.6);
+    x.fillStyle='rgba(42,33,26,0.10)'; x.beginPath(); x.arc(0,0,112,0,Math.PI); x.fill();
+  }],
+  ['02','Hakone Pavilion','Wayfinding & motion','anteroom.studio/work/hakone','#8a5a22', (x)=>{
+    x.strokeStyle='rgba(42,33,26,0.62)'; x.lineWidth=14; x.lineCap='round';
+    x.beginPath(); x.moveTo(-150,-92); x.lineTo(150,-92); x.stroke();
+    x.lineWidth=10;
+    x.beginPath(); x.moveTo(-124,-40); x.lineTo(124,-40); x.stroke();
+    x.lineWidth=16;
+    x.beginPath(); x.moveTo(-94,-92); x.lineTo(-94,132); x.stroke();
+    x.beginPath(); x.moveTo( 94,-92); x.lineTo( 94,132); x.stroke();
+  }],
+  ['03','Deep Field','Research & data','anteroom.studio/work/deep-field','#2f6152', (x)=>{
+    for (let i=1;i<=7;i++) ring(x, i*22, 1.8, 0.13 + i*0.06);
+    x.fillStyle='rgba(42,33,26,0.75)'; x.beginPath(); x.arc(0,0,8,0,7); x.fill();
+  }],
+  ['04','Anteroom','Studio archive 2020—26','anteroom.studio/index','#5a4a86', (x)=>{
+    x.strokeStyle='rgba(42,33,26,0.58)'; x.lineWidth=2.4;
+    x.strokeRect(-160,-118,320,236);
+    x.beginPath(); x.moveTo(-160,52); x.lineTo(160,52); x.stroke();
+    x.fillStyle='rgba(42,33,26,0.12)'; x.fillRect(-160,52,320,66);
+    ring(x,48,2.4,0.6);
+  }]
+];
+
+function makeSheetMaterial(tex, phase, key, hov){
+  const m = new THREE.MeshStandardMaterial({
+    map: tex, side: THREE.DoubleSide, roughness: 0.82, metalness: 0.0,
+    transparent: true, depthWrite: true
+  });
+  m.onBeforeCompile = (sh)=>{
+    sh.uniforms.uTime   = sheetU.uTime;
+    sh.uniforms.uSize   = sheetU.uSize;
+    sh.uniforms.uReveal = sheetU.uReveal;
+    sh.uniforms.uHover  = hov;
+    sh.uniforms.uCamP   = sheetU.uCamP;
+    sh.uniforms.uPhase  = { value: phase };
+    sh.uniforms.uAmp    = { value: 0.60 };
+    sh.uniforms.uFreq   = { value: 3.10 };
+    sh.uniforms.uTwist  = { value: 1.05 };
+    sh.uniforms.uTimeC  = shared.uTime;
+    sh.uniforms.uCausticC = shared.uCausticC;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos; varying vec3 vWNrm;\n' + SHEET_WAVE)
+      .replace('#include <beginnormal_vertex>', `
+        vec3 sheetP; vec3 objectNormal;
+        sheetPoint(uv, sheetP, objectNormal);
+        vWNrm = normalize(mat3(modelMatrix) * objectNormal);`)
+      .replace('#include <begin_vertex>', `
+        vec3 transformed = sheetP;
+        vWPos = (modelMatrix * vec4(transformed,1.0)).xyz;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vWPos; varying vec3 vWNrm;
+        uniform float uReveal, uTimeC, uHover; uniform vec3 uCausticC, uCamP;
+        ${CAUSTIC_GLSL}`)
+      .replace('#include <fog_fragment>', `
+        {
+          float depth = -vWPos.y;
+          if (depth > 0.0){
+            float up = clamp(vWNrm.y*0.6 + 0.4, 0.0, 1.0);
+            float caus = causticCell(vWPos.xz*0.20, uTimeC*0.42);
+            float atten = exp(-depth*0.115);
+            gl_FragColor.rgb += uCausticC * caus * atten * up * 1.5;
+            float ab = 1.0 - exp(-depth*0.020);
+            gl_FragColor.rgb *= mix(vec3(1.0), vec3(0.70, 0.86, 0.90), ab);
+            gl_FragColor.rgb *= 1.72;
+          }
+          // reach for a sheet and something switches on behind it: the page lifts,
+          // and the glancing edges — where you see through the most paper — burn
+          if (uHover > 0.001){
+            vec3 V = normalize(uCamP - vWPos);
+            float rim = pow(1.0 - abs(dot(normalize(vWNrm), V)), 2.4);
+            gl_FragColor.rgb *= 1.0 + uHover*0.28;
+            gl_FragColor.rgb += vec3(1.00, 0.80, 0.55) * uHover * (0.14 + 1.15*rim);
+          }
+        }
+        gl_FragColor.a *= uReveal;
+        #include <fog_fragment>`);
+  };
+  m.customProgramCacheKey = ()=> 'sheet' + key;
+  return m;
+}
+
+// the grid the sheets hang on — read from here and from the loop, so it only
+// exists once
+const ARC = { cx: -0.15, cy: -9.30, cz: -6.55, dx: 1.88, dy: 1.26, dz: 0.30 };
+const arcU = {
+  uTime:{ value:0 }, uPx:{ value:1 },
+  uH:{ value:new Float32Array(4) }, uB:{ value:new Float32Array(4) },
+  uP:{ value:Array.from({length:4}, ()=>new THREE.Vector3()) },
+  uS:{ value:new THREE.Vector2(SHEET_W, SHEET_H) }
+};
+const archive = new THREE.Group();
+const sheets = [];                       // { mesh, hovU, haloU, hov, sel, burst }
+let hoverSheet = -1, selSheet = -1;
+
+/* the glow that comes on behind a sheet — a plate a third larger, drawn before
+   the sheet so only the margin escapes and reads as light spilling round it */
+const HALO_GEO = new THREE.PlaneGeometry(1, 1);
+function backlight(on){
+  const m = new THREE.Mesh(HALO_GEO, new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, depthTest:true, fog:false,
+    blending: THREE.AdditiveBlending, premultipliedAlpha:true, side: THREE.DoubleSide,
+    uniforms:{ uOn: on, uCol:{ value:new THREE.Color(0xffc27a).convertSRGBToLinear() } },
+    vertexShader:`
+      varying vec2 vUv;
+      void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader:`
+      precision mediump float;
+      varying vec2 vUv;
+      uniform float uOn; uniform vec3 uCol;
+      void main(){
+        float r = length((vUv - 0.5) * vec2(2.0, 1.86));
+        float a = pow(clamp(1.0 - r, 0.0, 1.0), 1.9) * uOn;
+        if (a < 0.002) discard;
+        gl_FragColor = vec4(uCol * a, a);
+      }`
+  }));
+  m.scale.set(SHEET_W*1.42, SHEET_H*1.52, 1);
+  m.position.z = -0.18;
+  m.renderOrder = 4;
+  m.frustumCulled = false;
+  return m;
+}
+{
+  const geo = new THREE.PlaneGeometry(1, 1, 54, 38);
+  PLATES.forEach(([idx, title, sub, url, accent, draw], i)=>{
+    const tex = plateTexture(idx, title, sub, url, accent, draw);
+    const hovU = { value: 0 }, haloU = { value: 0 };
+    const mat = makeSheetMaterial(tex, i*1.9, i, hovU);
+    const mesh = new THREE.Mesh(geo, mat);
+    const col = i % 2, row = (i / 2) | 0;
+    mesh.position.set(ARC.cx + (col - 0.5)*2*ARC.dx, ARC.cy + (0.5 - row)*2*ARC.dy,
+                      ARC.cz + (col - 0.5)*2*ARC.dz);
+    mesh.rotation.y = (col - 0.5) * -0.26;
+    mesh.rotation.z = (i%2 ? 1 : -1) * 0.030;
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 5;
+    mesh.add(backlight(haloU));
+    archive.add(mesh);
+    sheets.push({ mesh, hovU, haloU, hov:0, sel:0, burst:0 });
+  });
+
+  /* motes shaken loose when you reach for a sheet, thrown outward when you take it */
+  {
+    const N = 4*64;
+    const pos = new Float32Array(N*3), aIdx = new Float32Array(N), aRnd = new Float32Array(N*3);
+    for (let i=0;i<N;i++){
+      aIdx[i] = i % 4;
+      aRnd[i*3] = Math.random(); aRnd[i*3+1] = Math.random(); aRnd[i*3+2] = Math.random();
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('aIdx', new THREE.BufferAttribute(aIdx, 1));
+    g.setAttribute('aRnd', new THREE.BufferAttribute(aRnd, 3));
+    const pts = new THREE.Points(g, new THREE.ShaderMaterial({
+      transparent:true, depthWrite:false, depthTest:true, fog:false,
+      blending: THREE.AdditiveBlending, premultipliedAlpha:true,
+      uniforms: arcU,
+      vertexShader:`
+        attribute float aIdx;
+        attribute vec3 aRnd;
+        uniform float uTime, uPx;
+        uniform float uH[4], uB[4];
+        uniform vec3 uP[4];
+        uniform vec2 uS;
+        varying float vA;
+        void main(){
+          // four sheets, so read the arrays with a masked loop rather than a
+          // computed index — constant bounds, constant subscripts, no surprises
+          float h = 0.0, b = 0.0; vec3 c = vec3(0.0);
+          for (int k = 0; k < 4; k++){
+            float m = step(abs(aIdx - float(k)), 0.5);
+            h += uH[k]*m; b += uB[k]*m; c += uP[k]*m;
+          }
+          float life = fract(aRnd.z + uTime*(0.085 + aRnd.x*0.085));
+          vec3 o;
+          o.x = (aRnd.x - 0.5) * uS.x * 1.08;
+          o.y = (life - 0.5) * uS.y * 1.6;
+          o.z = (aRnd.y - 0.5) * 0.7 + 0.34;
+          o.x += sin(uTime*0.8 + aRnd.y*31.0) * 0.13;
+          o.z += cos(uTime*0.6 + aRnd.x*24.0) * 0.09;
+          vec2 rad = normalize(o.xy + vec2(1e-4));
+          o.xy += rad * b * 0.85;
+          o.z  += b * 0.55;
+          vec4 mv = modelViewMatrix * vec4(c + o, 1.0);
+          gl_Position = projectionMatrix * mv;
+          vA = (h*0.50 + b*0.72) * smoothstep(0.0, 0.14, life) * smoothstep(1.0, 0.72, life);
+          gl_PointSize = (0.8 + aRnd.z*1.9) * uPx * (1.0 + b*0.7) * (13.0 / max(0.4, -mv.z));
+        }`,
+      fragmentShader:`
+        precision mediump float;
+        varying float vA;
+        void main(){
+          float a = smoothstep(0.5, 0.06, length(gl_PointCoord - 0.5)) * vA;
+          if (a < 0.004) discard;
+          gl_FragColor = vec4(vec3(1.00, 0.93, 0.80) * a, a);
+        }`
+    }));
+    pts.frustumCulled = false;
+    pts.renderOrder = 6;
+    archive.add(pts);
+  }
+
+  scene.add(archive);
+  archive.visible = false;
+  dbg.archive = archive;
+  dbg.sheets = ()=>sheets.map(S=>({ hov:+S.hov.toFixed(2), sel:+S.sel.toFixed(2), burst:+S.burst.toFixed(2) }));
+  dbg.sheetSize = ()=>sheetU.uSize.value;
+}
+
+/* wisps in the air, drawn along by the pointer */
+const wispU = { uTime:{value:0}, uPx:{value:1}, uUnder:{value:0},
+                uWisp:{value:new THREE.Vector3(0,2,-8)}, uWispOn:{value:0} };
+{
+  const N = 360;
+  const g = new THREE.BufferGeometry();
+  const pos = new Float32Array(N*3), rnd = new Float32Array(N);
+  for (let i=0;i<N;i++){
+    pos[i*3]   = -16 + Math.random()*32;
+    pos[i*3+1] = 0.18 + Math.pow(Math.random(), 1.5)*5.6;
+    pos[i*3+2] = -17 + Math.random()*20;
+    rnd[i] = Math.random();
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aRnd', new THREE.BufferAttribute(rnd,1));
+  const m = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, premultipliedAlpha:true,
+    uniforms: wispU,
+    vertexShader: `
+      attribute float aRnd; varying float vA; varying float vP;
+      uniform float uTime, uPx, uWispOn, uUnder; uniform vec3 uWisp;
+      void main(){
+        float r = aRnd;
+        vec3 home = position;
+        home.x += sin(uTime*0.23 + r*41.0)*1.05;
+        home.y += sin(uTime*0.19 + r*29.0)*0.42;
+        home.z += cos(uTime*0.21 + r*33.0)*1.05;
+        vec3 d = uWisp - home;
+        float dist = length(d);
+        vec3 dir = d / max(dist, 1e-3);
+        // they are drawn toward the cursor and then swirl round it rather than pile up on it
+        float pull = uWispOn * exp(-dist*0.42);
+        vec3 tang = normalize(cross(dir, vec3(0.0,1.0,0.0)) + vec3(1e-4));
+        vec3 p = home + dir*pull*dist*0.62
+                      + tang*pull*sin(uTime*1.9 + r*24.0)*1.15
+                      + vec3(0.0, pull*0.75, 0.0);
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = (0.7 + r*1.5) * (1.0 + pull*2.6) * uPx * (17.0 / -mv.z);
+        vP = pull;
+        vA = (0.018 + r*0.055 + pull*0.72) * (1.0 - uUnder);
+      }`,
+    fragmentShader: `
+      varying float vA; varying float vP;
+      void main(){
+        vec2 q = gl_PointCoord - 0.5;
+        float d = length(q);
+        float core = smoothstep(0.5, 0.02, d);
+        float halo = smoothstep(0.5, 0.14, d);
+        vec3 warm = mix(vec3(1.5,0.86,0.48), vec3(1.7,1.25,0.92), vP);
+        float a = (core*0.75 + halo*0.35) * vA;
+        if (a < 0.003) discard;
+        gl_FragColor = vec4(warm * a, a);
+      }`
+  });
+  const wisps = new THREE.Points(g, m);
+  wisps.frustumCulled = false;
+  wisps.renderOrder = 7;
+  scene.add(wisps);
+  dbg.wisps = wisps;
+}
+
+/* pointer ripples on the pool */
+const ripPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+const ripRay   = new THREE.Raycaster();
+const ripHit   = new THREE.Vector3();
+const ripLast  = new THREE.Vector2(1e9, 1e9);
+let ripSlot = 0, ripCool = 0, ptrOnWater = 0, wispAim = 0;
+function pushRipple(x, z, strength){
+  const arr = waterMat.uniforms.uRip.value;
+  arr[ripSlot % 6].set(x, z, performance.now()/1000, strength);
+  ripSlot++;
+}
+const _wispAim = new THREE.Vector3();
+function pokeWater(nx, ny, strong){
+  ripRay.setFromCamera({ x: nx, y: ny }, camera);
+  // the wisps ride the pointer whether or not it is over water
+  _wispAim.copy(ripRay.ray.direction).multiplyScalar(9.5).add(ripRay.ray.origin);
+  wispU.uWisp.value.copy(_wispAim);
+  wispAim = 1;
+  if (!ripRay.ray.intersectPlane(ripPlane, ripHit)) { ptrOnWater = 0; return; }
+  const d = ripHit.distanceTo(camera.position);
+  if (d > 60) { ptrOnWater = 0; return; }
+  ptrOnWater = 1;
+  waterMat.uniforms.uPtr.value.set(ripHit.x, ripHit.z, 1);
+  if (ripHit.distanceTo(camera.position) < 12) wispU.uWisp.value.set(ripHit.x, ripHit.y + 1.15, ripHit.z);
+  const moved = Math.hypot(ripHit.x - ripLast.x, ripHit.z - ripLast.y);
+  const now = performance.now();
+  if (strong || (moved > 0.42 && now > ripCool)){
+    pushRipple(ripHit.x, ripHit.z, strong ? 1.5 : 0.55 + Math.min(moved, 2.0)*0.22);
+    ripLast.set(ripHit.x, ripHit.z);
+    ripCool = now + 70;
+  }
+}
+window.addEventListener('pointermove', (e)=>{
+  const { w, h } = vp();
+  pokeWater((e.clientX/w)*2 - 1, -(e.clientY/h)*2 + 1, false);
+}, { passive:true });
+window.addEventListener('pointerdown', (e)=>{
+  const { w, h } = vp();
+  pokeWater((e.clientX/w)*2 - 1, -(e.clientY/h)*2 + 1, true);
+}, { passive:true });
+window.addEventListener('pointerleave', ()=>{ ptrOnWater = 0; wispAim = 0; }, { passive:true });
+
+const _rPos = new THREE.Vector3(), _cPos = new THREE.Vector3(), _normal = new THREE.Vector3();
+const _view = new THREE.Vector3(), _target = new THREE.Vector3(), _look = new THREE.Vector3();
+const _rot = new THREE.Matrix4();
+function updateReflector(){
+  _rPos.setFromMatrixPosition(water.matrixWorld);
+  _cPos.setFromMatrixPosition(camera.matrixWorld);
+  _rot.extractRotation(water.matrixWorld);
+  _normal.set(0,0,1).applyMatrix4(_rot);
+  _view.subVectors(_rPos, _cPos);
+  if (_view.dot(_normal) > 0) return false;
+  _view.reflect(_normal).negate().add(_rPos);
+  _rot.extractRotation(camera.matrixWorld);
+  _look.set(0,0,-1).applyMatrix4(_rot).add(_cPos);
+  _target.subVectors(_rPos, _look);
+  _target.reflect(_normal).negate().add(_rPos);
+  reflectCam.position.copy(_view);
+  reflectCam.up.set(0,1,0).applyMatrix4(_rot).reflect(_normal);
+  reflectCam.lookAt(_target);
+  reflectCam.far = camera.far; reflectCam.near = camera.near;
+  reflectCam.updateMatrixWorld();
+  reflectCam.projectionMatrix.copy(camera.projectionMatrix);
+  textureMatrix.set(0.5,0,0,0.5, 0,0.5,0,0.5, 0,0,0.5,0.5, 0,0,0,1);
+  textureMatrix.multiply(reflectCam.projectionMatrix);
+  textureMatrix.multiply(reflectCam.matrixWorldInverse);
+  textureMatrix.multiply(water.matrixWorld);
+  return true;
+}
+
+/* =====================================================================
+   type engine — the headline is typeset into canvases and drawn as quads
+   inside the WebGL frame, so it picks up the grain, the bloom, the
+   refraction and the underwater grade. Nothing here is clickable.
+   ===================================================================== */
+/* the sheet of liquid the headline lies under. the solver itself lives down in
+   the post section, where the fullscreen blit helper is — these are the handles
+   the type shader holds on to. after canvas-ui's LiquidObject. */
+const LIQ = {
+  // the component's defaults are tuned for a 3-D object filling a canvas. type
+  // has to stay readable while it is being dragged, so distortion comes down by
+  // about 3x and the lens tightens to something nearer a cursor than a screen
+  distortion: 0.22,   // how far the liquid drags the letters as it flows
+  aberration: 0.45,   // chromatic fringe in a soft radius around the cursor
+  sheen:      0.70,   // light glinting off the moving surface
+  iridescence:0.55,   // rainbow shimmer where it runs fastest
+  grain:      1.00,
+  ambient:    0.50,   // idle drift that keeps the surface alive
+  cursorSize: 1.00,
+  cursorForce:1.00,
+  persistence:0.60,   // how long the ripples keep flowing after the cursor stops
+  swirl:      0.50,   // how much the flow curls into eddies
+  splash:     1.20    // the burst fired on click
+};
+const liqU = {
+  tField:      { value: null },
+  uRes:        { value: new THREE.Vector2(1,1) },
+  uFieldTexel: { value: new THREE.Vector2() },
+  uCursor:     { value: new THREE.Vector2(0.5, 0.5) },
+  uGlow:       { value: 0 },
+  uLiquid:     { value: REDUCED ? 0 : 1 },
+  uDistortion: { value: LIQ.distortion },
+  uAberration: { value: LIQ.aberration },
+  uSheen:      { value: LIQ.sheen },
+  uIridescence:{ value: LIQ.iridescence },
+  uGrainAmt:   { value: LIQ.grain },
+  uAmbient:    { value: LIQ.ambient },
+  uLensR:      { value: 0.10 + LIQ.cursorSize*0.16 }
+};
+
+const hudScene = new THREE.Scene();
+let hudCam = new THREE.OrthographicCamera(0, 1, 1, 0, -10, 10);
+
+const INK_AIR   = new THREE.Color(0xf9efdd).convertSRGBToLinear();
+const INK_WATER = new THREE.Color(0xf0fbff).convertSRGBToLinear();
+
+const BLOCKS = [
+  { key:'hero',
+    eyebrow:'A spatial, brand & motion studio',
+    lines:[ {style:'serif', words:['Beneath','the']}, {style:'sans', words:['surface']} ],
+    show:[0.000, 0.045, 0.150, 0.265], ink:'air', timed:true },
+  { key:'cross',
+    eyebrow:'01 — The crossing',
+    lines:[ {style:'serif', words:['We','build','the']}, {style:'sans', words:['quiet','part']} ],
+    show:[0.355, 0.440, 0.560, 0.650], ink:'water' },
+  { key:'floor',
+    eyebrow:'02 — The floor',
+    lines:[ {style:'serif', words:['Come','down']}, {style:'sans', words:['and','look']} ],
+    show:[0.700, 0.775, 0.880, 0.945], ink:'water' }
+];
+
+const typeMatProto = {
+  transparent:true, depthTest:false, depthWrite:false, premultipliedAlpha:true,
+  vertexShader:`
+    varying vec2 vUv;
+    void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader:`
+    precision highp float;
+    varying vec2 vUv;
+    uniform sampler2D map, tField;
+    uniform vec3 uColor;
+    uniform float uReveal, uSink, uWarp, uAlpha, uTime, uHalo;
+    uniform float uDistortion, uAberration, uSheen, uIridescence, uGrainAmt,
+                  uAmbient, uGlow, uLensR, uLiquid;
+    uniform vec2 uRes, uToWord, uCursor, uFieldTexel, uPad;
+
+    void main(){
+      vec2 uv = vUv;
+      // slide up from behind the quad edge; the quad is the mask
+      uv.y += (1.0 - uReveal) * 1.2;
+      uv.y += uSink * 1.2;
+      // the crossing bends the type the way the surface bends everything else
+      uv.x += sin(uv.y*7.0 + uTime*1.25) * 0.030 * uWarp;
+      uv.y += sin(uv.x*11.0 + uTime*1.70) * 0.014 * uWarp;
+      if (uv.y > 1.0 || uv.y < 0.0) discard;
+
+      // the liquid is one screen-space field for the whole page; each word asks it
+      // what is happening at its own pixels, then converts the answer — which is in
+      // screen uv — into its own box's uv, so every word drags by the same distance
+      vec2 suv  = gl_FragCoord.xy / uRes;
+      vec2 flow = texture2D(tField, suv).xy;
+      vec2 drift = vec2(sin(suv.y*9.0 + uTime*0.7) + sin(suv.y*21.0 - uTime*1.1)*0.6,
+                        sin(suv.x*8.0 - uTime*0.6) + sin(suv.x*17.0 + uTime*0.9)*0.6);
+      vec2 push = (flow * uDistortion * 0.001 + drift * uAmbient * 0.0016) * uToWord * uLiquid;
+      push = clamp(push, -uPad*0.62, uPad*0.62);
+
+      // the field's own slope is both the surface normal and the wave crest
+      float lx = length(texture2D(tField, suv - vec2(uFieldTexel.x, 0.0)).xy);
+      float rx = length(texture2D(tField, suv + vec2(uFieldTexel.x, 0.0)).xy);
+      float by = length(texture2D(tField, suv - vec2(0.0, uFieldTexel.y)).xy);
+      float ty = length(texture2D(tField, suv + vec2(0.0, uFieldTexel.y)).xy);
+      vec2 grad = vec2(rx - lx, ty - by);
+
+      float asp = uRes.x / uRes.y;
+      vec2 toCur = (suv - uCursor) * vec2(asp, 1.0);
+      float lens = smoothstep(uLensR, uLensR*0.15, length(toCur)) * uGlow * uLiquid;
+      vec2 spread = normalize(toCur + 1e-5) * (lens * uAberration * 0.006) / vec2(asp, 1.0) * uToWord;
+      spread.x += 0.0075 * uWarp;          // the meniscus splits it on its own axis too
+      spread = clamp(spread, -uPad*0.28, uPad*0.28);
+
+      float aR = texture2D(map, uv - push - spread).a;
+      float aG = texture2D(map, uv - push).a;
+      float aB = texture2D(map, uv - push + spread).a;
+      float a  = (aR + aG + aB) / 3.0 * uAlpha;
+
+      vec3 col = uColor * vec3(aR, aG, aB) * uAlpha;
+
+      vec3 nrm = normalize(vec3(-grad*0.3, 1.0));
+      float spec = pow(max(dot(nrm, normalize(vec3(-0.4, 0.55, 0.73))), 0.0), 16.0);
+      col += spec * uSheen * 0.40 * a;
+
+      float energy = length(flow), rim = length(grad);
+      float wave = smoothstep(2.0, 26.0, rim + energy*0.12) * a;
+      vec3 shimmer = 0.5 + 0.5*cos(vec3(0.0, 2.094, 4.188)
+                   + energy*0.045 + (grad.x - grad.y)*0.1 + uTime*0.6);
+      col += shimmer * wave * uIridescence * 0.55;
+
+      // a soft halo of alpha with no colour: premultiplied, that darkens whatever
+      // is behind, which is how pale type stays legible over lit stone. it has to
+      // travel with the ink or it detaches the moment the liquid drags a letter
+      float h = max(max(texture2D(map, uv - push + vec2(0.007, 0.0)).a,
+                        texture2D(map, uv - push - vec2(0.007, 0.0)).a),
+                    max(texture2D(map, uv - push + vec2(0.0, 0.010)).a,
+                        texture2D(map, uv - push - vec2(0.0, 0.010)).a));
+      h = max(h - aG, 0.0) * uHalo * uAlpha;
+
+      float gr = fract(sin(dot(gl_FragCoord.xy + vec2(uTime*127.1, uTime*311.7),
+                             vec2(12.9898, 78.233))) * 43758.5453);
+      col += (gr - 0.5) * uGrainAmt * (0.35 + 0.65*lens) * 0.14 * a;
+
+      float outA = min(1.0, a + h*0.55);
+      if (outA < 0.004) discard;
+      gl_FragColor = vec4(max(col, 0.0), outA);
+    }`
+};
+
+let typeBuilt = false;
+let introT = 0, introStart = 0;   // the hero's own entrance, independent of scroll
+const typeUnits = [];              // { mesh, mat, block, order }
+const measure = document.createElement('canvas').getContext('2d');
+
+function fontFor(style, px){
+  if (style === 'serif') return `italic 400 ${px}px "Instrument Serif", Georgia, serif`;
+  if (style === 'eyebrow') return `400 ${px}px "Switzer", "Helvetica Neue", Arial, sans-serif`;
+  return `400 ${px}px "Switzer", "Helvetica Neue", Arial, sans-serif`;
+}
+function setFont(ctx, style, px, ls){
+  ctx.font = fontFor(style, px);
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${ls}px`;
+}
+function wordTexture(word, style, px, ls, dpr){
+  setFont(measure, style, px, ls);
+  const m = measure.measureText(word);
+  const inkL = Math.ceil(m.actualBoundingBoxLeft   || 0);
+  const inkR = Math.ceil(m.actualBoundingBoxRight  || m.width);
+  const asc  = Math.ceil(m.actualBoundingBoxAscent  || px*0.75);
+  const desc = Math.ceil(m.actualBoundingBoxDescent || px*0.25);
+  // the quad is the mask, so the liquid can only drag the ink as far as the
+  // canvas has margin — anything past this gets sliced off at the quad edge
+  const padX = Math.ceil(px*0.34) + 12;
+  const padY = Math.ceil(px*0.38) + 10;                // room above for the slide-in mask
+  const w = inkL + inkR + padX*2;
+  const h = asc + desc + padY*2;
+  const c = document.createElement('canvas');
+  c.width = Math.max(2, Math.round(w*dpr));
+  c.height = Math.max(2, Math.round(h*dpr));
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  setFont(ctx, style, px, ls);
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(word, padX + inkL, padY + asc);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 4;
+  return { tex, w, h, padX, padY, offX: padX + inkL, offY: padY + asc };   // offsets from the box to the glyph origin
+}
+
+function clearType(){
+  typeUnits.forEach(u => { hudScene.remove(u.mesh); u.mesh.geometry.dispose(); u.mat.uniforms.map.value.dispose(); u.mat.dispose(); });
+  typeUnits.length = 0;
+}
+
+const quad = new THREE.PlaneGeometry(1,1);
+function buildType(W, H){
+  clearType();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const SANS  = THREE.MathUtils.clamp(W*0.069, 46, 132);
+  const SERIF = SANS * 1.03;
+  const EYE   = THREE.MathUtils.clamp(W*0.0084, 11, 15);
+  const lsSans = SANS * -0.022, lsSerif = 0, lsEye = EYE * 0.055;
+  const lineGap = SANS * 0.86;
+
+  for (const block of BLOCKS){
+    let order = 0;
+    const rows = [];
+
+    // eyebrow, typeset as one unit
+    {
+      const text = block.eyebrow.toUpperCase();
+      setFont(measure, 'eyebrow', EYE, lsEye);
+      const m = measure.measureText(text);
+      rows.push({ style:'eyebrow', px:EYE, ls:lsEye, items:[{ word:text, x:0 }], width:m.width, cap:EYE*0.72 });
+    }
+    for (const line of block.lines){
+      const px = line.style === 'serif' ? SERIF : SANS;
+      const ls = line.style === 'serif' ? lsSerif : lsSans;
+      setFont(measure, line.style, px, ls);
+      const items = []; let x = 0;
+      for (const w of line.words){
+        items.push({ word:w, x });
+        x += measure.measureText(w + ' ').width;
+      }
+      rows.push({ style:line.style, px, ls, items, width: measure.measureText(line.words.join(' ')).width });
+    }
+
+    // vertical rhythm: eyebrow, then the lines on a tight leading
+    const baselines = [];
+    let y = 0;
+    baselines.push(y);                                   // eyebrow baseline
+    y += SANS * 0.92;
+    for (let i=1;i<rows.length;i++){ baselines.push(y); y += lineGap; }
+    const blockTop = baselines[0] - rows[0].cap;
+    const blockBot = baselines[baselines.length-1];
+    const shift = H*0.442 - (blockTop + blockBot)/2;
+    block._bottom = blockBot + shift;
+
+    rows.forEach((row, ri)=>{
+      const lineX = (W - row.width) / 2;
+      const baseY = baselines[ri] + shift;
+      for (const it of row.items){
+        const t = wordTexture(it.word, row.style, row.px, row.ls, dpr);
+        const mat = new THREE.ShaderMaterial(Object.assign({}, typeMatProto, {
+          uniforms: Object.assign({
+            map:{ value: t.tex },
+            uColor:{ value: (block.ink === 'water' ? INK_WATER : INK_AIR).clone() },
+            uReveal:{ value: 0 }, uSink:{ value: 0 }, uWarp:{ value: 0 },
+            uAlpha:{ value: 1 }, uTime:{ value: 0 }, uHalo:{ value: 0 },
+            // screen uv -> this box's uv, so one field drags every word by the
+            // same number of pixels whatever size its canvas happens to be
+            uToWord:{ value: new THREE.Vector2(W / t.w, H / t.h) },
+            uPad:{ value: new THREE.Vector2(t.padX / t.w, t.padY / t.h) }
+          }, liqU)
+        }));
+        const mesh = new THREE.Mesh(quad, mat);
+        const px0 = lineX + it.x - t.offX;
+        const py0 = baseY - t.offY;
+        mesh.scale.set(t.w, t.h, 1);
+        mesh.position.set(px0 + t.w/2, H - (py0 + t.h/2), 0);
+        mesh.renderOrder = 10;
+        hudScene.add(mesh);
+        typeUnits.push({ mesh, mat, block, order: order++, row: ri });
+      }
+    });
+  }
+  typeBuilt = true;
+  layoutPlates();
+}
+
+/* =====================================================================
+   chrome plates — a shader behind a DOM control, drawn as a quad in the HUD
+   scene at the element's own rect. no second GL context to pay for, and the
+   light they throw goes through the page's bloom like everything else
+   ===================================================================== */
+const PLATE_VERT = `
+  varying vec2 vUv;
+  void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
+const PLATE_HEAD = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform float uTime, uOn, uHover, uRadius;
+  uniform vec2 uSize;
+  float hash21(vec2 p){ p = fract(p*vec2(443.897, 441.423)); p += dot(p, p + 19.19); return fract(p.x*p.y); }
+  // rounded box, so the fill stops exactly under the pill's own border
+  float boxSD(vec2 p, vec2 b, float r){
+    vec2 d = abs(p) - b + r;
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r;
+  }`;
+
+const plates = [];
+function chromePlate(el, frag, padX, padY, order){
+  const mat = new THREE.ShaderMaterial({
+    transparent:true, depthTest:false, depthWrite:false, premultipliedAlpha:true,
+    uniforms:{ uTime:{value:0}, uSize:{value:new THREE.Vector2(1,1)},
+               uOn:{value:0}, uHover:{value:0}, uRadius:{value:99} },
+    vertexShader: PLATE_VERT, fragmentShader: PLATE_HEAD + frag
+  });
+  const mesh = new THREE.Mesh(quad, mat);
+  mesh.renderOrder = order;
+  mesh.visible = false;
+  hudScene.add(mesh);
+  const P = { el, mesh, mat, padX, padY, hover:0, want:0, on:0 };
+  el.addEventListener('pointerenter', ()=>{ P.want = 1; });
+  el.addEventListener('pointerleave', ()=>{ P.want = 0; });
+  plates.push(P);
+  return P;
+}
+function layoutPlates(){
+  for (const P of plates){
+    const r = P.el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1){ P.mesh.visible = false; continue; }
+    const w = r.width + P.padX*2, h = r.height + P.padY*2;
+    P.mesh.scale.set(w, h, 1);
+    P.mesh.position.set(r.left + r.width/2, H - (r.top + r.height/2), 0);
+    P.mat.uniforms.uSize.value.set(w, h);
+    P.mat.uniforms.uRadius.value = r.height/2 + Math.min(P.padX, P.padY);
+  }
+}
+
+/* Field Notes: rays raking across a dark plate, with motes riding them */
+const notesPlate = chromePlate(document.getElementById('notes'), `
+  void main(){
+    vec2 p = (vUv - 0.5) * uSize;
+    float sd = boxSD(p, uSize*0.5, uRadius);
+    float mask = 1.0 - smoothstep(-1.2, 0.6, sd);
+    if (mask < 0.004) discard;
+
+    float t = uTime;
+    vec2 q = p / uSize.y;                       // 1 unit = the pill's height
+    float asp = uSize.x / uSize.y;
+
+    // dark enough that white type stays white type
+    vec3 col = mix(vec3(0.028,0.022,0.028), vec3(0.068,0.050,0.056), vUv.y);
+
+    // rays: two banded sets raked over at a shallow angle, kept soft — a low
+    // exponent here reads as light, a high one reads as painted stripes
+    float s = q.x + q.y*1.15;
+    float rays = pow(max(0.0, sin(s*3.6 - t*0.50)), 1.7) * 0.62
+               + pow(max(0.0, sin(s*8.1 + t*0.29 + 1.3)), 2.2) * 0.38;
+    // a brighter pass travelling the length of the pill
+    float head = (fract(t*0.11) * 2.4 - 1.2) * asp * 0.5;
+    rays *= 0.22 + 1.15 * exp(-pow((q.x - head)*1.30, 2.0));
+    col += vec3(1.00, 0.82, 0.56) * rays * (0.20 + 0.42*uHover);
+
+    // motes riding up through the rays. the page's composite splits every dot
+    // into r/g/b, so a dense field turns to coloured static — keep it sparse
+    float motes = 0.0;
+    for (int i = 0; i < 2; i++){
+      float fi = float(i);
+      vec2 g = q * (4.2 + fi*2.4) + vec2(fi*7.3, -t*(0.26 + fi*0.15) + fi*3.1);
+      vec2 cell = floor(g), f = fract(g) - 0.5;
+      float hs = hash21(cell + fi*17.0);
+      if (hs < 0.45) continue;                 // most cells stay empty
+      vec2 off = (vec2(hs, fract(hs*31.7)) - 0.5) * 0.62;
+      float tw = 0.30 + 0.70*sin(t*(1.3 + hs*2.2) + hs*40.0);
+      motes += smoothstep(0.20, 0.02, length(f - off)) * max(tw, 0.0) * (0.30 + 0.70*hs);
+    }
+    col += vec3(1.00, 0.95, 0.86) * motes * (0.34 + 0.60*uHover);
+
+    float a = mask * uOn * (0.88 + 0.12*uHover);
+    gl_FragColor = vec4(col * a, a);
+  }`, 1, 1, 8);
+
+/* the scroll cue: no plate, only motes settling around the words */
+const hintPlate = chromePlate(document.getElementById('hint'), `
+  void main(){
+    vec2 q = (vUv - 0.5) * vec2(uSize.x / uSize.y, 1.0);
+    float fade = smoothstep(0.5, 0.06, length(q * vec2(0.42, 1.0)));
+    if (fade < 0.004) discard;
+    float t = uTime;
+    float motes = 0.0;
+    for (int i = 0; i < 2; i++){
+      float fi = float(i);
+      vec2 g = q * (5.5 + fi*3.0) + vec2(sin(t*0.12 + fi)*0.6 + fi*5.7, -t*(0.16 + fi*0.09));
+      vec2 cell = floor(g), f = fract(g) - 0.5;
+      float hs = hash21(cell + fi*23.0);
+      if (hs < 0.40) continue;                 // sparse, or it reads as static
+      vec2 off = (vec2(hs, fract(hs*57.3)) - 0.5) * 0.7;
+      float tw = 0.30 + 0.70*sin(t*(0.9 + hs*1.8) + hs*40.0);
+      motes += smoothstep(0.17, 0.015, length(f - off)) * max(tw, 0.0) * (0.30 + 0.70*hs);
+    }
+    float a = motes * fade * uOn * 0.60;
+    if (a < 0.004) discard;
+    gl_FragColor = vec4(vec3(1.00, 0.96, 0.90) * a, a);
+  }`, 190, 26, 8);
+
+/* =====================================================================
+   post
+   ===================================================================== */
+const quadGeo = new THREE.BufferGeometry();
+quadGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1,-1,0, 3,-1,0, -1,3,0]),3));
+quadGeo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array([0,0, 2,0, 0,2]),2));
+const quadCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const quadScene = new THREE.Scene();
+const quadMesh = new THREE.Mesh(quadGeo, null);
+quadMesh.frustumCulled = false;
+quadScene.add(quadMesh);
+function blit(mat, target){
+  quadMesh.material = mat;
+  renderer.setRenderTarget(target || null);
+  renderer.render(quadScene, quadCam);
+}
+const VERT = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position,1.0); }`;
+/* =====================================================================
+   the liquid: a small Navier-Stokes field on the GPU. splat velocity where
+   the cursor moved, curl it into eddies with vorticity confinement, project
+   it divergence-free with a Jacobi pressure solve, then advect. the second
+   advected copy — the field — is what the type reads. after canvas-ui's
+   LiquidObject; the maths is Stam's, the tuning is theirs.
+   ===================================================================== */
+const SIM_RES = 128, FIELD_RES = 256, PRESSURE_STEPS = 4, SIM_STEP = 1/60;
+function simRT(size){
+  const rt = new THREE.WebGLRenderTarget(size, size, {
+    type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+    wrapS: THREE.ClampToEdgeWrapping, wrapT: THREE.ClampToEdgeWrapping,
+    depthBuffer:false, stencilBuffer:false
+  });
+  rt.texture.colorSpace = THREE.NoColorSpace;
+  rt.texture.generateMipmaps = false;
+  return rt;
+}
+const velRT = [simRT(SIM_RES), simRT(SIM_RES)];
+const prsRT = [simRT(SIM_RES), simRT(SIM_RES)];
+const fldRT = [simRT(FIELD_RES), simRT(FIELD_RES)];
+const divRT = simRT(SIM_RES), crlRT = simRT(SIM_RES);
+const simTexel = new THREE.Vector2(1/SIM_RES, 1/SIM_RES);
+const fldTexel = new THREE.Vector2(1/FIELD_RES, 1/FIELD_RES);
+liqU.uFieldTexel.value.copy(fldTexel);
+
+const SIM_HEAD = `precision highp float; varying vec2 vUv; uniform vec2 uTexel;`;
+function simPass(fs, uniforms){
+  return new THREE.ShaderMaterial({
+    uniforms, vertexShader: VERT, fragmentShader: fs,
+    depthTest:false, depthWrite:false, blending: THREE.NoBlending
+  });
+}
+const splatMat = simPass(`precision highp float; varying vec2 vUv;
+  uniform sampler2D tTarget; uniform vec2 uPoint; uniform vec3 uValue;
+  uniform float uRadius, uAspect;
+  void main(){
+    vec2 d = vUv - uPoint; d.x *= uAspect;
+    gl_FragColor = vec4(texture2D(tTarget, vUv).xyz + uValue * exp(-dot(d,d)/max(uRadius,1e-5)), 1.0);
+  }`, { tTarget:{value:null}, uPoint:{value:new THREE.Vector2(0.5,0.5)},
+        uValue:{value:new THREE.Vector3()}, uRadius:{value:0.02}, uAspect:{value:1} });
+const curlMat = simPass(`${SIM_HEAD} uniform sampler2D tVelocity;
+  void main(){
+    float l = texture2D(tVelocity, vUv - vec2(uTexel.x,0.0)).y;
+    float r = texture2D(tVelocity, vUv + vec2(uTexel.x,0.0)).y;
+    float b = texture2D(tVelocity, vUv - vec2(0.0,uTexel.y)).x;
+    float t = texture2D(tVelocity, vUv + vec2(0.0,uTexel.y)).x;
+    gl_FragColor = vec4((r - l - t + b) * 0.5, 0.0, 0.0, 1.0);
+  }`, { tVelocity:{value:null}, uTexel:{value:simTexel} });
+const vortMat = simPass(`${SIM_HEAD} uniform sampler2D tVelocity, tCurl; uniform float uCurl, uDt;
+  void main(){
+    float l = texture2D(tCurl, vUv - vec2(uTexel.x,0.0)).x;
+    float r = texture2D(tCurl, vUv + vec2(uTexel.x,0.0)).x;
+    float b = texture2D(tCurl, vUv - vec2(0.0,uTexel.y)).x;
+    float t = texture2D(tCurl, vUv + vec2(0.0,uTexel.y)).x;
+    float c = texture2D(tCurl, vUv).x;
+    vec2 f = vec2(abs(t) - abs(b), abs(r) - abs(l)) * 0.5;
+    f /= length(f) + 1e-4;
+    f *= uCurl * c;
+    f.y *= -1.0;
+    gl_FragColor = vec4(clamp(texture2D(tVelocity, vUv).xy + f*uDt, -600.0, 600.0), 0.0, 1.0);
+  }`, { tVelocity:{value:null}, tCurl:{value:crlRT.texture}, uTexel:{value:simTexel},
+        uCurl:{value:1}, uDt:{value:SIM_STEP} });
+const divMat = simPass(`${SIM_HEAD} uniform sampler2D tVelocity;
+  void main(){
+    float l = texture2D(tVelocity, vUv - vec2(uTexel.x,0.0)).x;
+    float r = texture2D(tVelocity, vUv + vec2(uTexel.x,0.0)).x;
+    float b = texture2D(tVelocity, vUv - vec2(0.0,uTexel.y)).y;
+    float t = texture2D(tVelocity, vUv + vec2(0.0,uTexel.y)).y;
+    gl_FragColor = vec4((r - l + t - b) * 0.5, 0.0, 0.0, 1.0);
+  }`, { tVelocity:{value:null}, uTexel:{value:simTexel} });
+const prsMat = simPass(`${SIM_HEAD} uniform sampler2D tPressure, tDivergence;
+  void main(){
+    float l = texture2D(tPressure, vUv - vec2(uTexel.x,0.0)).x;
+    float r = texture2D(tPressure, vUv + vec2(uTexel.x,0.0)).x;
+    float b = texture2D(tPressure, vUv - vec2(0.0,uTexel.y)).x;
+    float t = texture2D(tPressure, vUv + vec2(0.0,uTexel.y)).x;
+    gl_FragColor = vec4((l + r + b + t - texture2D(tDivergence, vUv).x) * 0.25, 0.0, 0.0, 1.0);
+  }`, { tPressure:{value:null}, tDivergence:{value:divRT.texture}, uTexel:{value:simTexel} });
+const gradMat = simPass(`${SIM_HEAD} uniform sampler2D tPressure, tVelocity;
+  void main(){
+    float l = texture2D(tPressure, vUv - vec2(uTexel.x,0.0)).x;
+    float r = texture2D(tPressure, vUv + vec2(uTexel.x,0.0)).x;
+    float b = texture2D(tPressure, vUv - vec2(0.0,uTexel.y)).x;
+    float t = texture2D(tPressure, vUv + vec2(0.0,uTexel.y)).x;
+    gl_FragColor = vec4(texture2D(tVelocity, vUv).xy - vec2(r - l, t - b)*0.5, 0.0, 1.0);
+  }`, { tPressure:{value:null}, tVelocity:{value:null}, uTexel:{value:simTexel} });
+const advMat = simPass(`${SIM_HEAD} uniform sampler2D tVelocity, tSource; uniform float uDt, uDissipation;
+  void main(){
+    gl_FragColor = texture2D(tSource, vUv - uDt * texture2D(tVelocity, vUv).xy * uTexel) * uDissipation;
+  }`, { tVelocity:{value:null}, tSource:{value:null}, uTexel:{value:simTexel},
+        uDt:{value:SIM_STEP}, uDissipation:{value:0.98} });
+const fadeMat = simPass(`precision highp float; varying vec2 vUv;
+  uniform sampler2D tSource; uniform float uFade;
+  void main(){ gl_FragColor = texture2D(tSource, vUv) * uFade; }`,
+  { tSource:{value:null}, uFade:{value:0.8} });
+
+const liqQueue = [];                    // [x, y, dx, dy, radiusScale] in screen uv
+const _liqPt = new THREE.Vector2(), _liqVal = new THREE.Vector3();
+let liqEnergy = 0, liqAspect = 1;
+
+function liqSplat(pair, value, radius){
+  splatMat.uniforms.tTarget.value = pair[0].texture;
+  splatMat.uniforms.uPoint.value.copy(_liqPt);
+  splatMat.uniforms.uValue.value.copy(value);
+  splatMat.uniforms.uRadius.value = radius;
+  splatMat.uniforms.uAspect.value = liqAspect;
+  blit(splatMat, pair[1]);
+  pair.reverse();
+}
+function stepLiquid(delta){
+  if (liqQueue.length){
+    const radius = Math.max(LIQ.cursorSize, 0.02) * 0.01;
+    for (const [x, y, dx, dy, r] of liqQueue){
+      _liqPt.set(x, y); _liqVal.set(dx, dy, 0);
+      liqSplat(velRT, _liqVal, radius*r);
+      liqSplat(fldRT, _liqVal, radius*r);
+    }
+    liqQueue.length = 0;
+    liqEnergy = 1;
+  }
+  curlMat.uniforms.tVelocity.value = velRT[0].texture;
+  blit(curlMat, crlRT);
+
+  vortMat.uniforms.tVelocity.value = velRT[0].texture;
+  vortMat.uniforms.uCurl.value = Math.max(LIQ.swirl, 0) * 4;
+  vortMat.uniforms.uDt.value = delta;
+  blit(vortMat, velRT[1]); velRT.reverse();
+
+  divMat.uniforms.tVelocity.value = velRT[0].texture;
+  blit(divMat, divRT);
+
+  fadeMat.uniforms.tSource.value = prsRT[0].texture;
+  fadeMat.uniforms.uFade.value = Math.pow(0.8, delta*60);
+  blit(fadeMat, prsRT[1]); prsRT.reverse();
+  for (let i=0;i<PRESSURE_STEPS;i++){
+    prsMat.uniforms.tPressure.value = prsRT[0].texture;
+    blit(prsMat, prsRT[1]); prsRT.reverse();
+  }
+
+  gradMat.uniforms.tPressure.value = prsRT[0].texture;
+  gradMat.uniforms.tVelocity.value = velRT[0].texture;
+  blit(gradMat, velRT[1]); velRT.reverse();
+
+  const settle = THREE.MathUtils.clamp(LIQ.persistence, 0, 1), frames = delta*60;
+  const flowDecay  = Math.pow(0.985 + settle*0.015, frames);
+  const fieldDecay = Math.pow(0.900 + settle*0.099, frames);
+
+  advMat.uniforms.tVelocity.value = velRT[0].texture;
+  advMat.uniforms.tSource.value   = velRT[0].texture;
+  advMat.uniforms.uTexel.value    = simTexel;
+  advMat.uniforms.uDt.value = delta;
+  advMat.uniforms.uDissipation.value = flowDecay;
+  blit(advMat, velRT[1]); velRT.reverse();
+
+  advMat.uniforms.tVelocity.value = velRT[0].texture;
+  advMat.uniforms.tSource.value   = fldRT[0].texture;
+  advMat.uniforms.uTexel.value    = fldTexel;
+  advMat.uniforms.uDissipation.value = fieldDecay;
+  blit(advMat, fldRT[1]); fldRT.reverse();
+
+  liqEnergy *= fieldDecay;
+  renderer.setRenderTarget(null);
+}
+{ // the targets start life full of garbage; zero them once
+  const c = new THREE.Color(); renderer.getClearColor(c);
+  const a = renderer.getClearAlpha();
+  renderer.setClearColor(0x000000, 0);
+  for (const rt of [...velRT, ...prsRT, ...fldRT, divRT, crlRT]){
+    renderer.setRenderTarget(rt); renderer.clear(true, false, false);
+  }
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(c, a);
+}
+
+/* =====================================================================
+   the menu sheet — a page of paper pinned along the top edge that unrolls
+   down the screen. the bend is integrated rather than pushed in z, the way
+   the archive sheets are, so the paper keeps its arc length and really
+   shortens as it curls instead of stretching
+   ===================================================================== */
+/* nocturne-award's own sheet wave, values and all: the card hangs, so the curl
+   grows toward one vertical edge and toward the top, and the bend is integrated
+   rather than pushed in z so the paper keeps its arc length */
+const MENU_WAVE = /* glsl */`
+  uniform float uTime, uAmp, uFlutter, uPhase, uFreq, uTwist;
+  uniform vec2  uSize;
+  float sAmp (float u, float v){ return uAmp*(0.10 + pow(u,1.35))*(0.50 + 0.64*v); }
+  float sAmpV(float u){          return uAmp*(0.10 + pow(u,1.35))*0.64; }
+  float sTheta(float u, float v){
+    float a  = sAmp(u,v);
+    float ph = uFreq*u + uTwist*v + uTime*0.40 + uPhase;
+    return a*sin(ph) + uFlutter*a*0.60*sin(ph*2.35 + uTime*2.0);
+  }
+  float sThetaV(float u, float v){
+    float a = sAmp(u,v), da = sAmpV(u);
+    float ph = uFreq*u + uTwist*v + uTime*0.40 + uPhase;
+    float f  = ph*2.35 + uTime*2.0;
+    return da*sin(ph) + a*cos(ph)*uTwist
+         + uFlutter*0.60*(da*sin(f) + a*cos(f)*uTwist*2.35);
+  }
+  float sYoff(float u, float v){
+    float w = 1.0 - 0.55*v;
+    return 0.021*uSize.y*sin(2.05*u + uTime*0.47 + uPhase)
+         + 0.013*uSize.y*sin(3.35*u - 1.55*v + uTime*0.63 + uPhase)*w;
+  }
+  float sYdU(float u, float v){
+    float w = 1.0 - 0.55*v;
+    return 0.0431*uSize.y*cos(2.05*u + uTime*0.47 + uPhase)
+         + 0.0436*uSize.y*cos(3.35*u - 1.55*v + uTime*0.63 + uPhase)*w;
+  }
+  float sYdV(float u, float v){
+    float ph = 3.35*u - 1.55*v + uTime*0.63 + uPhase;
+    return 0.013*uSize.y*(-1.55*cos(ph)*(1.0-0.55*v) - 0.55*sin(ph));
+  }
+  void menuPoint(vec2 q, out vec3 P, out vec3 NN){
+    float u = q.x, v = q.y;
+    float x=0.0, z=0.0, xe=0.0, ze=0.0, dxv=0.0, dzv=0.0, dxe=0.0, dze=0.0;
+    const int NS = 20;
+    float h = 1.0/float(NS);
+    for (int i=0;i<NS;i++){
+      float uu = (float(i)+0.5)*h;
+      float w  = clamp((u-(uu-0.5*h))/h, 0.0, 1.0);
+      float th = sTheta(uu,v);
+      float dt = sThetaV(uu,v);
+      float c = cos(th), sn = sin(th);
+      xe += c*h;          ze += sn*h;
+      dxe += -sn*dt*h;    dze +=  c*dt*h;
+      x   += c*h*w;       z   += sn*h*w;
+      dxv += -sn*dt*h*w;  dzv +=  c*dt*h*w;
+    }
+    float W = uSize.x, H = uSize.y;
+    float th0 = sTheta(u,v);
+    P = vec3((x - xe*0.5)*W, (v-0.5)*H + sYoff(u,v), (z - ze*0.5)*W);
+    vec3 Tu = vec3(W*cos(th0), sYdU(u,v), W*sin(th0));
+    vec3 Tv = vec3((dxv - dxe*0.5)*W, H + sYdV(u,v), (dzv - dze*0.5)*W);
+    NN = normalize(cross(Tu, Tv));
+  }`;
+
+/* the certificate, drawn at nocturne-award's own grid: 1200x1656, M=74, the two
+   nested rules at 20/36 with radii 14/10, and the feathered frost band behind
+   the headline block. the type is anteroom's rather than Inter Tight — the
+   layout is theirs, the voice is not */
+const CERT_W = 1200, CERT_H = 1656, CERT_M = 74;
+const MENU_ITEMS = ['Index', 'Work', 'Studio', 'Contacts'];
+const CERT_ROW0 = 392, CERT_ROWH = 126, CERT_SIZE = 106;
+function certRR(x, a, b, w, h, r){
+  x.beginPath(); x.moveTo(a+r, b);
+  x.arcTo(a+w, b, a+w, b+h, r); x.arcTo(a+w, b+h, a, b+h, r);
+  x.arcTo(a, b+h, a, b, r);     x.arcTo(a, b, a+w, b, r); x.closePath();
+}
+function certTexture(){
+  const c = document.createElement('canvas');
+  c.width = CERT_W; c.height = CERT_H;
+  const x = c.getContext('2d');
+  const W = CERT_W, H = CERT_H, M = CERT_M;
+
+  x.fillStyle = 'rgba(255,255,255,.030)'; x.fillRect(0, 0, W, H);
+  // a whisper of frost behind the headline, feathered so it is not a UI panel
+  const fr = x.createLinearGradient(0, 240, 0, 940);
+  fr.addColorStop(0, 'rgba(255,255,255,0)');      fr.addColorStop(.28, 'rgba(255,255,255,.052)');
+  fr.addColorStop(.72, 'rgba(255,255,255,.052)'); fr.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = fr; x.fillRect(40, 240, W-80, 700);
+
+  x.strokeStyle = 'rgba(255,255,255,.34)'; x.lineWidth = 2;
+  certRR(x, 20, 20, W-40, H-40, 14); x.stroke();
+  x.strokeStyle = 'rgba(255,255,255,.12)'; x.lineWidth = 1;
+  certRR(x, 36, 36, W-72, H-72, 10); x.stroke();
+
+  x.fillStyle = '#ffffff';
+  x.font = 'italic 400 104px "Instrument Serif", Georgia, serif';
+  x.fillText('a.', M, 190);
+
+  // the four ways in, on nocturne's headline rhythm
+  x.font = `italic 400 ${CERT_SIZE}px "Instrument Serif", Georgia, serif`;
+  MENU_ITEMS.forEach((label, i)=>{
+    const y = CERT_ROW0 + i*CERT_ROWH;
+    x.fillStyle = 'rgba(255,255,255,.84)';
+    x.fillText(label, M, y);
+    const w = x.measureText(label).width;
+    x.save();
+    x.font = '400 26px "Switzer", system-ui, sans-serif';
+    x.fillStyle = 'rgba(255,255,255,.46)';
+    x.fillText('0' + (i+1), M + w + 16, y - CERT_SIZE*0.58);
+    x.restore();
+  });
+
+  x.font = '500 34px "Switzer", system-ui, sans-serif';
+  x.fillStyle = 'rgba(255,255,255,.90)';
+  ['hello@anteroom.studio', '(+44) 20 7946 0000', 'London — Kyoto'].forEach((t,i)=>
+    x.fillText(t, M+4, 1006 + i*45));
+
+  const px = 592, py = 1178;
+  x.font = '600 24px "Switzer", system-ui, sans-serif';
+  x.fillStyle = 'rgba(255,255,255,.92)';
+  x.fillText('Anteroom Studio®', px, py);
+  x.font = '400 22px "Switzer", system-ui, sans-serif';
+  x.fillStyle = 'rgba(255,255,255,.76)';
+  const words = 'A spatial, brand and motion studio. We build the quiet part — the room you pass through on the way somewhere else.'.split(' ');
+  let line = '', ly = py + 36;
+  for (const w of words){
+    const t = line ? line + ' ' + w : w;
+    if (x.measureText(t).width > 296){ x.fillText(line, px, ly); line = w; ly += 28; }
+    else line = t;
+  }
+  if (line){ x.fillText(line, px, ly); ly += 28; }
+  x.strokeStyle = 'rgba(255,255,255,.34)'; x.lineWidth = 1.4;
+  x.beginPath(); x.moveTo(px, ly + 22); x.lineTo(px + 296, ly + 22); x.stroke();
+  x.font = '500 21px "Switzer", system-ui, sans-serif';
+  x.fillStyle = 'rgba(255,255,255,.70)';
+  ['INSTAGRAM','ARE.NA','LINKEDIN','VIMEO'].forEach((t,i)=>
+    x.fillText(t, px + (i%2)*150, ly + 58 + ((i/2)|0)*30));
+
+  x.save(); x.translate(W - M - 24, 1256); x.rotate(Math.PI/2);
+  x.font = '500 23px "Switzer", system-ui, sans-serif';
+  x.fillStyle = 'rgba(255,255,255,.62)';
+  x.fillText('—', 0, 0); x.fillText('MENU', 48, 0);
+  x.restore();
+
+  x.font = '400 34px "Switzer", system-ui, sans-serif'; x.fillStyle = '#ffffff';
+  x.fillText('anteroom.', M, 1536);
+  const aw = x.measureText('anteroom.').width;
+  x.font = 'italic 400 36px "Instrument Serif", Georgia, serif';
+  x.fillStyle = 'rgba(255,255,255,.70)'; x.fillText(' studio', M + aw, 1536);
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.anisotropy = 8;
+  return t;
+}
+
+const menuScene = new THREE.Scene();
+const menuCam = new THREE.PerspectiveCamera(34, 1, 0.1, 60);
+menuCam.position.set(0, 0, 5);
+const menuU = {
+  uTime:{ value:0 },
+  uAmp:{ value:0.86 }, uFreq:{ value:4.70 }, uTwist:{ value:1.30 },
+  uFlutter:{ value:0 }, uPhase:{ value:0 },
+  uSize:{ value:new THREE.Vector2(1.8, 0.001) }, uOpen:{ value:0 },
+  // ColorManagement is on (the page never disables it), so new Color(hex) has
+  // already decoded to linear — a convertSRGBToLinear() here does it twice and
+  // the paper comes out orange, blue channel worst
+  uPaper:{ value:new THREE.Color(0xEFE0CC) },
+  tBlur:{ value:null }, uRes:{ value:new THREE.Vector2(1,1) },
+  tCert:{ value:null }, uRow:{ value:-1 }, uRowHot:{ value:0 },
+  uPx:{ value:1 }
+};
+const MENU_GEO = new THREE.PlaneGeometry(1, 1, 96, 96);
+/* the scrim: the room is still there behind the page, just stood down */
+const menuScrim = new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.ShaderMaterial({
+  transparent:true, depthTest:false, depthWrite:false,
+  uniforms:{ uOn:{ value:0 } },
+  vertexShader:`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader:`precision mediump float; varying vec2 vUv; uniform float uOn;
+    void main(){
+      float v = 1.0 - 0.45*smoothstep(0.15, 0.95, length(vUv - 0.5)*1.35);
+      float a = uOn * 0.68 * v;
+      gl_FragColor = vec4(vec3(0.012, 0.010, 0.014) * a, a);
+    }`
+}));
+menuScrim.renderOrder = 0; menuScrim.frustumCulled = false;
+menuScene.add(menuScrim);
+const menuSheet = new THREE.Mesh(
+  MENU_GEO,
+  new THREE.ShaderMaterial({
+    side: THREE.DoubleSide, transparent:true, depthWrite:true, depthTest:true,
+    uniforms: menuU,
+    vertexShader: `
+      varying vec2 vUv; varying vec3 vN; varying vec3 vP;
+      ${MENU_WAVE}
+      void main(){
+        vec3 P, N;
+        menuPoint(uv, P, N);
+        vUv = uv; vN = N; vP = P;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(P, 1.0);
+      }`,
+    fragmentShader: `
+      precision highp float;
+      varying vec2 vUv; varying vec3 vN; varying vec3 vP;
+      uniform sampler2D tBlur, tCert;
+      uniform vec3 uPaper;
+      uniform float uTime, uPx, uRow, uRowHot;
+      uniform vec2 uSize;
+      uniform vec2 uRes;
+      float h21(vec2 p){ p = fract(p*vec2(443.897,441.423)); p += dot(p,p+19.19); return fract(p.x*p.y); }
+      // rounded box in the sheet's own printed coordinates, so the corners and
+      // the inset rule ride the fold instead of staying screen-aligned
+      float boxSD(vec2 p, vec2 b, float r){
+        vec2 d = abs(p) - b + r;
+        return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r;
+      }
+      void main(){
+        vec3 N = normalize(vN);
+        vec3 V = normalize(vec3(0.0, 0.0, 5.0) - vP);
+        if (dot(N, V) < 0.0) N = -N;
+
+        vec2 q  = (vUv - vec2(0.5)) * uSize;
+        vec2 hs = uSize * 0.5;
+        // the certificate's own corner: 14px on a 1200px sheet, not a soft pill
+        float rad  = uSize.x * 0.012;
+        float shape = 1.0 - smoothstep(-0.004, 0.004, boxSD(q, hs, rad));
+        if (shape < 0.004) discard;
+
+        // what is behind, blurred — and bent a little by the fold, the way a
+        // thick sheet of glass drags the image across its own curvature
+        vec2 suv = gl_FragCoord.xy / uRes + N.xy * 0.055;
+        vec3 bg = texture2D(tBlur, clamp(suv, vec2(0.003), vec2(0.997))).rgb;
+        float lum = dot(bg, vec3(0.2126, 0.7152, 0.0722));
+        // the glass is beige, not neutral: the room comes through warmed, and a
+        // paper-coloured floor keeps it beige even over a dark part of the room
+        // tBlur is already the encoded frame, so the glass works in display space
+        // and its beige has to be a display-space colour, not the linear uPaper
+        const vec3 TINT  = vec3(1.00, 0.90, 0.75);
+        const vec3 BEIGE = vec3(0.93, 0.855, 0.735);
+        vec3 col = mix(vec3(lum), bg, 0.40) * 0.44 * TINT + BEIGE * 0.30;
+
+        float fres = pow(1.0 - abs(dot(N, V)), 2.4);
+        // a reflection of the room, off the fold — this is what moves when the
+        // card orbits, and it is the whole reason the surface reads as glass
+        vec3 R = reflect(-V, N);
+        vec3 refl = texture2D(tBlur, clamp(suv + R.xy * 0.40, vec2(0.003), vec2(0.997))).rgb;
+        col = mix(col, refl * 1.05 * TINT + BEIGE*0.16, fres * 0.50);
+
+        // two tight glints, so the fold catches light as it turns
+        vec3 L1 = normalize(vec3(-0.42, 0.72, 0.55)), L2 = normalize(vec3(0.68, 0.26, 0.68));
+        col += vec3(1.00, 0.96, 0.88) * pow(max(dot(N, normalize(L1 + V)), 0.0), 210.0) * 0.85;
+        col += vec3(1.00, 0.94, 0.84) * pow(max(dot(N, normalize(L2 + V)), 0.0),  70.0) * 0.30;
+
+        float key = max(dot(N, normalize(vec3(-0.25, 0.86, 0.44))), 0.0);
+        col += BEIGE * key * 0.155;
+        col += vec3(1.00, 0.94, 0.85) * fres * 0.22;
+
+        // the certificate, printed on the glass — but only on the printed side.
+        // the turn shows the back, and the back of a certificate is blank stock
+        // with the same two rules on it, not the type in mirror writing
+        vec4 cert;
+        if (gl_FrontFacing){
+          cert = texture2D(tCert, vUv);
+        } else {
+          float r1 = smoothstep(0.0018, 0.0, abs(boxSD(q, hs - vec2(uSize.x*0.0167), rad)));
+          float r2 = smoothstep(0.0013, 0.0, abs(boxSD(q, hs - vec2(uSize.x*0.0300), rad*0.72)));
+          cert = vec4(vec3(1.0), r1*0.34 + r2*0.12);
+        }
+        col = mix(col, cert.rgb, cert.a);
+        // and the way in under the pointer lights up
+        if (gl_FrontFacing && uRow >= 0.0){
+          float band = step(abs(vUv.y - uRow), uRowHot);
+          col += vec3(1.0, 0.98, 0.94) * band * cert.a * 0.55;
+        }
+
+        float g = h21(floor(gl_FragCoord.xy * (1.0/max(uPx,0.5))) + 3.1);
+        col *= 0.976 + 0.048*g;
+        // tBlur already holds the composited, encoded frame, so the glass works
+        // in display space and must not encode a second time
+        col = min(col, vec3(1.0));
+        gl_FragColor = vec4(col * shape, shape);
+      }`
+  })
+);
+menuSheet.frustumCulled = false;
+menuSheet.renderOrder = 2;
+const menuPivot = new THREE.Group();
+menuPivot.add(menuSheet);
+menuScene.add(menuPivot);
+let menuOpen = 0, menuWant = 0, menuVW = 3, menuVH = 3, menuFullH = 2, menuTopY = 1;
+let menuHold = -1;      // >= 0 pins the unroll, for stepping through it frame by frame
+let menuMX = 0, menuMY = 0, menuFlut = 0, menuPtrV = 0;
+// the page is an object in the frame, not a fill: these fractions are shared
+// with the overlay's own padding so the content always lands on the paper
+const MENU_FIT = { w: 0.78, h: 0.79, top: 0.085 };
+function layoutMenuSheet(){
+  menuCam.aspect = Math.max(W,1) / Math.max(H,1);
+  menuCam.updateProjectionMatrix();
+  menuVH = 2 * menuCam.position.z * Math.tan(menuCam.fov * Math.PI/360);
+  menuVW = menuVH * menuCam.aspect;
+  menuFullH = menuVH * MENU_FIT.h;
+  menuTopY  = menuVH * (0.5 - MENU_FIT.top);
+  menuU.uSize.value.x = menuFullH * (CERT_W / CERT_H);
+  // the scrim sits behind the card and has to cover the frustum at its own depth
+  const d = menuCam.position.z + 2.0;
+  const sh = 2 * d * Math.tan(menuCam.fov * Math.PI/360);
+  menuScrim.position.z = -2.0;
+  menuScrim.scale.set(sh * menuCam.aspect, sh, 1);
+  menuU.uPx.value = DPR;
+  menuU.uRes.value.set(Math.max(2, Math.round(W*DPR)), Math.max(2, Math.round(H*DPR)));
+}
+
+/* =====================================================================
+   the peel — canvas-ui's Peel, except the sheet being lifted is the finished
+   frame rather than a captured DOM subtree, so none of the html-in-canvas
+   machinery is needed: the composite already lands in a texture we can hand
+   straight to the curl. side is the bottom edge, and it is driven by a click
+   rather than by cursor proximity.
+   ===================================================================== */
+const PEEL = {
+  // the sheet stops being flat at reveal + curl above the bottom edge, and that
+  // whole span is what gets uncovered — at the docs' curl of 300 it reached the
+  // top of the frame and the scene rolled away entirely
+  reveal: 0.40,       // of the viewport height, at full peel
+  curl: 120, bow: 75, shade: 0.25, shine: 1.0,
+  shineDistance: 1200, bulge: 50, perspective: 2000
+};
+const peelU = {
+  tContent:{ value:null },
+  uRes:{ value:new THREE.Vector2(1,1) },
+  uPeel:{ value:0 }, uReveal:{ value:400 }, uCurl:{ value:PEEL.curl },
+  uBow:{ value:PEEL.bow }, uFocal:{ value:PEEL.perspective },
+  uZone:{ value:200 }, uBulge:{ value:PEEL.bulge },
+  uShade:{ value:PEEL.shade }, uShine:{ value:PEEL.shine },
+  uShineColor:{ value:new THREE.Vector3(1,1,1) },
+  uCross:{ value:1 }, uSpan:{ value:PEEL.shineDistance },
+  uPointer:{ value:new THREE.Vector2(1e4, 0) }
+};
+const peelScene = new THREE.Scene();
+{
+  const mat = new THREE.ShaderMaterial({
+    uniforms: peelU, transparent:true, depthTest:true, depthWrite:true,
+    side: THREE.DoubleSide,
+    vertexShader:`
+      precision highp float;
+      varying vec2 vUv; varying float vShade; varying vec2 vSide;
+      uniform vec2 uRes, uPointer;
+      uniform float uPeel, uReveal, uCurl, uBow, uFocal, uZone, uBulge;
+      const float PI = 3.1415926;
+      void main(){
+        // Peel's grid runs y-down like a DOM capture; a render target is y-up, so
+        // the sheet is laid out in their convention and sampled in ours
+        vUv = uv;
+        vec2 p = vec2(uv.x, 1.0 - uv.y) * uRes;
+        float crossLen = uRes.x;             // peeling the bottom edge
+        float u = uRes.y - p.y, v = p.x;
+
+        float A = clamp(uPeel, 0.0, 1.0);
+        float f = A * uReveal;
+        float R = max(uCurl * A, 0.001);
+        float c0 = f + R;
+
+        float dvB = (uPointer.y - v) / max(crossLen * 0.28, 1.0);
+        float prox = clamp(1.0 - uPointer.x / max(c0 + uZone, 1.0), 0.0, 1.0);
+        float c = c0 + uBulge * A * prox * prox * exp(-dvB * dvB);
+
+        float x = u, z = 0.0, sh = 0.0;
+        if (A > 0.001 && u < c){
+          float theta = (c - u) / R;
+          if (theta <= PI){ x = c - R*sin(theta); z = R*(1.0 - cos(theta)); }
+          else            { x = c + (theta - PI)*R; z = 2.0*R; }
+          sh = sin(clamp(theta, 0.0, PI));
+        }
+        z += uBow * A * sin(PI * v / max(crossLen, 1.0)) * clamp(z / max(R, 1.0), 0.0, 1.5);
+        z = clamp(z, -uFocal*0.2, uFocal*0.45);
+        vShade = sh * smoothstep(0.0, 0.08, A);
+        vSide = vec2(u, v);
+
+        vec2 q = vec2(v, uRes.y - x);
+        vec2 ndc = (q / uRes) * 2.0 - 1.0;
+        ndc.y = -ndc.y;
+        float w = (uFocal - z) / uFocal;
+        // the shader writes clip space itself, so no camera is involved
+        gl_Position = vec4(ndc, -z / uFocal, w);
+      }`,
+    fragmentShader:`
+      precision highp float;
+      varying vec2 vUv; varying float vShade; varying vec2 vSide;
+      uniform sampler2D tContent;
+      uniform float uShade, uShine, uCross, uSpan;
+      uniform vec3 uShineColor;
+      uniform vec2 uPointer;
+      void main(){
+        vec2 uv = clamp(vUv, vec2(0.001), vec2(0.999));
+        vec4 tex = texture2D(tContent, uv);
+        float sh = 1.0 - clamp(uShade, 0.0, 1.0) * 0.7 * pow(max(vShade, 0.0), 1.3);
+        float du = max(vSide.x, 0.0);
+        // wider than the docs' 2.5: the renderer is antialias:false, and a
+        // one-pixel line on a foreshortened edge breaks into dashes
+        float line = exp(-du/7.0) + exp(-du/22.0)*0.25;
+        float dv = (vSide.y - uPointer.y) / max(uCross*0.45, 1.0);
+        float prox = clamp(1.0 - uPointer.x / max(uSpan, 1.0), 0.0, 1.0);
+        float shine = uShine * line * exp(-dv*dv) * prox * prox;
+        gl_FragColor = vec4(mix(tex.rgb * sh, uShineColor, clamp(shine, 0.0, 1.0)), 1.0);
+      }`
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 160, 160), mat);
+  m.frustumCulled = false;
+  peelScene.add(m);
+}
+let peelOpen = 0, peelWant = 0, peelHold = -1;   // >= 0 pins the lift for stepping
+
+const rtOpts = { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer:false };
+const sceneRT = new THREE.WebGLRenderTarget(1,1,{ type: THREE.HalfFloatType, samples: 4 });
+const bloomA = [], bloomB = [];
+for (let i=0;i<4;i++){ bloomA.push(new THREE.WebGLRenderTarget(1,1,rtOpts)); bloomB.push(new THREE.WebGLRenderTarget(1,1,rtOpts)); }
+const raysRT = new THREE.WebGLRenderTarget(1,1,rtOpts);
+/* the menu glass samples the finished frame, so the composite has to land in a
+   target we can read back rather than straight on the canvas */
+const menuRT = new THREE.WebGLRenderTarget(1,1,rtOpts);
+const menuBlurA = new THREE.WebGLRenderTarget(1,1,rtOpts);
+const menuBlurB = new THREE.WebGLRenderTarget(1,1,rtOpts);
+const copyMat = new THREE.ShaderMaterial({
+  uniforms:{ tDiffuse:{value:null} }, vertexShader: VERT,
+  fragmentShader:`precision highp float; varying vec2 vUv; uniform sampler2D tDiffuse;
+    void main(){ gl_FragColor = vec4(texture2D(tDiffuse, vUv).rgb, 1.0); }`
+});
+
+const brightMat = new THREE.ShaderMaterial({
+  uniforms:{ tDiffuse:{value:null}, uThresh:{value:0.78}, uKnee:{value:0.40} },
+  vertexShader: VERT,
+  fragmentShader:`precision highp float; varying vec2 vUv; uniform sampler2D tDiffuse; uniform float uThresh, uKnee;
+    void main(){
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
+      float l = dot(c, vec3(0.2126,0.7152,0.0722));
+      float s = max(l - uThresh, 0.0);
+      s = s*s/(s + uKnee + 1e-4);
+      gl_FragColor = vec4(c * (s / max(l,1e-4)), 1.0);
+    }`
+});
+const blurMat = new THREE.ShaderMaterial({
+  uniforms:{ tDiffuse:{value:null}, uDir:{value:new THREE.Vector2(1,0)}, uTexel:{value:new THREE.Vector2()} },
+  vertexShader: VERT,
+  fragmentShader:`precision highp float; varying vec2 vUv;
+    uniform sampler2D tDiffuse; uniform vec2 uDir, uTexel;
+    void main(){
+      vec2 t = uDir * uTexel;
+      vec3 c = texture2D(tDiffuse, vUv).rgb * 0.227027;
+      c += (texture2D(tDiffuse, vUv + t*1.3846).rgb + texture2D(tDiffuse, vUv - t*1.3846).rgb) * 0.316216;
+      c += (texture2D(tDiffuse, vUv + t*3.2308).rgb + texture2D(tDiffuse, vUv - t*3.2308).rgb) * 0.070270;
+      gl_FragColor = vec4(c, 1.0);
+    }`
+});
+/* volumetric shafts: a radial march away from the sun's screen position */
+const raysMat = new THREE.ShaderMaterial({
+  uniforms:{ tDiffuse:{value:null}, uSunUV:{value:new THREE.Vector2(0.5,-0.2)},
+             uDensity:{value:0.72}, uDecay:{value:0.955}, uWeight:{value:0.42}, uStrength:{value:0.0} },
+  vertexShader: VERT,
+  fragmentShader:`precision highp float; varying vec2 vUv;
+    uniform sampler2D tDiffuse; uniform vec2 uSunUV;
+    uniform float uDensity, uDecay, uWeight, uStrength;
+    void main(){
+      if (uStrength < 0.001) { gl_FragColor = vec4(0.0,0.0,0.0,1.0); return; }
+      const int N = 28;
+      vec2 uv = vUv;
+      vec2 step = (uv - uSunUV) * (uDensity / float(N));
+      float illum = 1.0;
+      vec3 acc = vec3(0.0);
+      for (int i = 0; i < N; i++){
+        uv -= step;
+        acc += texture2D(tDiffuse, clamp(uv, 0.0, 1.0)).rgb * illum * uWeight;
+        illum *= uDecay;
+      }
+      gl_FragColor = vec4(acc / float(N) * uStrength, 1.0);
+    }`
+});
+
+const compMat = new THREE.ShaderMaterial({
+  uniforms:{
+    tDiffuse:{value:null}, tB0:{value:null}, tB1:{value:null}, tB2:{value:null}, tB3:{value:null}, tRays:{value:null},
+    uTime:{value:0}, uBloom:{value:0.30}, uGrain:{value:0.064}, uCA:{value:0.30},
+    uVig:{value:0.30}, uExposure:{value:1.16}, uUnder:{value:0}, uRays:{value:0}, uRes:{value:new THREE.Vector2()}
+  },
+  vertexShader: VERT,
+  fragmentShader:`
+    precision highp float;
+    varying vec2 vUv;
+    uniform sampler2D tDiffuse,tB0,tB1,tB2,tB3,tRays;
+    uniform float uTime,uBloom,uGrain,uCA,uVig,uExposure,uUnder,uRays;
+    uniform vec2 uRes;
+    vec3 aces(vec3 x){
+      const float a=2.51,b=0.03,c=2.43,d=0.59,e=0.14;
+      return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0.0, 1.0);
+    }
+    vec3 toSRGB(vec3 c){
+      return mix(c*12.92, 1.055*pow(max(c,vec3(0.0)), vec3(1.0/2.4)) - 0.055, step(0.0031308, c));
+    }
+    float hash(vec2 p){ p = fract(p*vec2(443.897,441.423)); p += dot(p,p+19.19); return fract(p.x*p.y); }
+    void main(){
+      vec2 uv = vUv;
+      // under water the whole frame breathes, the way it does through a moving surface
+      uv += vec2(sin(uv.y*24.0 + uTime*1.30), cos(uv.x*19.0 + uTime*1.05)) * 0.0026 * uUnder;
+      vec2 c  = uv - 0.5;
+      float r2 = dot(c,c);
+
+      float k = uCA * (0.0006 + r2*0.0060) * (1.0 + uUnder*1.0);
+      vec2 dir = normalize(c + 1e-6);
+      vec3 col;
+      col.r = texture2D(tDiffuse, uv - dir*k).r;
+      col.g = texture2D(tDiffuse, uv).g;
+      col.b = texture2D(tDiffuse, uv + dir*k).b;
+
+      vec3 bl = texture2D(tB0, uv).rgb*0.42
+              + texture2D(tB1, uv).rgb*0.28
+              + texture2D(tB2, uv).rgb*0.20
+              + texture2D(tB3, uv).rgb*0.14;
+      col += bl * uBloom;
+      col += texture2D(tRays, uv).rgb * uRays;
+
+      col *= uExposure;
+      float lum = dot(col, vec3(0.2126,0.7152,0.0722));
+      col = mix(vec3(lum), col, 1.06);
+      col *= vec3(1.018, 0.996, 0.978);      // the hall runs warm
+      // the deep grade: lifted shadows, cyan bias, a touch less contrast
+      vec3 deep = col * vec3(0.50, 0.94, 1.02) + vec3(0.006, 0.028, 0.036);
+      col = mix(col, deep, uUnder);
+      col = aces(col);
+      col = toSRGB(col);
+
+      float v = 1.0 - (uVig + uUnder*0.22)*smoothstep(0.16, 0.78, r2);
+      col *= v;
+      float g = hash(gl_FragCoord.xy + fract(uTime)*vec2(97.3, 41.7));
+      col += (g - 0.5) * uGrain;
+      gl_FragColor = vec4(col, 1.0);
+    }`
+});
+
+/* =====================================================================
+   sizing
+   ===================================================================== */
+let W=0, H=0, portrait = 0;
+function resize(){
+  const { w, h } = vp();
+  const dprNow = Math.min(window.devicePixelRatio || 1, 1.75);
+  if (w === W && h === H && dprNow === DPR) return;
+  W = w; H = h; DPR = dprNow;
+  renderer.setPixelRatio(DPR);
+  renderer.setSize(W, H, false);
+  camera.aspect = W/H;
+  const ar = W/H;
+  portrait = 1 - THREE.MathUtils.smoothstep(ar, 0.60, 1.30);
+  camera.fov = THREE.MathUtils.clamp(42 * Math.max(1, (16/9)/ar)**0.40, 42, 56);
+  camera.updateProjectionMatrix();
+
+  hudCam = new THREE.OrthographicCamera(0, W, H, 0, -10, 10);
+  if (document.fonts && document.fonts.status === 'loaded') buildType(W, H);
+  layoutPlates();
+
+  const pw = Math.max(2, Math.round(W*DPR)), ph = Math.max(2, Math.round(H*DPR));
+  sceneRT.setSize(pw, ph);
+  reflectRT.setSize(Math.max(2, Math.round(pw*0.62)), Math.max(2, Math.round(ph*0.62)));
+  raysRT.setSize(Math.max(2, Math.round(pw*0.5)), Math.max(2, Math.round(ph*0.5)));
+  menuRT.setSize(pw, ph);
+  menuBlurA.setSize(Math.max(2, Math.round(pw*0.22)), Math.max(2, Math.round(ph*0.22)));
+  menuBlurB.setSize(Math.max(2, Math.round(pw*0.22)), Math.max(2, Math.round(ph*0.22)));
+  for (let i=0;i<4;i++){
+    const s = Math.pow(2, i+1);
+    const bw = Math.max(2, Math.round(pw/s)), bh = Math.max(2, Math.round(ph/s));
+    bloomA[i].setSize(bw, bh); bloomB[i].setSize(bw, bh);
+  }
+  compMat.uniforms.uRes.value.set(pw, ph);
+  liqU.uRes.value.set(pw, ph);
+  layoutMenuSheet();
+  liqAspect = W/H;
+  moteU.uPx.value = DPR;
+  wispU.uPx.value = DPR;
+}
+window.addEventListener('resize', resize);
+new ResizeObserver(resize).observe(document.documentElement);
+resize();
+function typeReady(){
+  buildType(W, H);
+  layoutPlates();
+  menuU.tCert.value = certTexture();      // fonts have to be loaded or it draws in Times
+  introStart = performance.now()/1000;   // wall clock: a throttled tab must still reveal
+  document.body.classList.add('ready');
+}
+if (document.fonts) document.fonts.ready.then(typeReady); else typeReady();
+
+/* =====================================================================
+   the descent — one camera path, driven by scroll
+   ===================================================================== */
+const CAM_KEYS = [
+  // the room is built about AXIS, not zero — sit on it, or the door reads left of
+  // the torii it is supposed to stand inside
+  { t:0.00, p:[AXIS,  2.50,  0.00], l:[AXIS,  2.42, -18.0] },
+  { t:0.20, p:[AXIS,  2.22, -1.90], l:[AXIS,  1.92, -16.2] },
+  { t:0.36, p:[ 0.60,  1.10, -2.20], l:[ 0.64, -0.40, -13.8] },
+  { t:0.48, p:[ 0.38, -0.55, -1.80], l:[ 0.42, -2.90, -11.8] },
+  { t:0.62, p:[0.25, -2.70, -1.40], l:[ 0.5, -5.40, -11.2] },
+  { t:0.78, p:[ 0.4, -5.60, -1.20], l:[ 0.8, -8.10, -10.6] },
+  { t:0.90, p:[ 0.4, -8.30, -0.60], l:[ 0.2, -10.3,  -8.4] },
+  { t:1.00, p:[ 0.1, -9.00,  0.70], l:[-0.4,  -9.5,  -9.2] }
+];
+const posCurve = new THREE.CatmullRomCurve3(CAM_KEYS.map(k=>new THREE.Vector3(...k.p)), false, 'catmullrom', 0.35);
+const tgtCurve = new THREE.CatmullRomCurve3(CAM_KEYS.map(k=>new THREE.Vector3(...k.l)), false, 'catmullrom', 0.35);
+function pathU(p){
+  const n = CAM_KEYS.length;
+  for (let i=0;i<n-1;i++){
+    const a = CAM_KEYS[i].t, b = CAM_KEYS[i+1].t;
+    if (p <= b || i === n-2){
+      const f = THREE.MathUtils.clamp((p - a)/(b - a), 0, 1);
+      return (i + f) / (n - 1);
+    }
+  }
+  return 1;
+}
+
+let sp = 0, spTarget = 0;
+function readScroll(){
+  const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  spTarget = THREE.MathUtils.clamp(window.scrollY / max, 0, 1);
+}
+window.addEventListener('scroll', readScroll, { passive:true });
+readScroll();
+
+const rig = { ptr:new THREE.Vector2(), ptrE:new THREE.Vector2(), drag:new THREE.Vector2(), dragE:new THREE.Vector2(), dragging:false, last:new THREE.Vector2() };
+const _p = new THREE.Vector3(), _t = new THREE.Vector3();
+
+function updateCamera(dt, t, sdt){
+  rig.ptrE.lerp(rig.ptr, 1 - Math.pow(0.001, sdt));
+  rig.dragE.lerp(rig.drag, 1 - Math.pow(0.0006, sdt));
+  if (!rig.dragging) rig.drag.multiplyScalar(Math.pow(0.35, sdt));
+
+  const u = pathU(sp);
+  posCurve.getPoint(u, _p);
+  tgtCurve.getPoint(u, _t);
+
+  const dk = REDUCED ? 0 : 1;
+  _p.x += (Math.sin(t*0.16)*0.30 + Math.sin(t*0.071)*0.16) * dk;
+  _p.y += Math.sin(t*0.11 + 1.1)*0.085 * dk;
+  _p.z += Math.sin(t*0.083 + 2.3)*0.14 * dk + portrait * 6.8;
+  _p.y += portrait * 0.30;
+  _t.y -= portrait * 0.95;
+
+  const px = rig.ptrE.x*1.35 + rig.dragE.x*2.9;
+  const py = rig.ptrE.y*0.55 + rig.dragE.y*1.05;
+  _p.x += px; _p.y += -py*0.5;
+  _t.x += px*0.30; _t.y += -py*0.85;
+
+  camera.position.lerp(_p, 1 - Math.pow(0.02, sdt));
+  camera.lookAt(_t);
+}
+
+/* pointer + drag */
+const cur = document.getElementById('cur');
+let curX=0, curY=0, curTX=0, curTY=0;
+/* the liquid reads the pointer in raw css pixels — the rig's normalised copy is
+   already smoothed for the camera and lags too far behind to push a fluid with */
+let ptrX = -1e5, ptrY = -1e5, ptrOn = false;
+window.addEventListener('pointermove', (e)=>{
+  const { w, h } = vp();
+  rig.ptr.set((e.clientX/w)*2-1, (e.clientY/h)*2-1);
+  // feed the liquid the movement, in screen uv with y up the way the field is
+  if (ptrOn && !REDUCED && liqQueue.length < 64){
+    const f = Math.max(LIQ.cursorForce, 0) * 1.1;
+    const dx = (e.clientX - ptrX) * f, dy = -(e.clientY - ptrY) * f;
+    if (dx*dx + dy*dy > 1e-8) liqQueue.push([e.clientX/w, 1 - e.clientY/h, dx, dy, 1]);
+  }
+  if (ptrOn) menuPtrV = Math.min(1, Math.hypot(e.clientX-ptrX, e.clientY-ptrY)/26);
+  ptrX = e.clientX; ptrY = e.clientY; ptrOn = true;
+  curTX = e.clientX; curTY = e.clientY;
+  cur.classList.add('on');
+  if (rig.dragging){
+    rig.drag.x += (e.clientX - rig.last.x)/w * -1.35;
+    rig.drag.y += (e.clientY - rig.last.y)/h * -0.75;
+    rig.drag.x = THREE.MathUtils.clamp(rig.drag.x, -1, 1);
+    rig.drag.y = THREE.MathUtils.clamp(rig.drag.y, -0.6, 0.6);
+    rig.last.set(e.clientX, e.clientY);
+  }
+}, {passive:true});
+let downX = 0, downY = 0, downSheet = -1;
+window.addEventListener('pointerdown', (e)=>{
+  rig.dragging = true; rig.last.set(e.clientX, e.clientY);
+  downX = e.clientX; downY = e.clientY;
+  // remember it here: picking is suspended while the button is down, since a
+  // held button means look-around, so hoverSheet is already -1 by pointerup
+  downSheet = hoverSheet;
+  cur.classList.add('grab');
+  if (!REDUCED && LIQ.splash > 0){
+    const { w, h } = vp();
+    const x = e.clientX/w, y = 1 - e.clientY/h;
+    for (let i=0;i<8 && liqQueue.length<64;i++){
+      const ang = (i/8)*Math.PI*2, cx = Math.cos(ang), cy = Math.sin(ang);
+      liqQueue.push([x + cx*0.02, y + cy*0.02, cx*70*LIQ.splash, cy*70*LIQ.splash, 2.2]);
+    }
+  }
+});
+window.addEventListener('pointerup', (e)=>{
+  rig.dragging = false; cur.classList.remove('grab');
+  // a press that stayed put is a click, not the start of a look-around
+  if (downSheet >= 0 && (e.clientX-downX)**2 + (e.clientY-downY)**2 < 49){
+    sheets[downSheet].burst = 1;
+    selSheet = selSheet === downSheet ? -1 : downSheet;
+  }
+  if (menuRow >= 0 && (e.clientX-downX)**2 + (e.clientY-downY)**2 < 49) setMenu(false);
+  downSheet = -1;
+});
+window.addEventListener('pointerleave', ()=>{ cur.classList.remove('on'); ptrOn = false; });
+document.addEventListener('pointerover', e=>{ if (e.target.closest('[data-cursor="big"]')) cur.classList.add('big'); });
+document.addEventListener('pointerout',  e=>{
+  if (e.target.closest('[data-cursor="big"]') && !(e.relatedTarget && e.relatedTarget.closest('[data-cursor="big"]')))
+    cur.classList.remove('big');
+});
+
+/* chrome */
+/* which way in is under the pointer. the card is near enough flat where the
+   items sit, so a hit against its base plane is exact enough to click by */
+const _mRay = new THREE.Raycaster(), _mN = new THREE.Vector2();
+const _mA = new THREE.Vector3(), _mB = new THREE.Vector3(), _mC = new THREE.Vector3();
+const _mP = new THREE.Vector3(), _mH = new THREE.Vector3();
+let menuRow = -1;
+function pickMenuRow(){
+  if (menuOpen < 0.9 || !ptrOn) return -1;
+  const { w, h } = vp();
+  _mRay.setFromCamera(_mN.set((ptrX/w)*2 - 1, -(ptrY/h)*2 + 1), menuCam);
+  menuPivot.updateMatrixWorld();
+  menuPivot.matrixWorld.extractBasis(_mA, _mB, _mC);
+  _mP.setFromMatrixPosition(menuPivot.matrixWorld);
+  const den = _mRay.ray.direction.dot(_mC);
+  if (Math.abs(den) < 1e-5) return -1;
+  const t = _mP.clone().sub(_mRay.ray.origin).dot(_mC) / den;
+  if (t <= 0) return -1;
+  _mRay.ray.at(t, _mH).sub(_mP);
+  const u = _mH.dot(_mA) / menuU.uSize.value.x + 0.5;
+  const v = _mH.dot(_mB) / menuU.uSize.value.y + 0.5;
+  if (u < 0 || u > 1 || v < 0 || v > 1) return -1;
+  const cy = (1 - v) * CERT_H;                     // back into the printed grid
+  for (let i=0;i<MENU_ITEMS.length;i++){
+    const base = CERT_ROW0 + i*CERT_ROWH;
+    if (cy > base - CERT_SIZE*0.80 && cy < base + CERT_SIZE*0.20) return i;
+  }
+  return -1;
+}
+
+const menuBtn = document.getElementById('menu');
+function setMenu(on){
+  document.body.classList.toggle('menu-open', on);
+  menuBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
+  menuWant = on ? 1 : 0;
+}
+menuBtn.addEventListener('click', ()=> setMenu(!document.body.classList.contains('menu-open')));
+document.querySelectorAll('#menuOverlay a').forEach(a => a.addEventListener('click', ()=> setMenu(false)));
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ setMenu(false); setPeel(false); }
+});
+const ctaEl = document.getElementById('cta');
+const contactEl = document.getElementById('contact');
+function setPeel(on){
+  peelWant = on ? 1 : 0;
+  document.body.classList.toggle('peeled', on);
+  contactEl.setAttribute('aria-hidden', on ? 'false' : 'true');
+  if (on) setMenu(false);
+}
+document.getElementById('contactClose').addEventListener('click', ()=> setPeel(false));
+document.getElementById('contactForm').addEventListener('submit', e => e.preventDefault());
+ctaEl.addEventListener('click', (e)=>{
+  if (ctaMode !== 'project') return;         // higher up it is still the scroll cue
+  e.preventDefault();
+  setPeel(!document.body.classList.contains('peeled'));
+});
+const ctaLabel = document.getElementById('ctaLabel');
+const railFill = document.getElementById('railFill');
+
+/* =====================================================================
+   loop
+   ===================================================================== */
+const _sunProj = new THREE.Vector3();
+const _peelClear = new THREE.Color();
+const PEEL_GROUND = new THREE.Color().setRGB(0x12/255, 0x21/255, 0x2A/255, THREE.LinearSRGBColorSpace);
+const _arcRay = new THREE.Raycaster(), _ndc = new THREE.Vector2();
+const _ax = new THREE.Vector3(), _ay = new THREE.Vector3(), _az = new THREE.Vector3();
+const _pp = new THREE.Vector3(), _hit = new THREE.Vector3();
+let prev = performance.now()/1000;
+let frameAcc = 0, frameN = 0, quality = 1;
+let ctaMode = '';
+
+function renderFrame(now){
+  const t = now/1000;
+  const raw = t - prev;
+  const dt  = Math.min(0.05, raw);
+  const sdt = Math.min(0.5, raw);
+  prev = t;
+
+  sp += (spTarget - sp) * (1 - Math.pow(0.0009, sdt));
+  updateCamera(dt, t, sdt);
+  camera.updateMatrixWorld();
+
+  /* --- above / below --- */
+  // MathUtils.smoothstep needs ascending bounds — invert rather than swapping them
+  const under = 1 - THREE.MathUtils.smoothstep(camera.position.y, -0.55, 0.55);
+  const crossing = 1 - THREE.MathUtils.clamp(Math.abs(camera.position.y)/1.6, 0, 1);
+
+  const wet = Math.pow(under, 0.55);            // the water takes over faster than the camera sinks
+  scene.fog.color.copy(FOG_AIR).lerp(FOG_WATER, wet);
+  scene.fog.near = THREE.MathUtils.lerp(28, 2.0, wet);
+  scene.fog.far  = THREE.MathUtils.lerp(250, 62, wet);
+  hemi.intensity   = THREE.MathUtils.lerp(1.10, 0.42, under);
+  amb.intensity    = THREE.MathUtils.lerp(0.46, 0.30, under);
+  sun.intensity    = THREE.MathUtils.lerp(2.30, 0.65, under);
+  spill.intensity  = THREE.MathUtils.lerp(16, 2, under);
+  deepKey.intensity= THREE.MathUtils.lerp(0.0, 1.35, under);
+  shared.uCaustic.value = 0.20 + under*1.0;
+
+  skyUniforms.uTime.value = t;
+  skyUniforms.uUnder.value = under;
+  shared.uTime.value = t;
+  shaftU.uTime.value = t;
+  shaftU.uCam.value.copy(camera.position);
+  shaftU.uGain.value = 1.0 - under*0.92;      // the shafts belong to the air
+  waterMat.uniforms.uTime.value = t;
+  {
+    const u = waterMat.uniforms.uPtr.value;
+    u.z += (ptrOnWater - u.z) * Math.min(1, dt*6.0);   // the swell eases in and out
+  }
+  waterMat.uniforms.uCam.value.copy(camera.position);
+  waterMat.uniforms.uUnder.value = under;
+  moteU.uTime.value = t;
+  wispU.uTime.value = t;
+  wispU.uUnder.value = under;
+  wispU.uWispOn.value += (wispAim - wispU.uWispOn.value) * Math.min(1, dt*3.2);
+  sheetU.uTime.value = t;
+  sheetU.uCamP.value.copy(camera.position);
+  const arcIn = THREE.MathUtils.smoothstep(sp, 0.855, 0.985);
+  sheetU.uReveal.value = arcIn;
+  archive.visible = arcIn > 0.004;
+  arcU.uTime.value = t;
+  arcU.uPx.value = DPR;
+
+  /* which sheet is under the pointer. the sheets are near-flat quads, so a plane
+     hit against their own basis beats raycasting a mesh the vertex shader has
+     already displaced out from under its geometry */
+  hoverSheet = -1;
+  if (archive.visible && arcIn > 0.5 && ptrOn && !rig.dragging){
+    const { w, h } = vp();
+    _arcRay.setFromCamera(_ndc.set((ptrX/w)*2 - 1, -(ptrY/h)*2 + 1), camera);
+    let best = Infinity;
+    for (let i=0;i<sheets.length;i++){
+      const m = sheets[i].mesh;
+      m.matrixWorld.extractBasis(_ax, _ay, _az);
+      _pp.setFromMatrixPosition(m.matrixWorld);
+      const den = _arcRay.ray.direction.dot(_az);
+      if (Math.abs(den) < 1e-5) continue;
+      const tt = _pp.sub(_arcRay.ray.origin).dot(_az) / den;
+      if (tt <= 0 || tt >= best) continue;
+      _arcRay.ray.at(tt, _hit).sub(_pp.setFromMatrixPosition(m.matrixWorld));
+      if (Math.abs(_hit.dot(_ax)) <= SHEET_W*0.5 && Math.abs(_hit.dot(_ay)) <= SHEET_H*0.5){
+        best = tt; hoverSheet = i;
+      }
+    }
+  }
+  cur.classList.toggle('pick', hoverSheet >= 0);
+
+  sheets.forEach((S, i)=>{
+    S.hov += ((hoverSheet === i ? 1 : 0) - S.hov) * (1 - Math.pow(0.004, sdt));
+    S.sel += ((selSheet === i ? 1 : 0) - S.sel) * (1 - Math.pow(0.02, sdt));
+    S.burst = Math.max(0, S.burst - sdt*1.55);
+    const m = S.mesh, near = Math.max(S.hov, S.sel);
+    m.position.y = (ARC.cy + (0.5 - ((i/2)|0))*2*ARC.dy) + Math.sin(t*0.42 + i*1.7)*0.10;
+    m.position.z = (ARC.cz + ((i%2) - 0.5)*2*ARC.dz) + S.hov*0.20 + S.sel*0.26;
+    // it also squares up to you as it comes forward
+    m.rotation.y = ((i%2) - 0.5) * -0.26 * (1 - 0.6*near) + Math.sin(t*0.28 + i*2.3)*0.048;
+    const glow = Math.min(1.2, S.hov*0.85 + S.sel*0.5 + S.burst*0.6);
+    S.hovU.value  = glow;
+    S.haloU.value = glow*0.92 + S.burst*0.45;
+    arcU.uH.value[i] = Math.max(S.hov, S.sel*0.85) * arcIn;
+    arcU.uB.value[i] = S.burst;
+    arcU.uP.value[i].copy(m.position);
+  });
+  moteU.uUnder.value = under;
+  if (dbg.grassU) dbg.grassU.uTime.value = t;
+  pearl.rotation.y = t*0.05;
+  pearlMat.uniforms.uCam.value.copy(camera.position);
+  pearlMat.uniforms.uSun.value.copy(sun.position).sub(sun.target.position).normalize();
+  pearlMat.uniforms.uTime.value = t;
+  pearlMat.uniforms.uUnder.value = under;
+
+  /* --- type --- */
+  if (typeBuilt){
+    introT = introStart ? Math.min(1, (t - introStart)/1.15) : 0;
+    for (const u of typeUnits){
+      const [a,b,c,d] = u.block.show;
+      const inP  = u.block.timed ? introT
+                 : THREE.MathUtils.clamp((sp - a)/Math.max(1e-4, b - a), 0, 1);
+      const outP = THREE.MathUtils.clamp((sp - c)/Math.max(1e-4, d - c), 0, 1);
+      const stagger = u.order * 0.085;
+      const rv = THREE.MathUtils.clamp((inP*(1 + stagger) - stagger) / 0.72, 0, 1);
+      u.mat.uniforms.uReveal.value = 1 - Math.pow(1 - rv, 3);
+      u.mat.uniforms.uSink.value   = outP*outP*0.34;
+      u.mat.uniforms.uAlpha.value  = 1 - THREE.MathUtils.clamp((outP - 0.10)/0.75, 0, 1);
+      u.mat.uniforms.uWarp.value   = u.block.key === 'hero' ? crossing : crossing*0.5;
+      u.mat.uniforms.uTime.value   = t;
+      u.mat.uniforms.uHalo.value   = 0.62 + under*0.38;
+      u.mesh.visible = inP > 0.0001 && outP < 0.9999;
+    }
+    /* the liquid itself: shared by every word, so it is stepped once. it only
+       costs anything while there is something left moving in it */
+    if (!REDUCED){
+      const { w, h } = vp();
+      liqU.uCursor.value.set(ptrX/w, 1 - ptrY/h);
+      liqU.uGlow.value += ((ptrOn ? 1 : 0) - liqU.uGlow.value) * Math.min(dt*6, 1);
+      if (dt > 0 && (liqQueue.length || liqEnergy > 0.002)) stepLiquid(Math.min(dt, SIM_STEP*2));
+      liqU.tField.value = fldRT[0].texture;
+    }
+  }
+
+  /* --- DOM chrome driven by the same clock --- */
+  document.body.classList.toggle('deep', under > 0.55);
+  document.body.classList.toggle('scrolled', sp > 0.015);
+  {
+    const ready = document.body.classList.contains('ready');
+    const shut  = document.body.classList.contains('menu-open');
+    for (const P of plates){
+      // the cue itself fades out on scroll, so its motes have to go with it
+      const want = (ready && !shut && !(P === hintPlate && sp > 0.015)) ? 1 : 0;
+      P.on   += (want - P.on) * Math.min(dt*3.2, 1);
+      P.hover += (P.want - P.hover) * Math.min(dt*7, 1);
+      P.mat.uniforms.uOn.value = P.on;
+      P.mat.uniforms.uHover.value = P.hover;
+      P.mat.uniforms.uTime.value = t;
+      P.mesh.visible = P.on > 0.004;
+    }
+  }
+  railFill.style.height = (sp*100).toFixed(2) + '%';
+  const wantCta = sp < 0.10 ? 'work' : (sp > 0.90 ? 'project' : '');
+  if (wantCta !== ctaMode){
+    ctaMode = wantCta;
+    ctaEl.dataset.hidden = wantCta ? '0' : '1';
+    if (wantCta === 'work')    ctaLabel.textContent = 'See the work';
+    if (wantCta === 'project') ctaLabel.textContent = 'Start a project';
+    ctaEl.classList.toggle('pill--solid', true);
+  }
+  {
+    const b = (wantCta === 'project' ? BLOCKS[2] : BLOCKS[0])._bottom;
+    if (b) ctaEl.style.top = (b + THREE.MathUtils.clamp(W*0.069, 46, 132) * 0.42) + 'px';
+  }
+
+  /* --- planar reflection (only worth paying for above the surface) --- */
+  water.visible = false;
+  if (under < 0.98 && updateReflector()){
+    renderer.setRenderTarget(reflectRT);
+    renderer.clear();
+    renderer.render(scene, reflectCam);
+  }
+  water.visible = true;
+
+  /* --- main + type --- */
+  renderer.setRenderTarget(sceneRT);
+  renderer.clear();
+  renderer.render(scene, camera);
+  if (typeBuilt){
+    renderer.autoClear = false;
+    renderer.render(hudScene, hudCam);
+    renderer.autoClear = true;
+  }
+
+  /* --- bloom --- */
+  brightMat.uniforms.tDiffuse.value = sceneRT.texture;
+  blit(brightMat, bloomA[0]);
+  let src = bloomA[0];
+  for (let i=0;i<4;i++){
+    blurMat.uniforms.uTexel.value.set(1/bloomB[i].width, 1/bloomB[i].height);
+    blurMat.uniforms.tDiffuse.value = src.texture;
+    blurMat.uniforms.uDir.value.set(1,0); blit(blurMat, bloomB[i]);
+    blurMat.uniforms.tDiffuse.value = bloomB[i].texture;
+    blurMat.uniforms.uDir.value.set(0,1); blit(blurMat, bloomA[i]);
+    src = bloomA[i];
+  }
+
+  /* --- shafts: march away from where the sun sits on screen --- */
+  let rays = under * quality;
+  if (rays > 0.01){
+    _sunProj.set(-3.0, 16.0, -11.0);              // the shaft that comes down through the room
+    _sunProj.project(camera);
+    const behind = _sunProj.z > 1.0;
+    const off = Math.max(Math.abs(_sunProj.x), Math.abs(_sunProj.y));
+    rays *= behind ? 0 : (1 - THREE.MathUtils.smoothstep(off, 1.0, 2.4));
+    if (rays > 0.01){
+      raysMat.uniforms.uStrength.value = 1;
+      raysMat.uniforms.uSunUV.value.set(_sunProj.x*0.5+0.5, _sunProj.y*0.5+0.5);
+      raysMat.uniforms.tDiffuse.value = bloomA[0].texture;
+      blit(raysMat, raysRT);
+    } else raysMat.uniforms.uStrength.value = 0;
+  } else raysMat.uniforms.uStrength.value = 0;
+
+  /* --- composite --- */
+  compMat.uniforms.tDiffuse.value = sceneRT.texture;
+  compMat.uniforms.tB0.value = bloomA[0].texture;
+  compMat.uniforms.tB1.value = bloomA[1].texture;
+  compMat.uniforms.tB2.value = bloomA[2].texture;
+  compMat.uniforms.tB3.value = bloomA[3].texture;
+  compMat.uniforms.tRays.value = raysRT.texture;
+  compMat.uniforms.uRays.value = rays * 0.9;
+  compMat.uniforms.uUnder.value = under;
+  compMat.uniforms.uTime.value = REDUCED ? 0.3 : t;
+  /* --- the peel: how far the scene has been lifted off the form beneath --- */
+  {
+    if (peelHold < 0){
+      peelOpen = THREE.MathUtils.clamp(
+        peelOpen + (peelWant ? dt/0.85 : -dt/0.62) * (REDUCED ? 14 : 1), 0, 1);
+    } else peelOpen = peelHold;
+    if (peelOpen > 0.0006 || peelWant){
+      // the ease is a reading of the state, never written back into it — doing
+      // that compounds every frame and the lift snaps open in three frames.
+      // smoothstep, not ease-out: a click-driven lift wants an even pace
+      const a = peelOpen*peelOpen*(3 - 2*peelOpen);
+      peelU.uPeel.value = a;
+      const { w:pw, h:ph } = vp();
+      // Peel measures from the peeling edge: u away from the bottom, v along it
+      peelU.uPointer.value.set(ptrOn ? Math.max(ph - ptrY, 0) : 1e4, ptrOn ? ptrX : pw*0.5);
+      peelU.uZone.value = Math.max(ph*0.22, 1);
+      peelU.uSpan.value = PEEL.shineDistance;
+      // the sheet's lowest point is at f = a*reveal (the curl bottoms out at
+      // c - R = f), so that is exactly what has been uncovered. clipping any
+      // higher puts the form on top of the curl and hides the fold's curve
+      contactEl.style.setProperty('--peel', (a * ph * PEEL.reveal).toFixed(1) + 'px');
+    }
+  }
+
+  /* --- the menu sheet, unrolled over the finished frame --- */
+  {
+    const glass = menuOpen > 0.0006 || menuWant > 0;
+    const peeling = peelOpen > 0.0006 || peelWant > 0;
+    blit(compMat, (glass || peeling) ? menuRT : null);
+    if (peeling){
+      // the sheet being lifted is the live frame, so the water keeps moving on it
+      peelU.tContent.value = menuRT.texture;
+      peelU.uRes.value.set(W, H);
+      peelU.uCross.value = W;
+      peelU.uReveal.value = H * PEEL.reveal;
+      // blit() leaves its target bound, so without this the sheet draws back
+      // into the very texture it is sampling and never reaches the canvas
+      renderer.setRenderTarget(null);
+      renderer.autoClear = false;
+      // the fold bows but the form's clip is a straight line, so a sliver of the
+      // canvas shows between them — clear it to the form's own ground, not black
+      renderer.getClearColor(_peelClear); const _peelA = renderer.getClearAlpha();
+      // outputColorSpace is LinearSRGB — a plain hex would be decoded to linear
+      // and written straight out, which lands at (1,4,6). setRGB in the working
+      // space says "these are already the numbers I want on screen"
+      renderer.setClearColor(PEEL_GROUND, 1);
+      renderer.clear(true, true, false);
+      renderer.setClearColor(_peelClear, _peelA);
+      renderer.render(peelScene, quadCam);
+      renderer.autoClear = true;
+    }
+    if (glass){
+      // three ping-pong passes at 22%: one jump straight to a tiny target
+      // aliases the window frames into visible blocks
+      let src = menuRT.texture;
+      blurMat.uniforms.uTexel.value.set(1/menuBlurA.width, 1/menuBlurA.height);
+      for (let i=0;i<3;i++){
+        blurMat.uniforms.tDiffuse.value = src;
+        blurMat.uniforms.uDir.value.set(1,0); blit(blurMat, menuBlurB);
+        blurMat.uniforms.tDiffuse.value = menuBlurB.texture;
+        blurMat.uniforms.uDir.value.set(0,1); blit(blurMat, menuBlurA);
+        src = menuBlurA.texture;
+      }
+      if (!peeling){ copyMat.uniforms.tDiffuse.value = menuRT.texture; blit(copyMat, null); }
+      menuU.tBlur.value = menuBlurA.texture;
+    }
+  }
+  {
+    // opening is slower than closing: paper falls, it does not snap back
+    /* a timeline, not an exponential ease-in. the lerp jumped a quarter turn on
+       its very first frame, so a third of the spin was never on screen */
+    if (menuHold < 0){
+      menuOpen = THREE.MathUtils.clamp(
+        menuOpen + (menuWant ? dt/0.95 : -dt/0.78) * (REDUCED ? 12 : 1), 0, 1);
+    } else menuOpen = menuHold;
+    if (menuOpen > 0.0006){
+      const e = 1 - Math.pow(1 - menuOpen, 2.6);       // it arrives, then settles
+      // half a turn on its own even curve: it comes up backing you and turns over
+      const spin = menuOpen*menuOpen*(3 - 2*menuOpen);
+      menuU.uTime.value = t;
+      menuU.uOpen.value = e;
+      // the card is always its full size — it flies in, it does not grow
+      menuU.uSize.value.y = menuFullH;
+      menuScrim.material.uniforms.uOn.value = Math.min(1, e*1.7);
+      // the fold hardens while it is still travelling, then settles to its hang
+      menuU.uAmp.value = 0.86 + 0.55 * Math.pow(1 - e, 1.3);
+      menuFlut += ((REDUCED ? 0 : Math.min(menuPtrV*0.9, 0.34)) - menuFlut) * Math.min(dt*2.2, 1);
+      menuU.uFlutter.value = menuFlut;
+
+      /* nocturne's rig: the card orbits with the pointer over a slow idle drift,
+         and turns about its own centre wherever the growth has put that */
+      const idle = REDUCED ? 0 : 1;
+      const { w:vw, h:vh } = vp();
+      const mx = ptrOn ? (ptrX/vw)*2 - 1 : 0, my = ptrOn ? (ptrY/vh)*2 - 1 : 0;
+      menuMX += (mx - menuMX) * Math.min(dt*3.0, 1);
+      menuMY += (my - menuMY) * Math.min(dt*3.0, 1);
+      /* it comes up off the bottom of the frame turning a full circle on the way,
+         and leaves the same way in reverse — so both directions are one path
+         driven off `enter` rather than two hand-written animations */
+      const enter = 1 - e;
+      const restY = menuTopY - menuFullH*0.5;
+      menuPivot.position.set(
+        Math.sin(t*0.21)*0.045*idle + menuMX*0.10 + enter*0.38,
+        restY + Math.sin(t*0.36)*0.055*idle - enter * menuVH * 1.34,
+        -enter * 2.4);                       // and starts further off, so it flies
+      menuPivot.rotation.y = menuMX*0.16 + Math.sin(t*0.23)*0.035*idle + (1 - spin)*Math.PI;
+      menuPivot.rotation.x = -menuMY*0.11 + Math.sin(t*0.19)*0.022*idle + enter*0.42;
+      menuPivot.rotation.z = Math.sin(t*0.27)*0.016*idle - enter*0.30;
+      menuRow = pickMenuRow();
+      if (menuRow >= 0){
+        const base = CERT_ROW0 + menuRow*CERT_ROWH;
+        menuU.uRow.value = 1 - ((base - CERT_SIZE*0.30) / CERT_H);
+        menuU.uRowHot.value = (CERT_SIZE*0.55) / CERT_H;
+      } else menuU.uRow.value = -1;
+      cur.classList.toggle('pick', menuRow >= 0);
+      renderer.autoClear = false;
+      // the composite triangle writes depth at 0.5 and the sheet sits behind
+      // that, so without this clear the paper never passes the depth test
+      renderer.clearDepth();
+      renderer.render(menuScene, menuCam);
+      renderer.autoClear = true;
+    }
+  }
+
+  curX += (curTX-curX)*Math.min(1, dt*18);
+  curY += (curTY-curY)*Math.min(1, dt*18);
+  cur.style.transform = `translate(${curX}px,${curY}px)`;
+
+  frameAcc += dt; frameN++;
+  if (frameAcc > 1.5){
+    const fps = frameN/frameAcc;
+    if (fps < 52 && quality > 0.6){ quality = 0.66; DPR = Math.min(DPR, 1.15); W = 0; resize(); }
+    frameAcc = 0; frameN = 0;
+  }
+}
+renderer.setAnimationLoop(renderFrame);
+renderFrame(performance.now());
+
+/* ---------- inspection hooks ---------- */
+dbg.cam = camera;
+dbg.setP = (v)=>{
+  const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  window.scrollTo(0, v*max);
+  spTarget = v; sp = v;
+};
+dbg.settle = (n)=>{ for (let i=0;i<(n||90);i++) renderFrame(performance.now() + i*16.7); };
+dbg.freeze = ()=>{ rig.ptr.set(0,0); rig.ptrE.set(0,0); rig.drag.set(0,0); rig.dragE.set(0,0); };
+dbg.state = ()=>({ sp, y:+camera.position.y.toFixed(2), words:typeUnits.length });
+dbg.type = ()=>typeUnits.map(u=>({ row:u.row, key:u.block.key, vis:u.mesh.visible,
+  pos:[Math.round(u.mesh.position.x), Math.round(u.mesh.position.y)],
+  size:[Math.round(u.mesh.scale.x), Math.round(u.mesh.scale.y)] }));
+dbg.menuRow = ()=>menuRow;
+dbg.peelAt = (v)=>{ peelHold = v; peelWant = v>0?1:0; peelOpen = v; document.body.classList.toggle('peeled', v>0); contactEl.setAttribute('aria-hidden', v>0?'false':'true'); };
+dbg.menuPivot = menuPivot;
+dbg.menuAt = (v)=>{ menuHold = v; if (v >= 0) document.body.classList.add('menu-open'); };
+dbg.liquid = ()=>({ energy:+liqEnergy.toFixed(4), queued:liqQueue.length,
+  glow:+liqU.uGlow.value.toFixed(2), cursor:liqU.uCursor.value.toArray().map(v=>+v.toFixed(3)) });
+dbg.info = ()=>({ tris: renderer.info.render.triangles, calls: renderer.info.render.calls, prog: renderer.info.programs.length });
+dbg.parts = { water, sky, outside, room, hud: hudScene };
+dbg.hide = (k, v)=>{ dbg.parts[k].visible = v === undefined ? false : v; };
+dbg.shafts = shafts;
+dbg.pick = (nx, ny)=>{
+  const rc = new THREE.Raycaster();
+  rc.setFromCamera(new THREE.Vector2(nx||0, ny||0), camera);
+  const hits = rc.intersectObjects(scene.children, true).filter(h=>h.object.visible);
+  return hits.slice(0,3).map(h=>({ d:+h.distance.toFixed(2), t:h.object.type,
+    m:h.object.material && h.object.material.type,
+    c:h.object.material && h.object.material.color ? '#'+h.object.material.color.getHexString() : null,
+    p:[+h.point.x.toFixed(1),+h.point.y.toFixed(1),+h.point.z.toFixed(1)] }));
+};
+
+
+
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Hour of the Everbloom</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23d8a94f' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23d8a94f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#06060d;color:#efe4d2;overflow:hidden}
+body{font-family:'EB Garamond',Georgia,serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* horizontal unit = 1 design px of a 1920 comp; vertical unit = 1 design px of a 1080 comp */
+:root{
+  --u: calc(100vw / 1920);
+  --v: calc(100vh / 1080);
+  --ink:#efe4d2;
+  --gold:#d8a94f;
+  --blush:#f3dde2;
+  --void:#06060d;
+}
+
+/* ---------- layers ---------- */
+.layer{position:fixed;inset:0;pointer-events:none}
+#hall{z-index:0;overflow:hidden}
+#hall img{position:absolute;left:50%;top:50%;width:118%;height:118%;object-fit:cover;
+  transform:translate(-50%,-50%);will-change:transform}
+
+#haze{z-index:1;
+  background:
+    radial-gradient(78% 62% at 56% 44%, rgba(24,16,34,0) 0%, rgba(7,7,15,.22) 52%, rgba(4,4,9,.72) 100%),
+    linear-gradient(103deg, rgba(5,5,12,.80) 0%, rgba(5,5,12,.42) 26%, rgba(5,5,12,0) 52%),
+    linear-gradient(263deg, rgba(4,4,10,.90) 0%, rgba(4,4,10,.66) 16%, rgba(4,4,10,.18) 30%, rgba(4,4,10,0) 40%),
+    radial-gradient(38% 26% at 82% 4%, rgba(4,4,10,.72) 0%, rgba(4,4,10,0) 100%),
+    linear-gradient(0deg, rgba(4,4,9,.94) 0%, rgba(4,4,9,.10) 26%, rgba(4,4,9,0) 46%);}
+
+#pBack{z-index:2;
+  -webkit-mask-image:linear-gradient(97deg, rgba(0,0,0,.50) 0%, rgba(0,0,0,.58) 20%, #000 44%, #000 100%);
+  mask-image:linear-gradient(97deg, rgba(0,0,0,.50) 0%, rgba(0,0,0,.58) 20%, #000 44%, #000 100%)}
+#figure{z-index:3;overflow:hidden}
+#figure img{position:absolute;left:56%;top:51%;height:98%;width:auto;
+  transform:translate(-50%,-50%);will-change:transform}
+#angel{z-index:3}
+#glow{z-index:4;
+  background:radial-gradient(30% 34% at 56% 46%, rgba(232,168,86,.16) 0%, rgba(150,96,40,.05) 45%, rgba(0,0,0,0) 74%);
+  mix-blend-mode:screen}
+
+/* ---------- textures ---------- */
+#vellum{z-index:6;background-image:url(everbloom/assets/vellum.jpg);background-size:cover;
+  mix-blend-mode:soft-light;opacity:.30}
+#inkmarble{z-index:6;background-image:url(everbloom/assets/ink.jpg);background-size:cover;
+  mix-blend-mode:overlay;opacity:.34}
+#shelfscrim{z-index:7;display:none;
+  background:radial-gradient(62% 27% at 44% 46%, rgba(3,3,8,.94) 0%, rgba(3,3,8,.74) 46%, rgba(3,3,8,0) 100%)}
+#burn{z-index:7;
+  background:
+    radial-gradient(120% 96% at 50% 46%, rgba(0,0,0,0) 46%, rgba(3,3,7,.52) 82%, rgba(2,2,5,.88) 100%),
+    linear-gradient(180deg, rgba(2,2,5,.60) 0%, rgba(0,0,0,0) 12%);}
+#grain{z-index:12;opacity:.34;mix-blend-mode:overlay}
+#pFore{z-index:11;
+  -webkit-mask-image:linear-gradient(97deg, rgba(0,0,0,.34) 0%, rgba(0,0,0,.42) 22%, #000 46%, #000 100%);
+  mask-image:linear-gradient(97deg, rgba(0,0,0,.34) 0%, rgba(0,0,0,.42) 22%, #000 46%, #000 100%)}
+
+/* ---------- stage ---------- */
+.stage{position:fixed;inset:0;z-index:9}
+.stage>*{position:absolute}
+
+/* ---------- seal + nav ---------- */
+.seal{left:calc(42*var(--u));top:calc(30*var(--v));width:calc(38*var(--u));height:calc(38*var(--u));opacity:.92}
+.seal svg{width:100%;height:100%;display:block}
+nav{right:calc(44*var(--u));top:calc(38*var(--v));display:flex;gap:calc(56*var(--u));align-items:baseline}
+nav a{color:#e7dcc7;text-decoration:none;font-family:'Cinzel',serif;font-weight:500;
+  font-size:max(11px,calc(13.5*var(--u)));letter-spacing:calc(2.1*var(--u));text-transform:uppercase;
+  display:flex;gap:calc(13*var(--u));align-items:baseline;opacity:.86;transition:opacity .4s,color .4s}
+nav a i{font-family:'IM Fell English',serif;font-style:italic;font-size:max(11px,calc(14*var(--u)));
+  letter-spacing:0;color:var(--gold);opacity:.62}
+nav a:hover{opacity:1;color:#fff4e0}
+nav a.on{opacity:1}
+
+/* ---------- headline ---------- */
+h1{position:absolute;left:0;top:calc(150*var(--v));font-family:'Cinzel',serif;font-weight:400;
+   font-size:calc(112*var(--u));line-height:calc(104*var(--v));letter-spacing:.004em;color:var(--blush);
+   transform:scaleX(.95);transform-origin:0 0;
+   filter:drop-shadow(0 calc(3*var(--u)) calc(26*var(--u)) rgba(0,0,0,.62))
+          drop-shadow(0 0 calc(46*var(--u)) rgba(216,169,79,.16))}
+h1 .ln{display:block;overflow:hidden}
+h1 .ln span{display:block;white-space:nowrap;transform:translateY(106%);
+   background-image:url(everbloom/assets/foil.jpg),
+     linear-gradient(102deg,#fff1e0 0%,#f5dcc4 30%,#e9c48f 58%,#fff4e6 82%,#e6c290 100%);
+   background-size:170% auto, 100% 100%;
+   background-position:20% 46%;
+   background-blend-mode:soft-light;
+   -webkit-background-clip:text;background-clip:text;color:transparent}
+h1 .l1{padding-left:calc(46*var(--u))}
+h1 .l2{padding-left:calc(126*var(--u));letter-spacing:-.004em}
+h1 .l3{padding-left:calc(306*var(--u));letter-spacing:.010em}
+h1 .l4{padding-left:calc(70*var(--u));letter-spacing:-.020em}
+h1 em{font-style:normal;font-family:'IM Fell English',serif;text-transform:none;
+  font-size:1.06em;letter-spacing:0;margin-right:.10em}
+
+/* ---------- left copy ---------- */
+.lead{left:calc(250*var(--u));top:calc(632*var(--v));width:calc(320*var(--u));
+  font-size:max(12px,calc(17.4*var(--u)));line-height:calc(27*var(--v));color:#cdc0aa;font-weight:400;
+  letter-spacing:calc(.08*var(--u))}
+.lead b{font-weight:400;color:#e9dcc4}
+
+.cta{left:calc(250*var(--u));top:calc(786*var(--v));width:calc(222*var(--u));height:calc(62*var(--v));
+  border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;position:absolute;
+  font-family:'Cinzel',serif;font-weight:600;font-size:max(11px,calc(13*var(--u)));
+  letter-spacing:calc(2.6*var(--u));text-transform:uppercase;color:#2a1d08;
+  background-image:url(everbloom/assets/vellum.jpg);background-size:220% auto;background-position:38% 46%;
+  box-shadow:inset 0 calc(1*var(--u)) 0 rgba(255,248,232,.72),
+             inset 0 calc(-2*var(--u)) calc(5*var(--u)) rgba(72,46,14,.34),
+             0 calc(9*var(--u)) calc(26*var(--u)) rgba(0,0,0,.52);
+  transition:transform .45s cubic-bezier(.2,.8,.3,1), box-shadow .45s, filter .45s}
+.cta:hover{transform:translateY(calc(-2*var(--v)));filter:brightness(1.07);
+  box-shadow:inset 0 calc(1*var(--u)) 0 rgba(255,250,238,.85),
+             inset 0 calc(-2*var(--u)) calc(5*var(--u)) rgba(72,46,14,.30),
+             0 calc(14*var(--u)) calc(34*var(--u)) rgba(0,0,0,.58),
+             0 0 calc(26*var(--u)) rgba(216,169,79,.28)}
+.cta:focus-visible{outline:1px solid rgba(240,205,134,.8);outline-offset:calc(4*var(--u))}
+nav a:focus-visible{outline:1px solid rgba(240,205,134,.7);outline-offset:4px}
+
+.index{left:calc(44*var(--u));top:calc(694*var(--v));font-family:'IM Fell English',serif;
+  font-size:max(18px,calc(40*var(--u)));line-height:calc(58*var(--v));color:#e3d6bd}
+.index b{display:block;font-weight:400;transition:color .6s ease}
+.index b.on{color:var(--gold)}
+
+/* ---------- the shelf: horizontal books floating in real 3-D ---------- */
+.shelf{--bookS:1;left:calc(1368*var(--u));top:calc(178*var(--v));
+  width:calc(500*var(--u));height:calc(700*var(--v));
+  perspective:calc(1700*var(--u));perspective-origin:52% 46%;
+  transform:scale(var(--bookS));transform-origin:0 0;
+  transform-style:preserve-3d}
+.shelf .rule{position:absolute;left:calc(6*var(--u));top:calc(-80*var(--v));
+  display:flex;align-items:center;gap:calc(13*var(--u));
+  font-family:'Cinzel',serif;font-size:max(11px,calc(12.4*var(--u)));letter-spacing:calc(3.4*var(--u));
+  text-transform:uppercase;color:rgba(232,216,184,.80)}
+.shelf .rule{transition:opacity .5s ease}
+.shelf.reading .rule{opacity:0}
+.shelf .rule s{flex:none;width:calc(54*var(--u));height:1px;background:rgba(216,169,79,.42);text-decoration:none}
+
+.book{position:absolute;left:0;top:0;width:var(--BW);height:var(--BT);
+  transform-style:preserve-3d;transform-origin:50% 50%;cursor:pointer;
+  background:none;border:0;padding:0;-webkit-appearance:none;appearance:none;
+  will-change:transform,opacity}
+.book .bd{position:absolute;inset:0;transform-style:preserve-3d;
+  transform-origin:50% 50%;will-change:transform}
+.book .f{position:absolute;left:50%;top:50%;background-size:100% 100%;
+  background-color:#241a16;backface-visibility:hidden;overflow:hidden}
+.book .spine{width:var(--BW);height:var(--BT);
+  transform:translate(-50%,-50%) translateZ(calc(var(--BD)/2))}
+.book .fore {width:var(--BW);height:var(--BT);
+  transform:translate(-50%,-50%) rotateY(180deg) translateZ(calc(var(--BD)/2))}
+.book .front{width:var(--BW);height:var(--BD);
+  transform:translate(-50%,-50%) rotateX(90deg) translateZ(calc(var(--BT)/2))}
+.book .back {width:var(--BW);height:var(--BD);
+  transform:translate(-50%,-50%) rotateX(-90deg) translateZ(calc(var(--BT)/2))}
+.book .head {width:var(--BD);height:var(--BT);
+  transform:translate(-50%,-50%) rotateY(-90deg) translateZ(calc(var(--BW)/2))}
+.book .tail {width:var(--BD);height:var(--BT);
+  transform:translate(-50%,-50%) rotateY(90deg) translateZ(calc(var(--BW)/2))}
+/* the shadow the case throws onto the one below it */
+.book .cast{position:absolute;left:50%;top:50%;width:var(--BW);height:var(--BD);
+  transform:translate(-50%,-50%) rotateX(90deg) translateZ(calc(var(--BT)/-2 - 2px));
+  background:radial-gradient(62% 74% at 50% 50%, rgba(0,0,0,.72), rgba(0,0,0,0) 78%);
+  filter:blur(calc(9*var(--u)))}
+.book:focus-visible{outline:none}
+.book:focus-visible .spine{box-shadow:0 0 0 1px rgba(240,205,134,.9)}
+
+#bookinfo{left:calc(1332*var(--u));top:calc(736*var(--v));width:calc(500*var(--u));
+  opacity:0;pointer-events:none;transition:opacity .55s ease}
+#bookinfo.on{opacity:1}
+#bookinfo h3{font-family:'Cinzel',serif;font-weight:400;font-size:calc(27*var(--u));
+  line-height:calc(32*var(--v));color:#f4e8d2;letter-spacing:.012em;text-transform:uppercase}
+#bookinfo .by{font-family:'IM Fell English',serif;font-style:italic;
+  font-size:max(11px,calc(16.4*var(--u)));color:var(--gold);margin-top:calc(7*var(--v))}
+#bookinfo p{font-size:max(11px,calc(16.4*var(--u)));line-height:calc(25*var(--v));
+  color:#c2b7a2;margin-top:calc(13*var(--v))}
+#bookinfo .shut{margin-top:calc(17*var(--v));font-family:'Cinzel',serif;
+  font-size:max(11px,calc(11.6*var(--u)));letter-spacing:calc(2.6*var(--u));text-transform:uppercase;
+  color:rgba(226,208,172,.66);background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;
+  border-bottom:1px solid rgba(216,169,79,.32);transition:color .3s,border-color .3s}
+#bookinfo .shut:hover{color:#f4e8d2;border-color:rgba(216,169,79,.8)}
+
+.scroll{left:50%;transform:translateX(-50%);top:calc(972*var(--v));
+  font-family:'Cinzel',serif;font-size:max(11px,calc(12.6*var(--u)));
+  letter-spacing:calc(7.4*var(--u));text-transform:uppercase;color:rgba(240,228,204,.82);font-weight:500;
+  display:flex;flex-direction:column;align-items:center;gap:calc(11*var(--v));
+  text-shadow:0 calc(1*var(--u)) calc(14*var(--u)) rgba(0,0,0,.9)}
+.scroll i{display:block;position:relative;width:1px;height:calc(30*var(--v));
+  background:linear-gradient(180deg, rgba(216,169,79,.62) 0%, rgba(216,169,79,.10) 100%)}
+.scroll i::after{content:'';position:absolute;left:calc(-1.5*var(--u));width:calc(4*var(--u));
+  height:calc(4*var(--u));border-radius:50%;background:#f0cd86;
+  box-shadow:0 0 calc(9*var(--u)) rgba(240,205,134,.9);
+  animation:sink 3.4s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes sink{0%{top:0;opacity:0}18%{opacity:1}82%{opacity:1}100%{top:calc(30*var(--v));opacity:0}}
+.motto{left:calc(44*var(--u));top:calc(996*var(--v));font-family:'IM Fell English',serif;font-style:italic;
+  font-size:max(11px,calc(16*var(--u)));color:rgba(216,169,79,.78);letter-spacing:calc(.4*var(--u));text-shadow:0 1px 12px rgba(0,0,0,.8)}
+
+#arc{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+#arc path{fill:none;stroke:rgba(216,169,79,.22);stroke-width:.8}
+#arc path.thin{stroke:rgba(232,220,196,.10);stroke-width:.6}
+
+#readblur{position:fixed;inset:0;z-index:8;pointer-events:none;
+  opacity:0;transition:opacity .65s cubic-bezier(.3,.7,.3,1)}
+body.reading #readblur{opacity:1}
+/* each pane is only as wide as the region it actually blurs — four
+   full-viewport backdrop-filters cost twice what these do, and the masked-out
+   area is rasterised either way */
+#readblur i{position:absolute;top:0;bottom:0;right:0;display:block}
+/* every stop is measured from the RIGHT edge: the ramp has to die out before
+   it reaches the headline, or it softens the hero instead of the backdrop */
+#readblur i:nth-child(1){width:60%;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+  -webkit-mask-image:linear-gradient(to left,#000 0%,#000 50%,rgba(0,0,0,0) 93%);
+          mask-image:linear-gradient(to left,#000 0%,#000 50%,rgba(0,0,0,0) 93%)}
+#readblur i:nth-child(2){width:46%;-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  -webkit-mask-image:linear-gradient(to left,#000 0%,#000 44%,rgba(0,0,0,0) 93%);
+          mask-image:linear-gradient(to left,#000 0%,#000 44%,rgba(0,0,0,0) 93%)}
+#readblur i:nth-child(3){width:34%;-webkit-backdrop-filter:blur(11px);backdrop-filter:blur(11px);
+  -webkit-mask-image:linear-gradient(to left,#000 0%,#000 35%,rgba(0,0,0,0) 91%);
+          mask-image:linear-gradient(to left,#000 0%,#000 35%,rgba(0,0,0,0) 91%)}
+#readblur i:nth-child(4){width:23%;-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);
+  -webkit-mask-image:linear-gradient(to left,#000 0%,#000 22%,rgba(0,0,0,0) 87%);
+          mask-image:linear-gradient(to left,#000 0%,#000 22%,rgba(0,0,0,0) 87%)}
+/* and a touch of ink under the copy, so it reads against whatever survives */
+#readblur b{position:absolute;inset:0;display:block;
+  background:linear-gradient(to left, rgba(4,4,10,.62) 0%, rgba(4,4,10,.30) 26%, rgba(4,4,10,0) 52%)}
+@media (prefers-reduced-motion: reduce){#readblur{transition:none}}
+
+.frame{position:fixed;z-index:8;pointer-events:none;
+  left:calc(30*var(--u));right:calc(30*var(--u));top:calc(24*var(--v));bottom:calc(24*var(--v));
+  border:1px solid rgba(214,176,104,.085)}
+.frame:after{content:'';position:absolute;inset:calc(6*var(--u)) calc(6*var(--u));
+  border:1px solid rgba(214,176,104,.045)}
+.frame b{position:absolute;width:calc(9*var(--u));height:calc(9*var(--u));
+  border:1px solid rgba(220,182,110,.34);transform:rotate(45deg);
+  background:radial-gradient(50% 50% at 50% 50%, rgba(220,182,110,.22), rgba(0,0,0,0) 72%)}
+.frame b:nth-child(1){left:calc(-4.5*var(--u));top:calc(-4.5*var(--u))}
+.frame b:nth-child(2){right:calc(-4.5*var(--u));top:calc(-4.5*var(--u))}
+.frame b:nth-child(3){left:calc(-4.5*var(--u));bottom:calc(-4.5*var(--u))}
+.frame b:nth-child(4){right:calc(-4.5*var(--u));bottom:calc(-4.5*var(--u))}
+.sigil{position:fixed;z-index:5;pointer-events:none;
+  left:calc(-92*var(--u));top:calc(556*var(--v));
+  width:calc(560*var(--u));height:calc(560*var(--u));opacity:.145;
+  animation:turn 190s linear infinite}
+.sigil svg{width:100%;height:100%;display:block}
+@keyframes turn{to{transform:rotate(360deg)}}
+@media (max-width:900px){.sigil{left:calc(-160*var(--u));top:calc(600*var(--v));opacity:.085}}
+@media (prefers-reduced-motion: reduce){.sigil{animation:none}}
+.mask{position:fixed;inset:0;background:#06060d;z-index:20;pointer-events:none;transition:opacity 1.2s ease}
+
+/* --- narrow screens --- */
+@media (max-width: 900px){
+  :root{ --u: calc(100vw / 900); --v: calc(100vh / 1000); }
+  #haze{background:
+    radial-gradient(100% 66% at 68% 44%, rgba(24,16,34,0) 0%, rgba(7,7,15,.34) 44%, rgba(4,4,9,.86) 100%),
+    linear-gradient(96deg, rgba(5,5,12,.95) 0%, rgba(5,5,12,.86) 34%, rgba(5,5,12,.42) 62%, rgba(5,5,12,0) 86%),
+    linear-gradient(0deg, rgba(4,4,9,.96) 0%, rgba(4,4,9,.28) 26%, rgba(4,4,9,0) 48%)}
+  #pBack,#pFore{-webkit-mask-image:none;mask-image:none}
+  .dot{display:none}
+  #figure img{left:74%;height:86%}
+  .index,.motto{display:none}
+  .shelf{--bookS:.60;left:calc(500*var(--u));top:calc(546*var(--v));width:calc(500*var(--u))}
+  .shelf .rule{top:calc(-40*var(--v));font-size:max(11px,calc(11.4*var(--u)));letter-spacing:calc(2.2*var(--u))}
+  #bookinfo{left:calc(56*var(--u));top:calc(588*var(--v));width:calc(372*var(--u))}
+  h1{transition:opacity .5s ease}
+  body.reading h1{opacity:.16}
+  body.reading .lead,body.reading .cta{opacity:0 !important;pointer-events:none}
+  #bookinfo h3{font-size:calc(25*var(--u));line-height:calc(30*var(--v))}
+  body.reading .lead,body.reading .cta{opacity:0 !important;pointer-events:none}
+  h1{top:calc(140*var(--v));font-size:calc(96*var(--u));line-height:calc(92*var(--v))}
+  h1 .l1{padding-left:calc(50*var(--u))}
+  h1 .l2{padding-left:calc(96*var(--u))}
+  h1 .l3{padding-left:calc(210*var(--u))}
+  h1 .l4{padding-left:calc(56*var(--u))}
+  .lead{left:calc(56*var(--u));top:calc(588*var(--v));width:calc(372*var(--u));
+    font-size:max(13px,calc(20*var(--u)));line-height:calc(29*var(--v));transition:opacity .5s ease}
+  .cta{transition:opacity .5s ease,transform .45s cubic-bezier(.2,.8,.3,1)}
+  .cta{left:calc(56*var(--u));top:calc(794*var(--v));width:calc(272*var(--u));height:calc(70*var(--v));
+    font-size:max(11px,calc(14*var(--u)))}
+  nav{gap:calc(30*var(--u));right:calc(26*var(--u))}
+  nav a{font-size:max(11px,calc(15*var(--u)))}
+  nav a i{display:none}
+}
+@media (max-width: 620px){
+  nav a:nth-child(n+3){display:none}
+  /* the copy block sits on the robe here — give it its own ground */
+  #haze{background:
+    radial-gradient(110% 56% at 66% 38%, rgba(24,16,34,0) 0%, rgba(7,7,15,.28) 46%, rgba(4,4,9,.84) 100%),
+    linear-gradient(96deg, rgba(5,5,12,.90) 0%, rgba(5,5,12,.60) 40%, rgba(5,5,12,0) 88%),
+    linear-gradient(0deg, rgba(4,4,9,.97) 0%, rgba(4,4,9,.90) 16%, rgba(4,4,9,.46) 30%, rgba(4,4,9,0) 44%)}
+  .seal{left:20px;top:18px;width:28px;height:28px}
+  nav{right:20px;top:22px;gap:20px}
+  nav a{font-size:11.5px;letter-spacing:1.5px;gap:7px}
+  h1{top:7vh;font-size:clamp(34px,11.2vw,62px);line-height:1.05;transform:scaleX(.97)}
+  .lead .more{display:none}
+  .shelf{--bookS:1.30;left:50%;top:33vh;width:calc(500*var(--u));
+    margin-left:calc(-268*var(--u))}
+  .shelf .rule{display:none}
+  #figure img{left:80%;height:74%}
+  #shelfscrim{display:block}
+  #bookinfo{left:20px;right:20px;width:auto;top:auto;bottom:150px}
+  #bookinfo h3{font-size:19px;line-height:23px}
+  #bookinfo .by{font-size:13px}
+  #bookinfo p{font-size:13px;line-height:20px;margin-top:8px}
+  #bookinfo .shut{font-size:11px;margin-top:10px}
+  #bookinfo:before{content:'';position:absolute;left:-20px;right:-20px;top:-26px;bottom:-34px;
+    background:linear-gradient(180deg, rgba(4,4,10,0) 0%, rgba(4,4,10,.86) 20%, rgba(4,4,10,.94) 100%);
+    pointer-events:none;z-index:-1}
+
+  
+  h1 .l1{padding-left:20px}
+  h1 .l2{padding-left:44px}
+  h1 .l3{padding-left:92px}
+  h1 .l4{padding-left:20px}
+  .lead{left:20px;right:20px;width:auto;top:auto;bottom:170px;
+    font-size:15px;line-height:1.6;letter-spacing:0;transition:opacity .5s ease}
+  .cta{transition:opacity .5s ease, transform .45s cubic-bezier(.2,.8,.3,1)}
+  .cta{left:20px;top:auto;bottom:92px;width:200px;height:52px;font-size:11px;letter-spacing:2.2px}
+  .scroll{top:auto;bottom:24px;font-size:11px;letter-spacing:5px;gap:8px}
+  .scroll i{height:22px}
+  @keyframes sink{0%{top:0;opacity:0}18%{opacity:1}82%{opacity:1}100%{top:22px;opacity:0}}
+  .frame{left:14px;right:14px;top:14px;bottom:14px}
+  body.reading .lead,body.reading .cta{opacity:0 !important;pointer-events:none}
+  #figure img{left:72%;height:92%}
+}
+@media (prefers-reduced-motion: reduce){
+  h1 .ln span{transform:none !important}
+}
+</style>
+</head>
+<body>
+
+<div class="layer" id="hall" aria-hidden="true"><img src="everbloom/assets/hall.jpg" alt=""></div>
+<div aria-hidden="true" class="layer" id="haze"></div>
+<canvas class="layer" id="pBack" aria-hidden="true"></canvas>
+<div class="layer" id="figure"><img src="everbloom/assets/figure.webp" alt="A blindfolded saint-knight in tarnished gold plate, scarlet flowers grown through the armour"></div>
+<canvas class="layer" id="angel" aria-hidden="true"></canvas>
+<div aria-hidden="true" class="layer" id="glow"></div>
+<div aria-hidden="true" class="layer" id="vellum"></div>
+<div aria-hidden="true" class="layer" id="inkmarble"></div>
+<div aria-hidden="true" class="layer" id="burn"></div>
+
+<div class="sigil" aria-hidden="true"><svg viewBox="0 0 400 400" fill="none" stroke="#e5c489" stroke-width="1">
+  <circle cx="200" cy="200" r="196" opacity=".55"/>
+  <circle cx="200" cy="200" r="182" opacity=".30" stroke-dasharray="2 7"/>
+  <circle cx="200" cy="200" r="142" opacity=".70"/>
+  <circle cx="200" cy="200" r="136" opacity=".28"/>
+  <circle cx="200" cy="200" r="96" opacity=".50" stroke-dasharray="14 9"/>
+  <circle cx="200" cy="200" r="52" opacity=".8"/>
+  <path d="M200 48 344 304 56 304Z" opacity=".62"/>
+  <path d="M200 352 56 96 344 96Z" opacity=".38"/>
+  <path d="M200 4v392M4 200h392" opacity=".18"/>
+  <g opacity=".62">
+    <path d="M200 58v18M200 324v18M58 200h18M324 200h18"/>
+    <path d="M99 99l13 13M288 288l13 13M301 99l-13 13M112 288l-13 13"/>
+  </g>
+  <circle cx="200" cy="200" r="7" fill="#e5c489" stroke="none" opacity=".8"/>
+</svg></div>
+<div id="readblur" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
+
+<div class="frame" aria-hidden="true"><b></b><b></b><b></b><b></b></div>
+
+<div class="stage">
+  <div class="seal"><svg viewBox="0 0 40 40" fill="none">
+    <circle cx="20" cy="20" r="15.2" stroke="#d8a94f" stroke-width="1" opacity=".8"/>
+    <circle cx="20" cy="20" r="11.4" stroke="#efe4d2" stroke-width=".6" opacity=".45"/>
+    <path d="M20 6.6v26.8M8.2 13.4l23.6 13.2M31.8 13.4L8.2 26.6" stroke="#d8a94f" stroke-width=".8" opacity=".62"/>
+    <circle cx="20" cy="20" r="3.1" fill="#d8a94f" opacity=".9"/>
+  </svg></div>
+
+  <nav>
+    <a href="#" class="on"><i>I</i>Hallows</a><a href="#"><i>II</i>Herbary</a><a href="#"><i>III</i>Almanac</a><a href="#"><i>IV</i>Index</a>
+  </nav>
+
+  <h1>
+    <span class="ln l1"><span>THE</span></span>
+    <span class="ln l2"><span>HOUR</span></span>
+    <span class="ln l3"><span><em>of</em> THE</span></span>
+    <span class="ln l4"><span>EVERBLOOM</span></span>
+  </h1>
+
+  <p class="lead">A record of the small magics that only answer to patience.<span class="more"> We keep what blooms in the dark — <b>the slow spell, the long tending, the light left burning</b> — and let the loud and the hurried pass unlit.</span></p>
+  <button class="cta" type="button">Open the book</button>
+  <div class="index"><b class="on">I</b><b>II</b><b>III</b><b>IV</b></div>
+
+  <div class="shelf" id="shelf">
+    <div class="rule"><s></s>The Everbloom Shelf</div>
+  </div>
+  <div id="bookinfo">
+    <h3></h3>
+    <div class="by"></div>
+    <p></p>
+    <button class="shut" type="button">Close the book</button>
+  </div>
+
+  <div class="motto">Quod lente crescit, diu manet</div>
+  <div class="scroll"><span>Descend</span><i></i></div>
+  <svg id="arc" aria-hidden="true" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+    <path id="arcp" d=""/>
+    <path id="arcq" class="thin" d=""/>
+  </svg>
+</div>
+
+<canvas class="layer" id="pFore" aria-hidden="true"></canvas>
+<canvas class="layer" id="grain" aria-hidden="true"></canvas>
+<div class="mask" id="mask"></div>
+
+<script>
+/* ============================================================================
+   THE HOUR OF THE EVERBLOOM
+   an image-led fantasy hero — blossom fall, parchment texture, gold-leaf type
+   ========================================================================== */
+(() => {
+'use strict';
+
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* deterministic rng so every load composes the same */
+let _s = 20260828;
+const rnd = () => (_s = (_s * 1664525 + 1013904223) >>> 0) / 4294967296;
+const rr = (a, b) => a + (b - a) * rnd();
+
+/* ---------- viewport, robust to a 0-sized boot (background tab / pane) ---- */
+function viewport() {
+  let w = window.innerWidth || document.documentElement.clientWidth || 0;
+  let h = window.innerHeight || document.documentElement.clientHeight || 0;
+  if (w < 2 || h < 2) { w = Math.min(screen.width || 1600, 1600); h = Math.min(screen.height || 900, 900); }
+  return { w, h };
+}
+const DPR = () => Math.min(2, window.devicePixelRatio || 1);
+const viewportUnitV = () => viewport().h / (window.innerWidth <= 900 ? 1000 : 1080);
+
+/* =====================================================================
+   BLOSSOM FALL
+   ===================================================================== */
+const SHEET = new Image();
+const CELL = 256, COLS = 3, ROWS = 3, NSPR = 9;
+let SETS = {};               // name -> [9 canvases]
+let sheetReady = false;
+
+/* blur, tint, tint alpha, exposure — far petals go cool and dim (aerial
+   perspective), near ones pick up the candle warmth of the plate itself   */
+/* the petals are keyed white, so the tint does all the colour work. Depth runs
+   from a cold oxblood far away to a hot ember close to, which is the same ramp
+   the flowers on her armour sit on.                                          */
+const SPEC = {
+  far:   { b: 5.0, t: [104, 26, 34], ta: .80, ex: .60, halo: .22 },
+  mid:   { b: 2.2, t: [176, 30, 32], ta: .84, ex: .90, halo: .28 },
+  near:  { b: 0.9, t: [214, 48, 30], ta: .82, ex: 1.06, halo: .34 },
+  bokeh: { b: 11 , t: [196, 40, 28], ta: .84, ex: .96, halo: .20 }
+};
+
+function makeSet(k) {
+  const { b, t, ta, ex, halo } = SPEC[k];
+  const set = [];
+  for (let i = 0; i < NSPR; i++) {
+    const pad = Math.ceil((b + 9) * 3) + 4;
+    const s = document.createElement('canvas');
+    s.width = CELL + pad * 2; s.height = CELL + pad * 2;
+    const c = s.getContext('2d');
+    /* a soft halo first — the plate's own blossoms all sit in candle haze */
+    c.globalAlpha = halo;
+    c.filter = `blur(${b + 9}px)`;
+    c.drawImage(SHEET, (i % COLS) * CELL, ((i / COLS) | 0) * CELL, CELL, CELL,
+                pad - 6, pad - 6, CELL + 12, CELL + 12);
+    c.globalAlpha = 1;
+    if (b > 0) c.filter = `blur(${b}px)`; else c.filter = 'none';
+    c.drawImage(SHEET, (i % COLS) * CELL, ((i / COLS) | 0) * CELL, CELL, CELL, pad, pad, CELL, CELL);
+    c.filter = 'none';
+    /* tint inside the matte only */
+    c.globalCompositeOperation = 'source-atop';
+    c.fillStyle = `rgba(${t[0]},${t[1]},${t[2]},${ta})`;
+    c.fillRect(0, 0, s.width, s.height);
+    /* pull the exposure down so a petal never out-whites the candles */
+    if (ex < 1) {
+      c.fillStyle = `rgba(0,0,0,${1 - ex})`;
+      c.fillRect(0, 0, s.width, s.height);
+    }
+    c.globalCompositeOperation = 'source-over';
+    set.push(s);
+  }
+  return set;
+}
+
+function buildSprites() {
+  for (const k in SPEC) SETS[k] = makeSet(k);
+  sheetReady = true;
+}
+
+class Fall {
+  constructor(canvas, opt) {
+    this.cv = canvas; this.cx = canvas.getContext('2d');
+    this.o = opt; this.f = []; this.w = 0; this.h = 0;
+  }
+  size(w, h, dpr) {
+    if (this.w === w && this.h === h && this._dpr === dpr) return;
+    this.w = w; this.h = h; this._dpr = dpr;
+    this.cv.width = Math.max(2, Math.round(w * dpr));
+    this.cv.height = Math.max(2, Math.round(h * dpr));
+    this.cv.style.width = w + 'px'; this.cv.style.height = h + 'px';
+    const want = Math.round(this.o.n * Math.min(1.5, Math.max(0.45, (w * h) / (1600 * 900))));
+    while (this.f.length < want) this.f.push(this.spawn(true));
+    while (this.f.length > want) this.f.pop();
+  }
+  spawn(anywhere) {
+    const z = Math.pow(rnd(), this.o.zBias || 1);              // 0 far, 1 near
+    return {
+      x: rr(-0.12, 1.12), y: anywhere ? rr(-0.15, 1.05) : rr(-0.35, -0.05),
+      z, s: this.o.sMin + (this.o.sMax - this.o.sMin) * z,
+      vy: (this.o.vMin + (this.o.vMax - this.o.vMin) * z),
+      rot: rr(0, Math.PI * 2), spin: rr(-0.5, 0.5) * this.o.spin,
+      ph: rr(0, Math.PI * 2), sw: rr(0.4, 1.0) * this.o.sway,
+      tw: rr(0.5, 1.0),                                        // tumble phase speed
+      i: (rnd() * NSPR) | 0,
+      a: this.o.aMin + (this.o.aMax - this.o.aMin) * Math.pow(z, .6),
+      /* two motes of the same magic that carries the flower */
+      sp: [[rr(0, 6.283), rr(.7, 1.5), rr(.6, 1.5)], [rr(0, 6.283), rr(.9, 1.9), rr(.5, 1.3)]]
+    };
+  }
+  step(dt, t, wind) {
+    const { w, h } = this;
+    for (let k = 0; k < this.f.length; k++) {
+      const p = this.f[k];
+      p.y += p.vy * dt;
+      p.x += (Math.sin(t * 0.55 * p.tw + p.ph) * p.sw + wind * (0.35 + p.z)) * dt;
+      p.rot += p.spin * dt;
+      if (p.y > 1.22) { const n = this.spawn(false); n.z = p.z; n.s = p.s; n.vy = p.vy; n.a = p.a; this.f[k] = n; }
+      if (p.x < -0.25) p.x += 1.5; else if (p.x > 1.25) p.x -= 1.5;
+    }
+  }
+  draw(dpr) {
+    const c = this.cx, w = this.w, h = this.h;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, this.cv.width, this.cv.height);
+    if (!sheetReady) return;
+    c.scale(dpr, dpr);
+    const ref = Math.min(w, h);
+    for (const p of this.f) {
+      const set = SETS[this.o.set || (p.z > 0.70 ? 'near' : (p.z > 0.36 ? 'mid' : 'far'))];
+      const img = set[p.i];
+      const k = (p.s * ref) / img.width;
+      const sq = Math.abs(Math.cos(t3 * 0.85 * p.tw + p.ph));       // foreshortening
+      const sk = Math.sin(t3 * 0.62 * p.tw + p.ph * 1.7) * 0.30;    // tilt out of plane
+      c.save();
+      c.globalAlpha = p.a;
+      c.translate(p.x * w, p.y * h);
+      c.rotate(p.rot);
+      c.transform(k, 0, sk * k, k * (0.40 + 0.60 * sq), 0, 0);
+      c.drawImage(img, -img.width / 2, -img.height / 2);
+      c.restore();
+      /* the sparks the blossom drags along with it */
+      if (MOTE && this.o.spark) {
+        c.save();
+        c.globalCompositeOperation = 'lighter';
+        c.translate(p.x * w, p.y * h);
+        const base = p.s * ref;
+        for (let q = 0; q < p.sp.length; q++) {
+          const [ph0, rad, sp] = p.sp[q];
+          const a = ph0 + t3 * sp + p.rot * .5;
+          const glim = .45 + .55 * Math.sin(t3 * (2.1 + sp) + ph0 * 3.1);
+          c.globalAlpha = p.a * this.o.spark * glim * glim;
+          const ss = base * (.20 + .13 * glim);
+          c.drawImage(MOTE, Math.cos(a) * rad * base * .55 - ss / 2,
+                            Math.sin(a) * rad * base * .42 - ss / 2, ss, ss);
+        }
+        c.restore();
+      }
+    }
+  }
+}
+
+let t3 = 0;
+
+/* ---- drifting candle motes ------------------------------------------- */
+let MOTE = null;
+function buildMote() {
+  const N = 64, c = document.createElement('canvas'); c.width = c.height = N;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(N/2, N/2, 0, N/2, N/2, N/2);
+  g.addColorStop(0.00, 'rgba(255,236,196,1)');
+  g.addColorStop(0.16, 'rgba(255,196,110,.80)');
+  g.addColorStop(0.42, 'rgba(214,132,48,.24)');
+  g.addColorStop(1.00, 'rgba(160,88,20,0)');
+  x.fillStyle = g; x.fillRect(0, 0, N, N);
+  MOTE = c;
+}
+const motes = [];
+function seedMotes(n) {
+  motes.length = 0;
+  for (let i = 0; i < n; i++) motes.push({
+    x: rnd(), y: rnd(), r: rr(0.0022, 0.010), a: rr(0.10, 0.52),
+    vy: rr(-0.018, -0.004), ph: rr(0, 6.283), sw: rr(0.006, 0.022), tw: rr(0.3, 1.1)
+  });
+}
+function drawMotes(cx, w, h, dpr, dt, t, wind) {
+  if (!MOTE) return;
+  cx.save();
+  cx.globalCompositeOperation = 'lighter';
+  const ref = Math.min(w, h);
+  for (const m of motes) {
+    m.y += m.vy * dt;
+    if (m.y < -0.08) { m.y = 1.08; m.x = rnd(); }
+    const px = (m.x + Math.sin(t * 0.30 * m.tw + m.ph) * m.sw + wind * 0.06) * w;
+    const py = m.y * h;
+    const s = m.r * ref * (2.4 + Math.sin(t * 1.7 + m.ph) * 0.35);
+    cx.globalAlpha = m.a * (0.62 + 0.38 * Math.sin(t * 0.9 * m.tw + m.ph * 2.1));
+    cx.drawImage(MOTE, px - s / 2, py - s / 2, s, s);
+  }
+  cx.restore();
+}
+
+const back = new Fall(document.getElementById('pBack'), {
+  n: 84, sMin: 0.012, sMax: 0.046, vMin: 0.028, vMax: 0.086,
+  sway: 0.052, spin: 1.4, aMin: 0.14, aMax: 0.66, zBias: 1.30, spark: 0.62
+});
+const fore = new Fall(document.getElementById('pFore'), {
+  n: 9, sMin: 0.075, sMax: 0.175, vMin: 0.10, vMax: 0.23,
+  sway: 0.080, spin: 1.7, aMin: 0.050, aMax: 0.135, zBias: 0.75, set: 'bokeh', spark: 0.30
+});
+
+/* =====================================================================
+   THE SHELF — four fantasy cases, boards and spines drawn in canvas
+   ===================================================================== */
+const BRASS = ['#f3e0ae', '#c9a24f', '#7d5c22', '#2e2110'];
+const IRON  = ['#c8c6c2', '#8a8781', '#4b4843', '#1c1a18'];
+
+const BOOKS = [
+  { t:'Advanced Blossomry', sub:'Grade Four', a:'Ianthe Quillon', y:'MDCCCLXXIII',
+    cloth:'#4c1a22', edge:'#8a3a3f', foil:'#d9ac5c', emblem:'flame', metal:BRASS, wear:'214,176,132',
+    blurb:'Every spell worth casting is a long tending. Trim the wick, shelter the light, and let the quiet hours do the difficult part of the work for you.' },
+  { t:'A History of Slow Hours', sub:'Second Edition', a:'Bartholomew Ashgrove', y:'MDCCCXCI',
+    cloth:'#16233a', edge:'#2f4569', foil:'#c3cddd', emblem:'moon', metal:IRON, wear:'176,186,204',
+    blurb:'What frightens you in a book is usually only a page turned too quickly. Sit with it until the ink cools and the meaning comes up to meet you.' },
+  { t:'The Book of Quiet Spells', sub:'Grade One', a:'Perpetua Vane', y:'MDCCCLXVI',
+    cloth:'#26331f', edge:'#48603f', foil:'#cfb268', emblem:'root', metal:BRASS, wear:'196,192,148',
+    blurb:'Nothing enchanted grows under supervision. Set the working down, walk the cloisters, and return when the season has moved on without you.' },
+  { t:'Unfogging the Everbloom', sub:'Revised', a:'Cassius Merrowe', y:'MCMIV',
+    cloth:'#2f1a35', edge:'#553260', foil:'#dcc084', emblem:'hourglass', metal:BRASS, wear:'204,180,196',
+    blurb:'Choose the one thing that will still be standing in a hundred years, then take the smallest first step toward it before the candles are lit.' }
+];
+
+/* design-px geometry of one case, in the 1920x1080 comp */
+const BW = 408;   // board height — the long axis, running left/right
+const BD = 266;   // board width  — running away from the viewer
+const BT = 54;    // case thickness — these are tomes, not novels
+const PITCH = 138;
+
+/* ---------- little canvas helpers ---------------------------------- */
+function cv(w, h) {
+  const c = document.createElement('canvas');
+  c.width = Math.max(2, Math.round(w)); c.height = Math.max(2, Math.round(h));
+  return c;
+}
+function fitText(c, txt, maxW, size, font) {
+  let s = size;
+  for (let n = 0; n < 40; n++) {
+    c.font = font(s);
+    if (c.measureText(txt).width <= maxW) break;
+    s *= 0.955;
+  }
+  return c.font;
+}
+function grain(c, w, h, amt, scale) {
+  const n = cv(Math.round(w / scale), Math.round(h / scale)), nc = n.getContext('2d');
+  const im = nc.createImageData(n.width, n.height);
+  for (let i = 0; i < n.width * n.height; i++) {
+    const v = 128 + ((rnd() + rnd() + rnd()) / 3 - 0.5) * 210;
+    im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255;
+  }
+  nc.putImageData(im, 0, 0);
+  c.save(); c.globalAlpha = amt; c.globalCompositeOperation = 'overlay';
+  c.drawImage(n, 0, 0, w, h); c.restore();
+}
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v) => Math.max(0, Math.min(255, Math.round(v * k)));
+  return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+}
+
+/* ---------- goat morocco: mottle, then pebble, then break it -------- */
+function leather(c, w, h, b, lift) {
+  const R = Math.max(w, h);
+  c.fillStyle = b.cloth; c.fillRect(0, 0, w, h);
+  if (lift) { c.globalAlpha = lift; c.fillStyle = b.edge; c.fillRect(0, 0, w, h); c.globalAlpha = 1; }
+
+  /* the blotching of a skin that has been handled for two centuries */
+  for (let i = 0; i < 240; i++) {
+    const x = rr(0, w), y = rr(0, h), rad = rr(.014, .085) * R;
+    const g = c.createRadialGradient(x, y, 0, x, y, rad);
+    const up = rnd() > .48;
+    g.addColorStop(0, up ? 'rgba(255,238,212,.085)' : 'rgba(0,0,0,.125)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, rad, 0, 6.284); c.fill();
+  }
+
+  /* the pebble itself — thousands of tiny raised cells, each lit from the
+     upper left, which is the whole reason morocco reads as leather */
+  const cell = Math.max(3.0, R * 0.0072);
+  const N = Math.round((w * h) / (cell * cell) * 0.52);
+  for (let i = 0; i < N; i++) {
+    const x = rr(0, w), y = rr(0, h), rad = cell * rr(.42, 1.05);
+    c.fillStyle = `rgba(255,244,220,${rr(.055, .150)})`;
+    c.beginPath(); c.arc(x - rad * .24, y - rad * .26, rad * .60, 0, 6.284); c.fill();
+    c.fillStyle = `rgba(0,0,0,${rr(.070, .190)})`;
+    c.beginPath(); c.arc(x + rad * .30, y + rad * .34, rad * .56, 0, 6.284); c.fill();
+  }
+  grain(c, w, h, .30, 1);
+
+  /* crazing: fine cracks that run where the case has been flexed */
+  c.save();
+  c.lineCap = 'round';
+  for (let i = 0; i < 46; i++) {
+    let x = rr(0, w), y = rr(0, h), a = rr(0, 6.284);
+    const seg = rr(3, 9), len = rr(.012, .055) * R;
+    c.strokeStyle = `rgba(0,0,0,${rr(.10, .30)})`;
+    c.lineWidth = Math.max(.8, R * rr(.0007, .0017));
+    c.beginPath(); c.moveTo(x, y);
+    for (let k = 0; k < seg; k++) { a += rr(-.55, .55); x += Math.cos(a) * len; y += Math.sin(a) * len; c.lineTo(x, y); }
+    c.stroke();
+  }
+  c.restore();
+
+  /* rubbed corners and edges — the board shows through where it is held */
+  c.save();
+  for (const [ex, ey] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+    const x = ex * w, y = ey * h, rad = R * rr(.10, .17);
+    const g = c.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, `rgba(${b.wear},.42)`);
+    g.addColorStop(.55, `rgba(${b.wear},.13)`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g; c.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  }
+  c.restore();
+
+  /* one broad sheen, then the shadow that gives the board its form */
+  const sh = c.createLinearGradient(0, 0, w * .92, h * 1.05);
+  sh.addColorStop(.02, 'rgba(255,246,226,.06)');
+  sh.addColorStop(.17, 'rgba(255,248,232,.30)');
+  sh.addColorStop(.30, 'rgba(255,246,226,.07)');
+  sh.addColorStop(.62, 'rgba(0,0,0,.11)');
+  sh.addColorStop(1, 'rgba(0,0,0,.30)');
+  c.fillStyle = sh; c.fillRect(0, 0, w, h);
+  const vg = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.hypot(w, h) * .56);
+  vg.addColorStop(.46, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.42)');
+  c.fillStyle = vg; c.fillRect(0, 0, w, h);
+}
+
+function gild(c, x0, y0, x1, y1, foil, wgt) {
+  const g = c.createLinearGradient(x0, y0, x1, y1);
+  g.addColorStop(0, 'rgba(255,248,226,.85)');
+  g.addColorStop(.30, foil); g.addColorStop(.66, foil);
+  g.addColorStop(1, 'rgba(90,64,26,.75)');
+  c.strokeStyle = g; c.lineWidth = wgt;
+}
+
+/* a tooled rule: bitten into the leather first, then gilded, then lit */
+function rule(c, x, y, w2, h2, foil, wgt, S) {
+  c.save();
+  c.strokeStyle = 'rgba(0,0,0,.62)'; c.lineWidth = wgt * 1.9;
+  c.strokeRect(x + S * .9, y + S * .9, w2, h2);
+  gild(c, x, y, x + w2, y + h2, foil, wgt);
+  c.strokeRect(x, y, w2, h2);
+  c.strokeStyle = 'rgba(255,250,232,.62)'; c.lineWidth = Math.max(1, wgt * .30);
+  c.strokeRect(x - S * .5, y - S * .5, w2, h2);
+  c.restore();
+}
+
+/* ---------- fittings: the metal a real grimoire is armoured with ---- */
+function metal(c, x, y, w2, h2, tint) {
+  const g = c.createLinearGradient(x, y, x + w2 * .7, y + h2);
+  g.addColorStop(0.00, tint[0]);
+  g.addColorStop(0.22, tint[1]);
+  g.addColorStop(0.55, tint[2]);
+  g.addColorStop(1.00, tint[3]);
+  return g;
+}
+function corner(c, W, H, sx, sy, S, tint) {
+  /* an L of sheet metal wrapped over the corner, with rivets */
+  c.save();
+  c.translate(sx > 0 ? 0 : W, sy > 0 ? 0 : H);
+  c.scale(sx > 0 ? 1 : -1, sy > 0 ? 1 : -1);
+  const L = S * 3.9, T = S * 1.28, r = S * .30;
+  c.beginPath();
+  c.moveTo(0, 0); c.lineTo(L, 0); c.lineTo(L - T * .5, T * .62);
+  c.lineTo(T * .78, T * .78); c.lineTo(T * .62, L - T * .5); c.lineTo(0, L);
+  c.closePath();
+  c.fillStyle = metal(c, 0, 0, L, L, tint); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = Math.max(1, S * .075); c.stroke();
+  c.strokeStyle = 'rgba(255,246,214,.45)'; c.lineWidth = Math.max(1, S * .035);
+  c.beginPath(); c.moveTo(T * .30, T * .30); c.lineTo(L - T * .55, T * .30); c.stroke();
+  c.beginPath(); c.moveTo(T * .30, T * .30); c.lineTo(T * .30, L - T * .55); c.stroke();
+  for (const [rx, ry] of [[T * .48, T * .48], [L - T * .82, T * .50], [T * .50, L - T * .82]]) {
+    const g = c.createRadialGradient(rx - r * .3, ry - r * .3, 0, rx, ry, r);
+    g.addColorStop(0, 'rgba(255,250,226,.95)'); g.addColorStop(.5, tint[1]);
+    g.addColorStop(1, 'rgba(20,14,6,.9)');
+    c.fillStyle = g; c.beginPath(); c.arc(rx, ry, r, 0, 6.284); c.fill();
+  }
+  c.restore();
+}
+
+function boss(c, x, y, r, tint, foil, kind) {
+  /* a raised metal medallion, struck with the house sigil */
+  c.save();
+  const g = c.createRadialGradient(x - r * .38, y - r * .42, r * .05, x, y, r);
+  g.addColorStop(0.00, tint[0]);
+  g.addColorStop(0.30, tint[1]);
+  g.addColorStop(0.72, tint[2]);
+  g.addColorStop(1.00, tint[3]);
+  c.beginPath(); c.arc(x, y, r, 0, 6.284); c.fillStyle = g; c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.62)'; c.lineWidth = Math.max(1.4, r * .055); c.stroke();
+  /* beaded rim */
+  const nb = 30;
+  for (let i = 0; i < nb; i++) {
+    const a = (i / nb) * 6.284, br = r * .855, bb = r * .062;
+    const bx = x + Math.cos(a) * br, by = y + Math.sin(a) * br;
+    const bg = c.createRadialGradient(bx - bb * .3, by - bb * .3, 0, bx, by, bb);
+    bg.addColorStop(0, 'rgba(255,250,226,.85)'); bg.addColorStop(1, 'rgba(40,28,10,.55)');
+    c.fillStyle = bg; c.beginPath(); c.arc(bx, by, bb, 0, 6.284); c.fill();
+  }
+  c.strokeStyle = 'rgba(255,248,220,.42)'; c.lineWidth = Math.max(1, r * .022);
+  c.beginPath(); c.arc(x, y, r * .74, 0, 6.284); c.stroke();
+  /* the die sinks the sigil: a dark cut with the light catching its far wall */
+  const d = r * .030;
+  c.save(); c.translate(d, d); emblem(c, x, y, r * .50, 'rgba(255,250,228,.78)', kind); c.restore();
+  emblem(c, x, y, r * .50, 'rgba(28,18,6,.88)', kind);
+  /* the specular that makes it read as struck metal, not printed */
+  const sp = c.createRadialGradient(x - r * .42, y - r * .46, 0, x - r * .42, y - r * .46, r * .62);
+  sp.addColorStop(0, 'rgba(255,252,236,.42)'); sp.addColorStop(1, 'rgba(255,252,236,0)');
+  c.fillStyle = sp; c.beginPath(); c.arc(x, y, r, 0, 6.284); c.fill();
+  c.restore();
+}
+
+function clasp(c, W, H, cy, S, tint) {
+  /* a strap off the back board, caught by a hasp on the fore-edge */
+  c.save();
+  const x0 = W * .845, len = W * .175, th = S * 1.42;
+  c.fillStyle = 'rgba(24,15,8,.88)';
+  c.fillRect(x0, cy - th / 2, len, th);
+  c.fillStyle = 'rgba(255,236,200,.10)';
+  c.fillRect(x0, cy - th / 2, len, th * .18);
+  c.fillStyle = 'rgba(0,0,0,.45)';
+  c.fillRect(x0, cy + th * .30, len, th * .20);
+  const px = x0 + len * .30, pw = len * .62, ph = th * 1.30;
+  c.beginPath();
+  c.moveTo(px, cy - ph / 2); c.lineTo(px + pw, cy - ph / 2);
+  c.lineTo(px + pw + ph * .30, cy); c.lineTo(px + pw, cy + ph / 2);
+  c.lineTo(px, cy + ph / 2); c.closePath();
+  c.fillStyle = metal(c, px, cy - ph / 2, pw, ph, tint); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = Math.max(1, S * .07); c.stroke();
+  c.strokeStyle = 'rgba(255,246,214,.40)'; c.lineWidth = Math.max(1, S * .032);
+  c.beginPath(); c.moveTo(px + pw * .10, cy - ph * .30); c.lineTo(px + pw * .86, cy - ph * .30); c.stroke();
+  const r = ph * .17;
+  const g = c.createRadialGradient(px + pw * .30 - r * .3, cy - r * .3, 0, px + pw * .30, cy, r);
+  g.addColorStop(0, 'rgba(255,250,226,.95)'); g.addColorStop(1, 'rgba(24,16,6,.9)');
+  c.fillStyle = g; c.beginPath(); c.arc(px + pw * .30, cy, r, 0, 6.284); c.fill();
+  c.restore();
+}
+
+/* the tooled emblem, blind-stamped then gilt */
+function emblem(c, x, y, r, foil, kind) {
+  c.save(); c.translate(x, y);
+  c.strokeStyle = foil; c.fillStyle = foil;
+  c.lineWidth = Math.max(1.2, r * .052); c.lineJoin = 'round'; c.lineCap = 'round';
+  c.globalAlpha = .92;
+  if (kind === 'flame') {
+    c.beginPath();
+    c.moveTo(0, -r); c.bezierCurveTo(r * .62, -r * .30, r * .50, r * .48, 0, r * .82);
+    c.bezierCurveTo(-r * .50, r * .48, -r * .62, -r * .30, 0, -r); c.stroke();
+    c.beginPath();
+    c.moveTo(0, -r * .34); c.bezierCurveTo(r * .30, r * .02, r * .24, r * .44, 0, r * .58);
+    c.bezierCurveTo(-r * .24, r * .44, -r * .30, r * .02, 0, -r * .34); c.globalAlpha = .55; c.fill();
+  } else if (kind === 'moon') {
+    c.globalAlpha = .9;
+    c.beginPath(); c.arc(0, 0, r * .86, 0, 6.284); c.stroke();
+    c.beginPath(); c.arc(r * .16, 0, r * .70, 1.9, 4.4); c.stroke();
+    for (let i = 0; i < 7; i++) {
+      const a = -1.1 + i * .38, rr2 = r * 1.16;
+      c.beginPath(); c.arc(Math.cos(a) * rr2, Math.sin(a) * rr2, r * .045, 0, 6.284); c.fill();
+    }
+  } else if (kind === 'root') {
+    c.beginPath(); c.moveTo(0, -r * .95); c.lineTo(0, r * .35); c.stroke();
+    for (const [d, k] of [[-1, .30], [1, .10], [-1, -.14], [1, -.40]]) {
+      c.beginPath(); c.moveTo(0, r * k);
+      c.quadraticCurveTo(d * r * .52, r * (k - .16), d * r * .82, r * (k - .46)); c.stroke();
+    }
+    for (const d of [-1, 1]) {
+      c.beginPath(); c.moveTo(0, r * .35);
+      c.quadraticCurveTo(d * r * .34, r * .66, d * r * .60, r * .98); c.stroke();
+    }
+    c.beginPath(); c.arc(0, -r * .95, r * .10, 0, 6.284); c.fill();
+  } else {
+    c.beginPath();
+    c.moveTo(-r * .70, -r * .92); c.lineTo(r * .70, -r * .92);
+    c.lineTo(-r * .70, r * .92); c.lineTo(r * .70, r * .92); c.closePath(); c.stroke();
+    c.beginPath(); c.moveTo(-r * .82, -r * 1.02); c.lineTo(r * .82, -r * 1.02); c.stroke();
+    c.beginPath(); c.moveTo(-r * .82, r * 1.02); c.lineTo(r * .82, r * 1.02); c.stroke();
+    c.globalAlpha = .55;
+    c.beginPath(); c.moveTo(-r * .30, r * .18); c.lineTo(r * .30, r * .18);
+    c.lineTo(0, r * .86); c.closePath(); c.fill();
+  }
+  c.restore();
+}
+
+/* ---------- the front board ---------------------------------------- */
+function boardTex(b, W, H, plain) {
+  const c = cv(W, H).getContext('2d');
+  const S = W * 0.030;                       // one ornament unit
+  leather(c, W, H, b, 0.10);
+  if (plain) {
+    /* the back board is plain but not blank: two blind fillets and the same
+       four corner pieces, because it takes the same wear                */
+    c.save(); c.globalAlpha = .55;
+    rule(c, W * .085, H * .062, W * .830, H * .876, shade(b.foil, .55), Math.max(1.4, W * .0042), S * .1);
+    c.restore();
+    corner(c, W, H, 1, 1, S, b.metal); corner(c, W, H, -1, 1, S, b.metal);
+    corner(c, W, H, 1, -1, S, b.metal); corner(c, W, H, -1, -1, S, b.metal);
+    return c.canvas;
+  }
+
+  /* --- the tooled frame: three fillets, the outer one heavy --------- */
+  const m = W * .078;
+  rule(c, m, m * .70, W - m * 2, H - m * 1.40, b.foil, Math.max(2.8, W * .0100), S * .10);
+  rule(c, m * 1.42, m * 1.06, W - m * 2.84, H - m * 2.12, b.foil, Math.max(1.5, W * .0044), S * .07);
+  c.save(); c.globalAlpha = .62;
+  rule(c, m * 1.72, m * 1.30, W - m * 3.44, H - m * 2.60, b.foil, Math.max(1.1, W * .0026), S * .05);
+  c.restore();
+
+  /* --- corner fleurons inside the frame ---------------------------- */
+  c.save();
+  c.strokeStyle = b.foil; c.lineWidth = Math.max(1.2, W * .0030);
+  for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+    c.save();
+    c.translate(sx > 0 ? m * 1.72 : W - m * 1.72, sy > 0 ? m * 1.30 : H - m * 1.30);
+    c.scale(sx, sy);
+    c.globalAlpha = .80;
+    const k = S * 1.5;
+    c.beginPath();
+    c.moveTo(0, k); c.bezierCurveTo(0, k * .28, k * .28, 0, k, 0); c.stroke();
+    c.beginPath();
+    c.moveTo(k * .30, k * .30);
+    c.bezierCurveTo(k * .74, k * .30, k * .78, k * .74, k * .34, k * .78);
+    c.stroke();
+    c.globalAlpha = .9;
+    c.beginPath(); c.arc(k * .44, k * .44, k * .085, 0, 6.284); c.fillStyle = b.foil; c.fill();
+    c.restore();
+  }
+  c.restore();
+
+  /* --- the title cartouche ----------------------------------------- */
+  const F = (px) => `${px}px Cinzel, Georgia, serif`;
+  const words = b.t.split(' ');
+  const lines = []; let cur = '';
+  c.font = F(W * .104);
+  for (const wd of words) {
+    const t2 = cur ? cur + ' ' + wd : wd;
+    if (c.measureText(t2).width > W * .66 && cur) { lines.push(cur); cur = wd; } else cur = t2;
+  }
+  lines.push(cur);
+  const size = W * (lines.length > 2 ? .072 : lines.length > 1 ? .090 : .104);
+  const lead = size * 1.14;
+  const boxT = H * .118, boxH = lead * lines.length + size * .95;
+  const boxX = m * 2.30, boxW = W - m * 4.60;
+  c.save();
+  c.fillStyle = 'rgba(0,0,0,.16)'; c.fillRect(boxX, boxT, boxW, boxH);
+  c.globalAlpha = .90;
+  rule(c, boxX, boxT, boxW, boxH, b.foil, Math.max(1.3, W * .0034), S * .06);
+  /* a fleuron at each end of the panel */
+  for (const sx of [-1, 1]) {
+    c.save();
+    c.translate(sx > 0 ? boxX + boxW : boxX, boxT + boxH / 2); c.scale(sx, 1);
+    c.strokeStyle = b.foil; c.lineWidth = Math.max(1, W * .0026); c.globalAlpha = .85;
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(S * .9, 0); c.stroke();
+    c.beginPath(); c.arc(S * 1.18, 0, S * .28, 0, 6.284); c.stroke();
+    c.beginPath(); c.arc(S * 1.18, 0, S * .10, 0, 6.284); c.fillStyle = b.foil; c.fill();
+    c.restore();
+  }
+  c.restore();
+
+  c.save();
+  c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+  c.fillStyle = b.foil;
+  c.letterSpacing = (W * .005) + 'px';
+  let ty = boxT + size * 1.02;
+  for (const ln of lines) {
+    const txt = ln.toUpperCase();
+    c.font = fitText(c, txt, boxW * .86, size, F);
+    c.save();
+    c.fillStyle = 'rgba(0,0,0,.60)';                 /* the bite of the stamp */
+    c.fillText(txt, W / 2 + W * .0028, ty + W * .0030);
+    c.restore();
+    c.fillText(txt, W / 2, ty);
+    c.save();
+    c.globalAlpha = .34; c.fillStyle = '#fffaec';
+    c.fillText(txt, W / 2 - W * .0012, ty - W * .0014);
+    c.restore();
+    ty += lead;
+  }
+  c.letterSpacing = '0px';
+  c.restore();
+
+  /* --- the boss, and the imprint under it -------------------------- */
+  const bossR = Math.min(W * .155, (H * .700 - (boxT + boxH)) * .44);
+  const bossY = (boxT + boxH + H * .700) / 2;
+
+  /* a centre-and-corner binding: tooled arms run out of the medallion, and
+     the frame is studded at its mid-points */
+  c.save();
+  c.strokeStyle = b.foil; c.globalAlpha = .70;
+  c.lineWidth = Math.max(1.1, W * .0028);
+  for (const [ax, ay] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const r0 = bossR * 1.30, r1 = bossR * 2.55;
+    const nx = ax * .70, ny = ay * .70;
+    for (const o of [-W * .0075, W * .0075]) {
+      c.beginPath();
+      c.moveTo(W / 2 + nx * r0 - ay * o, bossY + ny * r0 + ax * o);
+      c.lineTo(W / 2 + nx * r1 - ay * o, bossY + ny * r1 + ax * o);
+      c.stroke();
+    }
+    const tx = W / 2 + nx * r1, ty2 = bossY + ny * r1;
+    c.beginPath(); c.arc(tx, ty2, W * .0125, 0, 6.284); c.stroke();
+    c.globalAlpha = .9;
+    c.beginPath(); c.arc(tx, ty2, W * .0044, 0, 6.284); c.fillStyle = b.foil; c.fill();
+    c.globalAlpha = .70;
+  }
+  /* the lozenge the medallion is set into */
+  c.globalAlpha = .60;
+  c.beginPath();
+  const lz = bossR * 1.62;
+  c.moveTo(W / 2, bossY - lz); c.lineTo(W / 2 + lz * .78, bossY);
+  c.lineTo(W / 2, bossY + lz); c.lineTo(W / 2 - lz * .78, bossY);
+  c.closePath(); c.stroke();
+  c.restore();
+
+  /* brass studs at the mid-point of every frame side */
+  {
+    const mm = W * .078 * 1.42, sr = S * .30;
+    const pts = [[W / 2, mm * .75], [W / 2, H - mm * .75], [mm, H / 2], [W - mm, H / 2]];
+    for (const [sx2, sy2] of pts) {
+      const g2 = c.createRadialGradient(sx2 - sr * .34, sy2 - sr * .34, 0, sx2, sy2, sr);
+      g2.addColorStop(0, 'rgba(255,250,228,.95)');
+      g2.addColorStop(.45, b.metal[1]);
+      g2.addColorStop(1, 'rgba(22,15,6,.92)');
+      c.fillStyle = g2; c.beginPath(); c.arc(sx2, sy2, sr, 0, 6.284); c.fill();
+      c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = Math.max(1, sr * .16); c.stroke();
+    }
+  }
+
+  boss(c, W / 2, bossY, bossR, b.metal, b.foil, b.emblem);
+
+  c.save();
+  c.textAlign = 'center'; c.fillStyle = b.foil;
+  c.globalAlpha = .90;
+  c.font = `italic ${W * .050}px 'IM Fell English', Georgia, serif`;
+  c.fillStyle = 'rgba(0,0,0,.5)'; c.fillText(b.a, W / 2 + W * .002, H * .790 + W * .002);
+  c.fillStyle = b.foil; c.fillText(b.a, W / 2, H * .790);
+  c.globalAlpha = .62;
+  c.font = `${W * .030}px Cinzel, Georgia, serif`;
+  c.letterSpacing = (W * .009) + 'px';
+  c.fillText(b.sub.toUpperCase() + '  ·  ' + b.y, W / 2, H * .872);
+  c.restore();
+
+  /* --- fittings ---------------------------------------------------- */
+  corner(c, W, H, 1, 1, S, b.metal); corner(c, W, H, -1, 1, S, b.metal);
+  corner(c, W, H, 1, -1, S, b.metal); corner(c, W, H, -1, -1, S, b.metal);
+  clasp(c, W, H, H * .300, S, b.metal);
+  clasp(c, W, H, H * .700, S, b.metal);
+
+  /* --- age: foxing, a wax drip, a scuff ---------------------------- */
+  c.save();
+  for (let i = 0; i < 26; i++) {
+    const x = rr(W * .1, W * .9), y = rr(H * .08, H * .94), r2 = rr(W * .004, W * .020);
+    const g = c.createRadialGradient(x, y, 0, x, y, r2);
+    g.addColorStop(0, 'rgba(96,62,26,.20)'); g.addColorStop(1, 'rgba(96,62,26,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r2, 0, 6.284); c.fill();
+  }
+  c.globalAlpha = .55;
+  for (let i = 0; i < 14; i++) {
+    const x = rr(W * .10, W * .92), y = rr(H * .07, H * .94);
+    c.strokeStyle = `rgba(${b.wear},${rr(.12, .34)})`;
+    c.lineWidth = Math.max(1, W * rr(.0010, .0030));
+    c.beginPath(); c.moveTo(x, y);
+    c.lineTo(x + rr(-W * .13, W * .13), y + rr(-H * .06, H * .06)); c.stroke();
+  }
+  /* the fore-edge is where a book is opened, so that is where it is rubbed */
+  c.globalAlpha = 1;
+  const fe = c.createLinearGradient(W, 0, W * .80, 0);
+  fe.addColorStop(0, `rgba(${b.wear},.30)`); fe.addColorStop(1, `rgba(${b.wear},0)`);
+  c.fillStyle = fe; c.fillRect(W * .80, 0, W * .20, H);
+  /* one spill of candle wax, because these live near a flame */
+  c.save();
+  const wx = rr(W * .18, W * .82), wy = rr(H * .55, H * .90);
+  const wg = c.createRadialGradient(wx, wy, 0, wx, wy, W * .058);
+  wg.addColorStop(0, 'rgba(255,246,220,.30)'); wg.addColorStop(.6, 'rgba(240,224,190,.13)');
+  wg.addColorStop(1, 'rgba(240,224,190,0)');
+  c.fillStyle = wg;
+  c.beginPath(); c.ellipse(wx, wy, W * .052, W * .034, rr(-.4, .4), 0, 6.284); c.fill();
+  c.beginPath(); c.ellipse(wx + W * .022, wy + W * .036, W * .017, W * .026, 0, 0, 6.284); c.fill();
+  c.restore();
+  c.restore();
+  return c.canvas;
+}
+
+/* ---------- the spine: five cords on a case this thick -------------- */
+function spineTex(b, W, H) {
+  const c = cv(W, H).getContext('2d');
+  leather(c, W, H, b, 0.13);
+  const S = H * .10;
+  const cords = [0.128, 0.318, 0.500, 0.682, 0.872];
+  const panel = (i) => [i === 0 ? 0 : cords[i - 1], i === cords.length ? 1 : cords[i]];
+
+  for (const u of cords) {
+    const x = u * W, bw = H * .088;
+    const g = c.createLinearGradient(x - bw, 0, x + bw, 0);
+    g.addColorStop(0, 'rgba(0,0,0,.50)'); g.addColorStop(.30, 'rgba(255,240,212,.24)');
+    g.addColorStop(.50, 'rgba(255,246,222,.40)'); g.addColorStop(.72, 'rgba(0,0,0,.20)');
+    g.addColorStop(1, 'rgba(0,0,0,.48)');
+    c.fillStyle = g; c.fillRect(x - bw, 0, bw * 2, H);
+    c.strokeStyle = b.foil; c.globalAlpha = .46; c.lineWidth = Math.max(1, H * .016);
+    for (const d of [-1, 1]) {
+      c.beginPath(); c.moveTo(x + d * bw * 1.12, H * .13);
+      c.lineTo(x + d * bw * 1.12, H * .87); c.stroke();
+    }
+    c.strokeStyle = 'rgba(255,248,226,.82)'; c.globalAlpha = .9;
+    c.lineWidth = Math.max(1, H * .007);
+    c.beginPath(); c.moveTo(x - bw * .10, H * .10); c.lineTo(x - bw * .10, H * .90); c.stroke();
+    c.globalAlpha = 1;
+  }
+  /* head and tail caps */
+  for (const [x0, x1] of [[0, cords[0] - H * .09 / W], [cords[4] + H * .09 / W, 1]]) {
+    c.save();
+    c.fillStyle = 'rgba(0,0,0,.30)';
+    c.fillRect(x0 * W, 0, (x1 - x0) * W, H);
+    c.restore();
+  }
+
+  const F = (px) => `${px}px Cinzel, Georgia, serif`;
+  const IF = (px) => `italic ${px}px 'IM Fell English', Georgia, serif`;
+  c.save();
+  c.fillStyle = b.foil; c.textBaseline = 'middle'; c.textAlign = 'center';
+
+  /* panel 2 carries the title */
+  let [p0, p1] = panel(2);
+  c.shadowColor = 'rgba(0,0,0,.72)'; c.shadowBlur = H * .10; c.shadowOffsetY = H * .022;
+  c.letterSpacing = (H * .030) + 'px';
+  c.font = fitText(c, b.t.toUpperCase(), (p1 - p0) * W * .90, H * .40, F);
+  c.fillText(b.t.toUpperCase(), (p0 + p1) / 2 * W, H * .52);
+  c.shadowBlur = 0; c.shadowOffsetY = 0; c.letterSpacing = '0px';
+
+  /* panel 4 the author, panel 1 and 3 tooled ornament */
+  [p0, p1] = panel(4);
+  c.globalAlpha = .88;
+  c.font = fitText(c, b.a, (p1 - p0) * W * .84, H * .28, IF);
+  c.fillText(b.a, (p0 + p1) / 2 * W, H * .52);
+
+  for (const idx of [1, 3, 5]) {
+    const [q0, q1] = panel(idx);
+    const mx = (q0 + q1) / 2 * W, mw = (q1 - q0) * W;
+    if (mw < H * .35) continue;
+    c.globalAlpha = .70;
+    if (idx === 3) { emblem(c, mx, H * .50, H * .26, b.foil, b.emblem); continue; }
+    c.strokeStyle = b.foil; c.lineWidth = Math.max(1, H * .014);
+    c.beginPath(); c.arc(mx, H * .50, H * .13, 0, 6.284); c.stroke();
+    for (const d of [-1, 1]) {
+      c.beginPath();
+      c.moveTo(mx + d * H * .19, H * .50); c.lineTo(mx + d * Math.min(mw * .40, H * .34), H * .50);
+      c.stroke();
+      c.beginPath(); c.arc(mx + d * H * .175, H * .50, H * .030, 0, 6.284); c.fillStyle = b.foil; c.fill();
+    }
+  }
+  c.globalAlpha = 1;
+  c.restore();
+
+  const rg = c.createLinearGradient(0, 0, 0, H);
+  rg.addColorStop(0, 'rgba(0,0,0,.64)'); rg.addColorStop(.22, 'rgba(255,240,214,.17)');
+  rg.addColorStop(.44, 'rgba(255,246,224,.06)');
+  rg.addColorStop(.74, 'rgba(0,0,0,.12)'); rg.addColorStop(1, 'rgba(0,0,0,.66)');
+  c.fillStyle = rg; c.fillRect(0, 0, W, H);
+  return c.canvas;
+}
+
+/* ---------- the page block: many leaves, gilded and worn ------------ */
+function edgeTex(W, H, along) {
+  const c = cv(W, H).getContext('2d');
+  c.fillStyle = '#cbb691'; c.fillRect(0, 0, W, H);
+  const span = along ? H : W;
+  const n = Math.max(40, Math.round(span / 2.0));
+  for (let i = 0; i < n; i++) {
+    const t = i / n;
+    const j = (i * 2654435761 % 211) / 211;
+    c.globalAlpha = .16 + .34 * j;
+    c.fillStyle = i % 4 === 0 ? '#8d7a56' : (j > .72 ? '#f5ead0' : '#a9946c');
+    if (along) c.fillRect(0, t * H, W, H / n * .78);
+    else c.fillRect(t * W, 0, W / n * .78, H);
+  }
+  c.globalAlpha = 1;
+  /* deckle: the leaves are not cut flush */
+  c.globalAlpha = .5;
+  for (let i = 0; i < n * .5; i++) {
+    const t = rnd();
+    c.fillStyle = 'rgba(60,46,26,.35)';
+    if (along) c.fillRect(rr(0, W * .5), t * H, rr(W * .06, W * .22), Math.max(1, H / n));
+    else c.fillRect(t * W, rr(0, H * .5), Math.max(1, W / n), rr(H * .06, H * .22));
+  }
+  c.globalAlpha = 1;
+  const g = along ? c.createLinearGradient(W, 0, 0, 0) : c.createLinearGradient(0, H, 0, 0);
+  g.addColorStop(0.00, 'rgba(0,0,0,.62)');
+  g.addColorStop(0.18, 'rgba(255,248,224,.60)');
+  g.addColorStop(0.32, 'rgba(214,186,130,.18)');
+  g.addColorStop(0.64, 'rgba(120,98,60,.26)');
+  g.addColorStop(1.00, 'rgba(0,0,0,.68)');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  grain(c, W, H, .16, 1);
+  return c.canvas;
+}
+
+/* ---------- build the stack ----------------------------------------- */
+const shelfEl = document.getElementById('shelf');
+const infoEl  = document.getElementById('bookinfo');
+const bookEls = [];
+let openIdx = -1;
+
+/* the boards are drawn upright and then laid on their side, so a case that
+   comes to the front reads as a portrait book rather than an album          */
+function turn(src) {
+  const c = cv(src.height, src.width), x = c.getContext('2d');
+  x.translate(c.width / 2, c.height / 2);
+  x.rotate(-Math.PI / 2);
+  x.drawImage(src, -src.width / 2, -src.height / 2);
+  src.width = src.height = 0;          /* free the upright original */
+  return c;
+}
+
+function buildShelf() {
+  if (!shelfEl) return;
+  BOOKS.forEach((b, i) => {
+    const el = document.createElement('button');
+    el.className = 'book';
+    el.type = 'button';
+    el.setAttribute('aria-label', `${b.t} — ${b.a}`);
+    el.style.setProperty('--BW', 'calc(' + BW + '*var(--u))');
+    el.style.setProperty('--BD', 'calc(' + BD + '*var(--u))');
+    el.style.setProperty('--BT', 'calc(' + BT + '*var(--u))');
+    el.innerHTML =
+      `<span class="bd">
+         <span class="f cast"></span>
+         <span class="f back"></span><span class="f front"></span>
+         <span class="f spine"></span><span class="f fore"></span>
+         <span class="f head"></span><span class="f tail"></span>
+       </span>`;
+    /* canvases go straight into the faces — no data-URL round trip, and the
+       board stays sharp when the case comes to the front                    */
+    const put = (sel, canvas) => {
+      const f = el.querySelector('.' + sel);
+      canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
+      f.appendChild(canvas);
+    };
+    put('front', turn(boardTex(b, 1400, Math.round(1400 * BW / BD))));
+    put('back',  turn(boardTex(b, 460, Math.round(460 * BW / BD), true)));
+    el.querySelector('.back').style.filter = 'brightness(.5) saturate(.85)';
+    put('spine', spineTex(b, Math.round(BW * 5.6), Math.round(BT * 5.6)));
+    put('fore',  edgeTex(Math.round(BW * 2.2), Math.round(BT * 4.0), true));
+    put('head',  edgeTex(Math.round(BD * 2.2), Math.round(BT * 4.0), true));
+    put('tail',  edgeTex(Math.round(BD * 2.2), Math.round(BT * 4.0), true));
+    el.addEventListener('click', () => toggleBook(i));
+    el.addEventListener('pointerenter', () => { bs[i].hoverT = 1; });
+    el.addEventListener('pointerleave', () => { bs[i].hoverT = 0; });
+    el.addEventListener('focus', () => { bs[i].hoverT = 1; });
+    el.addEventListener('blur', () => { bs[i].hoverT = 0; });
+    shelfEl.appendChild(el);
+    bookEls.push({ el, bd: el.querySelector('.bd') });
+  });
+}
+const bs = BOOKS.map(() => ({ hoverT: 0, hover: 0, open: 0, lift: 0, y: 0, tilt: 0 }));
+
+let hiBoard = null;                       /* the one oversized board alive */
+function dropHiBoard() {
+  if (!hiBoard) return;
+  hiBoard.face.replaceChildren(hiBoard.was);
+  hiBoard.hi.width = hiBoard.hi.height = 0;
+  hiBoard = null;
+}
+function raiseHiBoard(i) {
+  dropHiBoard();
+  const face = bookEls[i].el.querySelector('.front');
+  const was = face.firstElementChild;
+  /* a case that comes to the front is the subject of the page — give it a
+     board rendered for that size, not for a 40px spine strip */
+  const hi = turn(boardTex(BOOKS[i], 3000, Math.round(3000 * BW / BD)));
+  hi.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
+  face.replaceChildren(hi);
+  hiBoard = { face, was, hi };
+}
+
+/* The scroll is the only authority on which case is open: a lead-in of empty
+   travel keeps the hero state intact, then the range is split into one band per
+   case, so scrolling opens them one after another. Clicks and the nav just move
+   the scroll to the right band, which keeps a single source of truth. */
+const LEAD = 0.13;
+function bookFromScroll(sc) {
+  if (sc < LEAD) return -1;
+  const t = (sc - LEAD) / (1 - LEAD);
+  return Math.min(BOOKS.length - 1, Math.floor(t * BOOKS.length));
+}
+const scrollForBook = (i) => LEAD + (1 - LEAD) * ((i + 0.5) / BOOKS.length);
+
+function setOpen(i) {
+  if (i === openIdx) return;
+  openIdx = i;
+  S.windT += 0.6;
+  if (openIdx >= 0) {
+    const b = BOOKS[openIdx];
+    infoEl.querySelector('h3').textContent = b.t;
+    infoEl.querySelector('.by').textContent = `${b.a} · ${b.sub} · ${b.y}`;
+    infoEl.querySelector('p').textContent = b.blurb;
+    infoEl.classList.add('on');
+    const want = openIdx;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (openIdx === want) raiseHiBoard(want);
+    }));
+  } else {
+    infoEl.classList.remove('on');
+    dropHiBoard();
+  }
+}
+function toggleBook(i) {
+  S.target = (openIdx === i) ? 0 : scrollForBook(i);
+}
+if (infoEl) infoEl.querySelector('.shut').addEventListener('click', () => { S.target = 0; });
+addEventListener('keydown', e => { if (e.key === 'Escape' && openIdx >= 0) S.target = 0; });
+
+/* per-frame: the stack settles, the open case comes to the front ------ */
+const U = () => viewport().w / (window.innerWidth <= 900 ? 900 : 1920);
+const SX = 1368, SY = 178;              // .shelf origin, design px
+const OPEN_CX = 1592, OPEN_CY = 448;    // where an opened case comes to rest, design px
+
+function stepShelf(dt, t, fpos) {
+  if (!bookEls.length) return;
+  setOpen(bookFromScroll(S.scroll));
+  const u = U();
+  const reading = openIdx >= 0;
+  if (shelfEl) shelfEl.classList.toggle('reading', reading);
+  document.body.classList.toggle('reading', reading);
+  for (let i = 0; i < bs.length; i++) {
+    const st = bs[i], isOpen = openIdx === i;
+    const k = 1 - Math.pow(0.0016, dt);
+    st.hoverT = isOpen ? 0 : st.hoverT;
+    st.hover += ((isOpen ? 0 : st.hoverT) - st.hover) * k;
+    st.open  += ((isOpen ? 1 : 0) - st.open) * (1 - Math.pow(0.0025, dt));
+    st.away  = (st.away || 0) + (((reading && !isOpen) ? 1 : 0) - (st.away || 0)) * (1 - Math.pow(0.004, dt));
+
+    const cur = Math.max(0, 1 - Math.abs(i - fpos) * 1.6);
+    const bob = REDUCED ? 0 : Math.sin(t * 0.62 + i * 1.9) * 3.6;
+    st.lift += ((st.hover * 30 + cur * 9) - st.lift) * k;
+
+    /* the shelf sits somewhere else below 900, so solve the open pose from
+       the element's own live box rather than the desktop constants          */
+    const nar = window.innerWidth <= 900;
+    const box = shelfEl.getBoundingClientRect();
+    const sc = +(getComputedStyle(shelfEl).getPropertyValue('--bookS')) || 1;
+    const cx = (nar ? viewport().w * 0.50 : (OPEN_CX / 1920) * viewport().w);
+    const cy = (nar ? viewport().h * 0.495 : (OPEN_CY / 1080) * viewport().h);
+    const dx = box.width > 0 ? ((cx - box.left) / (u * sc) - BW / 2) : 0;
+    const dy = box.height > 0 ? ((cy - box.top) / (u * sc) - BT / 2 - i * PITCH) : 0;
+    const x = (st.open * dx + st.away * 120) * u;
+    const y = (i * PITCH + bob + st.open * (dy - bob)) * u;
+    const z = (st.lift + st.open * 372 - st.away * 240) * u;
+
+    const el = bookEls[i].el;
+    el.style.transform =
+      `translate3d(${x}px, ${y}px, ${z}px) rotateZ(${st.open * 90}deg)` +
+      (nar ? ` scale(${1 + st.open * 0.22})` : '');
+    el.style.opacity = String(1 - st.away * 0.86);
+    el.style.zIndex = isOpen ? 5 : 1;
+    el.style.pointerEvents = st.away > 0.5 ? 'none' : 'auto';
+    bookEls[i].bd.style.transform =
+      `rotateY(${-9 + st.hover * 3 + st.open * 22}deg) rotateX(${-16 - st.hover * 22 - st.open * 58 - cur * 4}deg)`;
+  }
+}
+
+/* =====================================================================
+   FILM GRAIN
+   ===================================================================== */
+const grainCv = document.getElementById('grain');
+const gcx = grainCv.getContext('2d', { willReadFrequently: false });
+let grainTiles = [], grainI = 0;
+function buildGrain() {
+  const N = 320;
+  grainTiles = [];
+  for (let k = 0; k < 4; k++) {
+    const c = document.createElement('canvas'); c.width = c.height = N;
+    const cx = c.getContext('2d');
+    const im = cx.createImageData(N, N);
+    for (let i = 0; i < N * N; i++) {
+      const v = 118 + ((rnd() + rnd() + rnd()) / 3 - 0.5) * 232;
+      im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v;
+      im.data[i * 4 + 3] = 255;
+    }
+    cx.putImageData(im, 0, 0);
+    grainTiles.push(c);
+  }
+}
+function drawGrain(w, h, dpr) {
+  if (!grainTiles.length) return;
+  /* one noise texel per device pixel — a half-resolution grain canvas is what
+     turns sharp dots into soft blobs on a retina screen */
+  const W = Math.max(2, Math.round(w * dpr)), H = Math.max(2, Math.round(h * dpr));
+  if (grainCv.width !== W || grainCv.height !== H) {
+    grainCv.width = W; grainCv.height = H;
+    grainCv.style.width = w + 'px'; grainCv.style.height = h + 'px';
+  }
+  const t = grainTiles[grainI = (grainI + 1) % grainTiles.length];
+  const p = gcx.createPattern(t, 'repeat');
+  gcx.setTransform(1, 0, 0, 1, 0, 0);
+  gcx.fillStyle = p;
+  gcx.fillRect(0, 0, W, H);
+}
+
+/* =====================================================================
+   OVERLAY RULES
+   ===================================================================== */
+function layoutArc() {
+  const p = document.getElementById('arcp'), q = document.getElementById('arcq');
+  if (!p) return;
+  const cx = 1010, cy = 1352, rx = 760, ry = 470;
+  p.setAttribute('d', `M ${cx - rx} ${cy - ry * 0.02} A ${rx} ${ry} 0 0 1 ${cx + rx} ${cy - ry * 0.02}`);
+  p.setAttribute('transform', 'translate(-322,-330)');
+  q.setAttribute('d', `M ${cx - rx} ${cy - ry * 0.02} A ${rx} ${ry} 0 0 1 ${cx + rx} ${cy - ry * 0.02}`);
+  q.setAttribute('transform', 'translate(-308,-312)');
+}
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+const S = {
+  scroll: 0, target: 0, ptrOn: 0,
+  tx: 0, ty: 0, px: 0, py: 0,
+  wind: 0, windT: 0,
+  t0: performance.now(), last: performance.now(),
+  intro: 0, lastTick: performance.now()
+};
+
+const hallImg = document.querySelector('#hall img');
+const figImg  = document.querySelector('#figure img');
+if (figImg) { figImg.style.maskImage = 'linear-gradient(to top, #000 0%, #000 0%, rgba(0,0,0,0) 17%)'; figImg.style.webkitMaskImage = figImg.style.maskImage; }
+const stageEl = document.querySelector('.stage');
+const glowEl  = document.getElementById('glow');
+const numerals = [...document.querySelectorAll('.index b')];
+const navs     = [...document.querySelectorAll('nav a')];
+
+/* =====================================================================
+   THE MASKED REVEAL
+   she arrives through a travelling mask; hovering her holds up a candle,
+   and what the candle finds is the angel underneath
+   ===================================================================== */
+const ANGEL = new Image();
+let angelReady = false, aBuf = null, aBufW = 0, aBufH = 0;
+ANGEL.onload = () => { angelReady = true; };
+ANGEL.src = 'everbloom/assets/figure-angel.webp';
+
+const revCv = document.getElementById('angel');
+const rcx = revCv ? revCv.getContext('2d') : null;
+/* every light source has to be *unioned* before it becomes a mask: successive
+   destination-in passes intersect, which collapses the reveal to one blob */
+const mCv = document.createElement('canvas');
+const mcx = mCv.getContext('2d');
+
+const REV = {
+  s: 0, want: 0, dwell: 0,       // how far the candle is up, and how long
+  x: 0.5, y: 0.5, tx: 0.5, ty: 0.5,
+  embers: [], acc: 0, smoke: [], sacc: 0,
+  entry: 0                       // the arrival mask, 0..1
+};
+
+/* ---- one-dimensional value noise: a candle is a slow drift with a fast
+       jitter riding on it, never a sine ------------------------------- */
+function vn(x) {
+  const i = Math.floor(x), f = x - i;
+  const hsh = n => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
+  const u = f * f * (3 - 2 * f);
+  return hsh(i) * (1 - u) + hsh(i + 1) * u;
+}
+const flame = (t, k) => vn(t * 1.6 + k) * .52 + vn(t * 5.1 + k * 3.7) * .31 + vn(t * 12.7 + k * 8.3) * .17;
+
+/* ---- smoke: layered soft blobs, rim-faded so no sprite shows a square -- */
+let SMOKE = null;
+function buildSmoke() {
+  const N = 176;
+  SMOKE = [0, 1, 2, 3].map(() => {
+    const c = document.createElement('canvas'); c.width = c.height = N;
+    const x = c.getContext('2d');
+    for (let i = 0; i < 30; i++) {
+      const a = rr(0, 6.283), rr2 = Math.sqrt(rnd()) * N * 0.26;
+      const px = N / 2 + Math.cos(a) * rr2, py = N / 2 + Math.sin(a) * rr2;
+      const rad = rr(N * 0.11, N * 0.27);
+      const g = x.createRadialGradient(px, py, 0, px, py, rad);
+      g.addColorStop(0.0, 'rgba(255,255,255,0.085)');
+      g.addColorStop(0.55, 'rgba(255,255,255,0.030)');
+      g.addColorStop(1.0, 'rgba(255,255,255,0)');
+      x.fillStyle = g; x.beginPath(); x.arc(px, py, rad, 0, 6.283); x.fill();
+    }
+    /* nothing may end at the sprite's own border */
+    x.globalCompositeOperation = 'destination-in';
+    const v = x.createRadialGradient(N / 2, N / 2, 0, N / 2, N / 2, N / 2);
+    v.addColorStop(0.55, 'rgba(0,0,0,1)');
+    v.addColorStop(1.00, 'rgba(0,0,0,0)');
+    x.fillStyle = v; x.fillRect(0, 0, N, N);
+    x.globalCompositeOperation = 'source-atop';
+    x.fillStyle = 'rgba(255,206,150,0.55)';
+    x.fillRect(0, 0, N, N);
+    return c;
+  });
+}
+
+/* ---- the light pool: flame-shaped, not circular --------------------- */
+function poolPath(c, cx, cy, R, t, k) {
+  const N = 26;
+  c.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    const r = R * (0.86 + 0.26 * flame(t * 0.9 + Math.cos(a) * 1.7 + Math.sin(a * 2.1) * 0.9, k));
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * 0.94;
+    if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+  }
+  c.closePath();
+}
+function pool(c, cx, cy, R, t, k, warm, alpha) {
+  poolPath(c, cx, cy, R, t, k);
+  const g = c.createRadialGradient(cx, cy - R * .12, 0, cx, cy, R);
+  g.addColorStop(0.00, `rgba(${warm},${alpha})`);
+  g.addColorStop(0.30, `rgba(${warm},${alpha * .92})`);
+  g.addColorStop(0.56, `rgba(${warm},${alpha * .58})`);
+  g.addColorStop(0.80, `rgba(${warm},${alpha * .18})`);
+  g.addColorStop(1.00, `rgba(${warm},0)`);
+  c.fillStyle = g; c.fill();
+}
+
+function figRect() {
+  if (!figImg) return null;
+  const r = figImg.getBoundingClientRect();
+  return (r.width > 2 && r.height > 2) ? r : null;
+}
+
+/* the angel is 2000px wide; rescaling it every frame is not free, so keep a
+   display-sized copy and only rebuild it when the layout actually moves   */
+function angelBuffer(w, h) {
+  const W = Math.max(2, Math.round(w)), H = Math.max(2, Math.round(h));
+  if (aBuf && Math.abs(aBufW - W) < 3 && Math.abs(aBufH - H) < 3) return aBuf;
+  aBuf = document.createElement('canvas');
+  aBuf.width = W; aBuf.height = H; aBufW = W; aBufH = H;
+  const c = aBuf.getContext('2d');
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(ANGEL, 0, 0, W, H);
+  return aBuf;
+}
+
+function stepReveal(dt, t, dpr0) {
+  if (!rcx) return;
+  const dpr = dpr0;                       /* full device resolution */
+  const v = viewport();
+  if (revCv.width !== Math.round(v.w * dpr) || revCv.height !== Math.round(v.h * dpr)) {
+    revCv.width = Math.max(2, Math.round(v.w * dpr));
+    revCv.height = Math.max(2, Math.round(v.h * dpr));
+    revCv.style.width = v.w + 'px'; revCv.style.height = v.h + 'px';
+    mCv.width = revCv.width; mCv.height = revCv.height;
+  }
+  rcx.setTransform(1, 0, 0, 1, 0, 0);
+  rcx.clearRect(0, 0, revCv.width, revCv.height);
+
+  const rect = figRect();
+  /* the candle only lights up while the pointer is on her */
+  if (rect && !REDUCED) {
+    const px = REV.tx * v.w, py = REV.ty * v.h;
+    const pad = rect.width * 0.18;
+    const inside = px > rect.left - pad && px < rect.right + pad &&
+                   py > rect.top - pad && py < rect.bottom + pad;
+    /* the shelf overlaps her on a phone: while a case is open, or while the
+       pointer is on one, the candle stays down */
+    /* test the cases themselves, not the shelf's box — a scaled perspective
+       container is far taller than the stack inside it */
+    let onShelf = false;
+    for (const bk of bookEls) {
+      const r2 = bk.el.getBoundingClientRect();
+      if (r2.width > 1 && px > r2.left - 8 && px < r2.right + 8 &&
+          py > r2.top - 8 && py < r2.bottom + 8) { onShelf = true; break; }
+    }
+    REV.want = (inside && S.ptrOn && openIdx < 0 && !onShelf) ? 1 : 0;
+  } else REV.want = 0;
+
+  REV.s += (REV.want - REV.s) * Math.min(1, dt * (REV.want ? 2.6 : 3.4));
+  REV.dwell += ((REV.want ? 1 : 0) - REV.dwell) * Math.min(1, dt * (REV.want ? 0.85 : 3.0));
+  REV.x += (REV.tx - REV.x) * Math.min(1, dt * 9);
+  REV.y += (REV.ty - REV.y) * Math.min(1, dt * 9);
+
+  const s = REV.s;
+  if (s < 0.002 || !rect) { REV.embers.length = 0; REV.smoke.length = 0; return; }
+
+  rcx.scale(dpr, dpr);
+  const cx = REV.x * v.w, cy = REV.y * v.h;
+  const R0 = Math.min(v.w, v.h) * (0.125 + 0.108 * s + 0.052 * REV.dwell);
+  const fl = flame(t, 0.0);
+  const R = R0 * (0.88 + 0.20 * fl);
+
+  /* the two satellites are the candles she is already holding, catching on */
+  const sats = [
+    [cx + Math.cos(t * 0.51) * R * 0.36, cy + Math.sin(t * 0.63 + 1.7) * R * 0.24, R * 0.46, 0.36],
+    [cx + Math.cos(t * 0.37 + 2.4) * R * 0.44, cy + Math.sin(t * 0.44 + 0.6) * R * 0.30, R * 0.34, 0.26]
+  ];
+
+  /* bound every op to the box the light can actually touch — that is what
+     pays for running the whole reveal at full retina resolution */
+  const BR = R * 3.1;
+  rcx.save();
+  rcx.beginPath();
+  rcx.rect(cx - BR, cy - BR, BR * 2, BR * 2);
+  rcx.clip();
+
+  /* 1 — the angel, then keep only what the light finds */
+  if (angelReady) {
+    const buf = angelBuffer(rect.width, rect.height);
+    rcx.globalAlpha = 0.96;
+    rcx.drawImage(buf, rect.left, rect.top);
+    rcx.globalAlpha = 1;
+    /* --- union every light into one mask, then apply it once ---------- */
+    mcx.setTransform(1, 0, 0, 1, 0, 0);
+    mcx.clearRect(Math.max(0, (cx - BR) * dpr), Math.max(0, (cy - BR) * dpr),
+                  BR * 2 * dpr, BR * 2 * dpr);
+    mcx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    mcx.globalCompositeOperation = 'lighter';
+    /* the light the hand carries is the whole mask — she is only other where
+       you are actually looking                                            */
+    pool(mcx, cx, cy, R, t, 0.0, '255,255,255', s * 0.94);
+    for (const [sx, sy, sr, sa] of sats) pool(mcx, sx, sy, sr, t, 3.1, '255,255,255', s * sa);
+    mcx.globalCompositeOperation = 'source-over';
+
+    const sx = Math.max(0, Math.floor((cx - BR) * dpr)), sy = Math.max(0, Math.floor((cy - BR) * dpr));
+    const sw = Math.min(mCv.width - sx, Math.ceil(BR * 2 * dpr));
+    const sh = Math.min(mCv.height - sy, Math.ceil(BR * 2 * dpr));
+    rcx.globalCompositeOperation = 'destination-in';
+    if (sw > 0 && sh > 0) {
+      rcx.save(); rcx.setTransform(1, 0, 0, 1, 0, 0);
+      rcx.drawImage(mCv, sx, sy, sw, sh, sx, sy, sw, sh);
+      rcx.restore();
+    }
+    rcx.globalCompositeOperation = 'source-over';
+  }
+
+  /* 2 — the light itself, spilling onto the page around her */
+  rcx.globalCompositeOperation = 'lighter';
+
+  /* shafts, thrown off the flame and turning slowly */
+  {
+    const NR = 11;
+    for (let i = 0; i < NR; i++) {
+      const a = (i / NR) * Math.PI * 2 + t * 0.055 + flame(t * .4, i) * 0.35;
+      const len = R * (1.5 + 1.9 * flame(t * 0.7, i * 2.7));
+      const wid = R * (0.055 + 0.085 * flame(t * 0.9, i * 5.1));
+      const dx = Math.cos(a), dy = Math.sin(a), nx = -dy, ny = dx;
+      const ex = cx + dx * len, ey = cy + dy * len;
+      const k = s * 0.030 * (0.30 + 0.70 * flame(t * 1.3, i * 3.3));
+      const g = rcx.createLinearGradient(cx, cy, ex, ey);
+      g.addColorStop(0.00, `rgba(255,228,180,${k})`);
+      g.addColorStop(0.26, `rgba(255,208,144,${k * .60})`);
+      g.addColorStop(1.00, 'rgba(255,190,110,0)');
+      rcx.fillStyle = g;
+      rcx.beginPath();
+      rcx.moveTo(cx + nx * wid * .22, cy + ny * wid * .22);
+      rcx.lineTo(ex + nx * wid, ey + ny * wid);
+      rcx.lineTo(ex - nx * wid, ey - ny * wid);
+      rcx.lineTo(cx - nx * wid * .22, cy - ny * wid * .22);
+      rcx.closePath();
+      rcx.fill();
+    }
+  }
+  pool(rcx, cx, cy, R * 1.34, t, 1.7, '255,190,110', s * 0.042 * (0.76 + 0.24 * fl));
+  pool(rcx, cx, cy, R * 0.30, t, 0.4, '255,228,178', s * 0.030 * (0.68 + 0.32 * fl));
+  for (const [sx, sy, sr, sa] of sats)
+    pool(rcx, sx, sy, sr * 1.6, t, 5.3, '255,184,102', s * sa * 0.032);
+
+  /* 3 — smoke, lifting out of the pool and past its edge, which is what
+         keeps the reveal from reading as a circle cut in the page */
+  if (SMOKE) {
+    REV.sacc += dt * s * 6.4;
+    while (REV.sacc >= 1 && REV.smoke.length < 30) {
+      REV.sacc -= 1;
+      const a = rr(0, 6.283), rad = Math.sqrt(rnd()) * R * 0.72;
+      REV.smoke.push({
+        x: cx + Math.cos(a) * rad, y: cy + Math.sin(a) * rad * .8,
+        vx: rr(-9, 9), vy: rr(-30, -9), rot: rr(0, 6.283), spin: rr(-.28, .28),
+        life: 0, max: rr(2.4, 4.6), sz: rr(.55, 1.35), i: (rnd() * 4) | 0, ph: rr(0, 6.283)
+      });
+    }
+    for (let i = REV.smoke.length - 1; i >= 0; i--) {
+      const p2 = REV.smoke[i];
+      p2.life += dt;
+      if (p2.life > p2.max) { REV.smoke.splice(i, 1); continue; }
+      p2.vy -= 5 * dt;
+      p2.vx += Math.sin(t * 0.7 + p2.ph) * 13 * dt;
+      p2.x += p2.vx * dt; p2.y += p2.vy * dt;
+      p2.rot += p2.spin * dt;
+      const k = p2.life / p2.max;
+      const grow = 0.55 + 1.5 * k;
+      const a2 = Math.sin(Math.min(1, k * 3.4) * 1.571) * (1 - k) * s * 0.44;
+      const sz = R * p2.sz * grow;
+      rcx.save();
+      rcx.globalAlpha = Math.max(0, a2);
+      rcx.translate(p2.x, p2.y); rcx.rotate(p2.rot);
+      rcx.drawImage(SMOKE[p2.i], -sz / 2, -sz / 2, sz, sz);
+      rcx.restore();
+    }
+    rcx.globalAlpha = 1;
+  }
+
+  /* 4 — embers, struck off the flame */
+  REV.acc += dt * s * 34;
+  while (REV.acc >= 1 && REV.embers.length < 130) {
+    REV.acc -= 1;
+    const a = rr(0, 6.283), rad = Math.sqrt(rnd()) * R * 0.92;
+    REV.embers.push({
+      x: cx + Math.cos(a) * rad, y: cy + Math.sin(a) * rad * .94,
+      vx: rr(-16, 16), vy: rr(-64, -16),
+      life: 0, max: rr(0.7, 2.0), sz: rr(1.1, 3.4), ph: rr(0, 6.283)
+    });
+  }
+  for (let i = REV.embers.length - 1; i >= 0; i--) {
+    const e = REV.embers[i];
+    e.life += dt;
+    if (e.life > e.max) { REV.embers.splice(i, 1); continue; }
+    e.vy -= 26 * dt;                                   // heat lifts them
+    e.vx += Math.sin(t * 2.3 + e.ph) * 34 * dt;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    const k = e.life / e.max;
+    const a = (1 - k) * (1 - k) * s * (0.55 + 0.45 * Math.sin(t * 9 + e.ph * 5));
+    if (MOTE) {
+      const sz = e.sz * (1 + k * 1.6) * 5.2;
+      rcx.globalAlpha = Math.max(0, a);
+      rcx.drawImage(MOTE, e.x - sz / 2, e.y - sz / 2, sz, sz);
+    }
+  }
+  rcx.globalAlpha = 1;
+
+  /* 5 — the grain lifts inside the pool: film sees noise where light is */
+  if (grainTiles.length) {
+    rcx.globalCompositeOperation = 'destination-over';
+    rcx.globalCompositeOperation = 'lighter';
+    rcx.save();
+    poolPath(rcx, cx, cy, R * 1.1, t, 2.2);   /* path only — never paint it */
+    rcx.clip();
+    const g = grainTiles[(grainI + 1) % grainTiles.length];
+    const pat = rcx.createPattern(g, 'repeat');
+    /* the pool's grain is drawn in device pixels too, so it stays a dot field */
+    rcx.save();
+    rcx.setTransform(1, 0, 0, 1, 0, 0);
+    rcx.globalAlpha = 0.070 * s;
+    rcx.fillStyle = pat;
+    rcx.translate(Math.round(t * 71) % 320, Math.round(t * 53) % 320);
+    const gr = R * 1.30 * dpr;
+    rcx.fillRect(cx * dpr - gr - 320, cy * dpr - gr - 320, gr * 2 + 640, gr * 2 + 640);
+    rcx.restore();
+    rcx.restore();
+  }
+  rcx.globalCompositeOperation = 'source-over';
+  rcx.globalAlpha = 1;
+  rcx.restore();
+}
+
+function paint(now) {
+  const v = viewport(), dpr = DPR();
+  const dt = Math.min(0.05, (now - S.last) / 1000); S.last = now;
+  const t = (now - S.t0) / 1000; t3 = t;
+
+  back.size(v.w, v.h, dpr);
+  fore.size(v.w, v.h, dpr);
+
+  S.scroll += (S.target - S.scroll) * Math.min(1, dt * 3.4);
+  S.px += (S.tx - S.px) * Math.min(1, dt * 2.2);
+  S.py += (S.ty - S.py) * Math.min(1, dt * 2.2);
+  S.wind += (S.windT - S.wind) * Math.min(1, dt * 1.4);
+  S.windT *= Math.exp(-dt * 0.9);
+
+  const drift = REDUCED ? 0 : 1;
+  const s = S.scroll;
+
+  /* --- parallax --------------------------------------------------- */
+  const hx = -S.px * 26 - 0 , hy = -S.py * 16 - s * 46;
+  hallImg.style.transform =
+    `translate(calc(-50% + ${hx}px), calc(-50% + ${hy}px)) scale(${1 + s * 0.05})`;
+  const fx = -S.px * 54, fy = -S.py * 26 + s * 24 + drift * Math.sin(t * 0.30) * 3.2;
+  figImg.style.transform =
+    `translate(calc(-50% + ${fx}px), calc(-50% + ${fy}px)) scale(${1 + s * 0.10})`;
+  glowEl.style.opacity = String(0.72 + 0.28 * Math.sin(t * 0.9) * 0.5 + 0.14 * Math.sin(t * 2.7) * 0.5);
+  stageEl.style.transform = `translate(${-S.px * 8}px, ${-S.py * 5 - s * 26}px)`;
+
+  /* --- chapter cross-fade driven by the virtual scroll -------------- */
+  const fpos = s * (BOOKS.length - 1);
+  stepShelf(dt, t, openIdx >= 0 ? openIdx : fpos);
+  const act = Math.min(BOOKS.length - 1, openIdx >= 0 ? openIdx : Math.round(fpos));
+  numerals.forEach((b, i) => {
+    b.style.opacity = String(i === act ? 1 : Math.max(0.16, 0.62 - Math.abs(i - fpos) * 0.22));
+    b.classList.toggle('on', i === act);
+  });
+  navs.forEach((a, i) => a.classList.toggle('on', i === act));
+
+  /* --- the arrival mask, then the candle ---------------------------- */
+  {
+    const T = REDUCED ? 1 : Math.min(1, Math.max(0, (t - 0.22) / 1.34));
+    const e = 1 - Math.pow(2, -10 * T);                    // expo.out
+    if (REV.entry < 1) {
+      REV.entry = e;
+      if (T >= 1) { REV.entry = 1; figImg.style.maskImage = 'none'; figImg.style.webkitMaskImage = 'none'; }
+      else {
+        const top = (e * 118 - 16).toFixed(2);
+        const m = `linear-gradient(to top, #000 0%, #000 ${Math.max(0, top)}%, rgba(0,0,0,0) ${(+top + 17).toFixed(2)}%)`;
+        figImg.style.maskImage = m; figImg.style.webkitMaskImage = m;
+      }
+    }
+  }
+  stepReveal(dt, t, dpr);
+
+  /* --- petals ------------------------------------------------------- */
+  const wind = (S.wind + S.px * 0.10) * (REDUCED ? 0 : 1);
+  if (!REDUCED) { back.step(dt, t, wind); fore.step(dt, t, wind * 1.5); }
+  back.draw(dpr);
+  { const c = back.cx; c.setTransform(dpr, 0, 0, dpr, 0, 0); drawMotes(c, v.w, v.h, dpr, REDUCED ? 0 : dt, t, wind); }
+  fore.draw(dpr);
+
+  /* --- grain -------------------------------------------------------- */
+  if (!REDUCED || !grainCv.width) drawGrain(v.w, v.h, dpr);
+
+  S.lastTick = now;
+}
+
+/* ---------- loop with a hidden-tab watchdog ------------------------- */
+let raf = 0;
+function loop(now) { raf = requestAnimationFrame(loop); paint(now); }
+
+/* =====================================================================
+   INPUT
+   ===================================================================== */
+addEventListener('wheel', e => {
+  S.target = Math.min(1, Math.max(0, S.target + e.deltaY * 0.000165));
+  S.windT += Math.max(-0.5, Math.min(0.5, e.deltaY * 0.0009));
+}, { passive: true });
+
+let ty0 = 0;
+addEventListener('touchstart', e => { ty0 = e.touches[0].clientY; }, { passive: true });
+addEventListener('touchmove', e => {
+  const y = e.touches[0].clientY;
+  S.target = Math.min(1, Math.max(0, S.target + (ty0 - y) * 0.00062)); ty0 = y;
+}, { passive: true });
+
+addEventListener('pointermove', e => {
+  const v = viewport();
+  S.tx = e.clientX / v.w - 0.5;
+  S.ty = e.clientY / v.h - 0.5;
+  S.ptrOn = 1;
+  REV.tx = e.clientX / v.w; REV.ty = e.clientY / v.h;
+  S.windT += (e.movementX || 0) * 0.0016;
+}, { passive: true });
+addEventListener('pointerleave', () => { S.tx = S.ty = 0; S.ptrOn = 0; });
+/* touch: hold a finger on her and the candle comes up under it. A tap is
+   allowed to linger — there is no hover to fall back to on a phone. */
+let touchHold = 0;
+addEventListener('touchstart', e => {
+  const v = viewport(), tt = e.touches[0];
+  clearTimeout(touchHold);
+  REV.tx = tt.clientX / v.w; REV.ty = tt.clientY / v.h; S.ptrOn = 1;
+}, { passive: true });
+addEventListener('touchmove', e => {
+  const v = viewport(), tt = e.touches[0];
+  clearTimeout(touchHold);
+  REV.tx = tt.clientX / v.w; REV.ty = tt.clientY / v.h; S.ptrOn = 1;
+}, { passive: true });
+addEventListener('touchend', () => {
+  clearTimeout(touchHold);
+  touchHold = setTimeout(() => { S.ptrOn = 0; }, 2200);
+}, { passive: true });
+addEventListener('pointerdown', () => { S.windT += 0.55; });
+
+/* the page's own affordances drive the same virtual descent */
+const goto_ = (i) => { S.target = scrollForBook(Math.max(0, Math.min(BOOKS.length - 1, i))); S.windT += 0.5; };
+const step = () => goto_(Math.min(BOOKS.length - 1, bookFromScroll(S.target) + 1));
+document.querySelector('.cta').addEventListener('click', step);
+document.querySelector('.scroll').addEventListener('click', step);
+navs.forEach((a, i) => a.addEventListener('click', e => { e.preventDefault(); goto_(i); }));
+document.querySelector('.scroll').style.cursor = 'pointer';
+document.querySelector('.scroll').style.pointerEvents = 'auto';
+
+addEventListener('visibilitychange', () => { S.last = performance.now(); });
+
+/* keep the canvases honest when the pane resizes without firing `resize` */
+const relayout = () => { const v = viewport(); back.size(v.w, v.h, DPR()); fore.size(v.w, v.h, DPR()); layoutArc(); };
+addEventListener('resize', relayout);
+try { new ResizeObserver(relayout).observe(document.documentElement); } catch (e) {}
+
+/* =====================================================================
+   INTRO
+   ===================================================================== */
+function runIntro() {
+  const lines = document.querySelectorAll('h1 .ln span');
+  lines.forEach((l, i) => {
+    l.style.transition = 'transform 1.25s cubic-bezier(.16,.84,.28,1)';
+    setTimeout(() => { l.style.transform = 'translateY(0%)'; }, 360 + i * 145);
+  });
+  const soft = document.querySelectorAll('.lead,.cta,.index,.shelf,.scroll,.motto,nav,.seal,#arc');
+  soft.forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 1.2s ease';
+    setTimeout(() => { el.style.opacity = ''; }, 820 + i * 95);
+  });
+  if (REDUCED) {
+    lines.forEach(l => { l.style.transition = 'none'; l.style.transform = 'translateY(0%)'; });
+    soft.forEach(el => { el.style.transition = 'none'; el.style.opacity = ''; });
+  }
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+function boot() {
+  buildMote(); buildSmoke(); seedMotes(58);
+  buildGrain();
+  buildShelf();
+  layoutArc();
+  const v = viewport(), dpr = DPR();
+  back.size(v.w, v.h, dpr); fore.size(v.w, v.h, dpr);
+  paint(performance.now());                       // first frame, synchronously
+  document.getElementById('mask').style.opacity = '0';
+  setTimeout(() => { const m = document.getElementById('mask'); if (m) m.remove(); }, 1400);
+  runIntro();
+  loop(performance.now());
+  /* rAF stalls in a hidden tab — keep a settled frame on screen anyway */
+  setInterval(() => {
+    if (performance.now() - S.lastTick > 900) paint(performance.now());
+  }, 1000);
+  window.__ready = true;
+}
+
+SHEET.onload = () => { buildSprites(); };
+SHEET.onerror = () => { sheetReady = false; };
+SHEET.src = 'everbloom/assets/petals.png';
+
+if (document.readyState === 'complete') boot();
+else addEventListener('load', boot);
+/* never let a slow font/image stall the reveal */
+setTimeout(() => { if (!window.__ready) boot(); }, 2200);
+
+window.__dbg = { S, back, fore, viewport, bs, BOOKS, toggleBook, REV, get openIdx(){return openIdx} };
+})();
+</script>
+</body>
+</html>
