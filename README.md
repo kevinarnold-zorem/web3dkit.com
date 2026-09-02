@@ -81,7 +81,15 @@ compilar y reiniciar la aplicación después de cada despliegue. Requiere Node.j
 
 En **Git Version Control**, clona este repositorio y selecciona `main`. Después,
 en **Application Manager**, registra la carpeta clonada como aplicación Node.js
-de producción, con `app.js` como startup file.
+de producción. Usa `app_wrapper.cjs` como startup file en CloudLinux/LiteSpeed;
+en Passenger estándar también puede usarse este wrapper.
+
+Si LiteSpeed registra `execve():/usr/bin/node: No such file or directory`, la
+ruta del intérprete configurada en cPanel es incorrecta. Obtén la ruta real con
+`node -p 'process.execPath'` y configúrala como **Node.js binary** o directiva
+`PassengerNodejs` de la aplicación. En instalaciones EasyApache 4 suele ser
+`/opt/cpanel/ea-nodejs22/bin/node`; Node.js Selector crea una ruta dentro de
+`/home/USUARIO/nodevenv/`.
 
 Variables mínimas:
 
