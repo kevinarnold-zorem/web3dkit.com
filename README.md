@@ -75,9 +75,9 @@ Después abre `http://127.0.0.1:8765/browse/`.
 
 ## Despliegue en cPanel
 
-El repositorio incluye `app.js` para Passenger y `.cpanel.yml` para instalar,
-compilar y reiniciar la aplicación después de cada despliegue. Requiere Node.js
-22 o posterior.
+El repositorio incluye `app.js`, el wrapper de Passenger y `dist/src` ya
+compilado. `.cpanel.yml` reinicia la aplicación después de cada despliegue sin
+crear un directorio `node_modules`. Requiere Node.js 22 o posterior.
 
 En **Git Version Control**, clona este repositorio y selecciona `main`. Después,
 en **Application Manager**, registra la carpeta clonada como aplicación Node.js
@@ -102,8 +102,10 @@ BACKEND_DATABASE_PATH=/home/USUARIO/web3dkit-data/web3dkit.sqlite
 
 Las credenciales opcionales de correo, Google y Stripe están documentadas en
 `.env.example`. En el primer despliegue usa **Update from Remote** y después
-**Deploy HEAD Commit**. Los despliegues posteriores ejecutan `npm ci`, el build,
-la eliminación de dependencias de desarrollo y el reinicio de Passenger.
+**Deploy HEAD Commit**. Los despliegues posteriores actualizan el código
+compilado y reinician Passenger. CloudLinux NodeJS Selector administra su propio
+entorno virtual y el enlace simbólico `node_modules`; no debe ejecutarse
+`npm ci` desde `.cpanel.yml`.
 
 ## Actualizar el espejo
 
