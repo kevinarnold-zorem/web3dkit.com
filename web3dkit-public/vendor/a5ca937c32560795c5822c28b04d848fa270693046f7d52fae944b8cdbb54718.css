@@ -1,0 +1,42 @@
+@font-face {
+  font-family: 'Italiana';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/738689473d4d7eb47543e820dfbb50f250ea45876e9fdc5b925213ee8940d53a.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/12ffff5404d61b27004ddae0e7e9917a433413e65d62ca95596ad9042c15ee60.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/755fa076675e6f6181d84b74c5fac6140496897fa75b2d61b049b9dca7c4c0ed.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/e6fa40b6715a310a22d307c73540f3db877769e6e3331b0defc73a7ff4283d87.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/900670474e93d412231f2dd6a29b4808616792cc15fb9c792676f719800c50d6.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Nothing You Could Do';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/4ad4e033e7667a4cf7070bb89aae9fef23d4cabe1ae93dae7e870ad1e3384da3.ttf) format('truetype');
+}

@@ -1,0 +1,49 @@
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/12ffff5404d61b27004ddae0e7e9917a433413e65d62ca95596ad9042c15ee60.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/755fa076675e6f6181d84b74c5fac6140496897fa75b2d61b049b9dca7c4c0ed.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/e6fa40b6715a310a22d307c73540f3db877769e6e3331b0defc73a7ff4283d87.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/900670474e93d412231f2dd6a29b4808616792cc15fb9c792676f719800c50d6.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/daba415d86cb6486d889797b4320d0a3e289a12b5bea3363469e3a9dece19ec5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/84f611d2daf17615b35c2e39335caabbdc02429d7a4b512242c561c32b1447d6.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/75ad872ee8d3ae2f68bdcf1a660fe363317ea91cb40d1d53c640b846d2d4928b.ttf) format('truetype');
+}

@@ -1,0 +1,63 @@
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/2f5bf0e5c27093562a4921cb11da89eb089174797fbad0333bca7044e00cd811.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/5ba0e240bb32bf9a3a24da50cc864f5f7265d60228e2d43c1db6e1c5c60ac547.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/aba48a3c52a959e2b9e7174268e53a3608539369c30b4a8fff4eb44fbbbb6d74.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/2711b5ffa4bc4a61e588607cc49ade9bd4735eab4c04b91f920c9dd77af98311.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/ea611ff711086e9f61e0186545a899888aa365989d2dfbe4f7d5b915cfaf5702.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/vendor/5e72687b0c65bc56d5f8003b56841f763898a44150dee80aa60ab5f15f76ed69.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url(/vendor/4914420a9e7b8910eb4af1df5fee7b0d3bc94847f13a0e5bee949698f9a27516.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/b95b576b0912b261b6f1e955c72ad6d060516aa0a537f13244c3fff4cef01193.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/6d83b1a12212ea9e5ba8de1265079d8fbf457750a6454dd527e85814b5697d41.ttf) format('truetype');
+}

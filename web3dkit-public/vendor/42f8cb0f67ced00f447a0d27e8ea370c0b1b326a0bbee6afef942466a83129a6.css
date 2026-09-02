@@ -1,0 +1,56 @@
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/5c592cba534d3294792f7c97849bb5407c40ee9a90492b9d34ebfa3a9f45a45a.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/fa4a331eca8487e04160f9b8c5aaaa129bc3c97c8d89716d92d56437bcd5292c.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/06156eb6e366d18d18f8b5ad1f7b7d6f2559246fe5911a3ce1279379b5338d84.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/0fb425c58bfeabd618cd81030d14f88a4971e54ba0a2cf2b18b5315f5cd1bf1c.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/09ea70d82d0ff88a25b2b094c23109790e79a8d13e3bacc2110fe8f9e268761d.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/01985dcde7eef1ad5e0d8ee0f6818c1414bb5f611a092a0782d8f62bb19489b9.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'IM Fell English';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/6dc4f8070f7cdd11ba91bb6016327326e36fde45d3afa594c5bfc297e600423b.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'IM Fell English';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/ddfada8d205db6cfc655f2244ea56a7751452b4e3d8c2bccd32bc2c25ed9a3ed.ttf) format('truetype');
+}

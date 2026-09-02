@@ -1,0 +1,63 @@
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/12ffff5404d61b27004ddae0e7e9917a433413e65d62ca95596ad9042c15ee60.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/755fa076675e6f6181d84b74c5fac6140496897fa75b2d61b049b9dca7c4c0ed.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/e6fa40b6715a310a22d307c73540f3db877769e6e3331b0defc73a7ff4283d87.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/900670474e93d412231f2dd6a29b4808616792cc15fb9c792676f719800c50d6.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/e7e0cf40cb44208e4c9c0fc09f405a00d54dae33c224dbf395f5246f0190f4ab.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/vendor/0404e9f6404a474c0e70416252f2b87d076eace49795ae50b57db7f9a9293961.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans JP';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/b431710df7a991992f6463457f26520c1b6e7cd9a0f8deebdd96547e7905ce8a.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans JP';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/4a2be2bc2243d807b3da1d58ba53bcf53319ce7941ae8bcb84fb5d7051ad716e.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans JP';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/28879f5d3c945de5bf88a3a5793101c4234ae621db404f4e9be961ad2580f26f.ttf) format('truetype');
+}

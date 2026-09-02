@@ -1,0 +1,42 @@
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 300;
+  font-display: block;
+  src: url(/vendor/900c1340657ef456eedaa19c2c859d4c3dede4852125ccecd8ebb4d6ed2667a8.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url(/vendor/c2bef016fb9b4bcd7b5a2fe9c00f317835a811291e82b5313c8ac8c7e107c360.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url(/vendor/541119bccb21575e2c8a0216e10430cceb9cb943c068cbc0fa1757399741af14.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url(/vendor/011cb50bc76b8e250586c2cbc73cd84dd1a4a475fc911b2090231b7b362c73df.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+  src: url(/vendor/7e0a56187ecaff85f3d03602981a2bf7bedc58b5dca3990ebce57c75c8ccdb18.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url(/vendor/c1e7453ea26a1d1eea2618b929d9a5f7be19492a0179cde7c3b69b460cb4cb28.ttf) format('truetype');
+}

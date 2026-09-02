@@ -1,0 +1,28 @@
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/e45972c7e9f24dc390848eb598daf023bc4e4284384ba7bb6696dc53c9e90a67.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/87e867b52640b3b397a977c3046d1cc543ecde56ff4d0fd14bc53b812bc940ed.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/6f49e1b28bce7339f4846ecd070af9e4eb927e5b7b543fde5f0cf8e6a7730736.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Questrial';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/2c0ba9319c1f6daf9f368e41748b197da12848ccb767acb46d662732b138cba6.ttf) format('truetype');
+}

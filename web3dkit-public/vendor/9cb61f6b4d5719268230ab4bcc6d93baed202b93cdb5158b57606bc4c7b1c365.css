@@ -1,0 +1,37 @@
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 900;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/vendor/e6f06bee11acb125f6e50f9d15d390b7bae60daf4e6d6285f5c774cfc153cba2.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 900;
+  font-stretch: semi-expanded;
+  font-display: swap;
+  src: url(/vendor/7818e9abab2e178c056f42874e365a18446eb5b46de25c890d41011bb093d139.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/cbad8a6b41d03593905e0c4245743fd30828a743c40a73180b6fc9b0460d0b44.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/a0c8dd62392c1bf554e251181aed7ae18d6fa0e5e701d0ad1a10d3f1341a3c4b.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/0c5880fa6a928ed86226cc5f2ce34fb1e3c882946f09bd3bc65cb9a29ef014f1.ttf) format('truetype');
+}

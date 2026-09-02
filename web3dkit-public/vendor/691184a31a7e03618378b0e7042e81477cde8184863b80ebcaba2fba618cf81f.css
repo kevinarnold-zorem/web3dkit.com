@@ -1,0 +1,49 @@
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/38f8abefb8f859c48db26b26879c08e5406355580da80b60e89c36d09fe82830.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/4da63a1b968e240dc30c7ff69a7bcb28afab7fc7c9ccce882fd3a3b5afb4ce33.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/42aaaf7a68ce5eb565c71d7a80eaa353f895577254899fac9498767988791b27.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/ba08b16a00221416a87bc114c2e29aaa904d054231271a82200739881aaac858.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/722ff42d0080d1505c01951d11645216b957ba2474e848ca353ec78df348bca5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/3ff89d14ef3d36416916316564230530a65b316f74857a99983b8d0eec1b4444.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url(/vendor/ff98febdd9d848baa7f346a05f8bb4315c4246c6a33a5420f50e3734094755a8.ttf) format('truetype');
+}

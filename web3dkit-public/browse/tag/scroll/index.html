@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WP9FS3ECK"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-5WP9FS3ECK');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const palettes = new Set(["mono", "sepia", "azure", "moss", "mauve"]);
+        try {
+          const savedTheme = localStorage.getItem("web3dkit-theme");
+          const lightPalette = localStorage.getItem("web3dkit-palette-light");
+          const darkPalette = localStorage.getItem("web3dkit-palette-dark");
+          const mode = savedTheme === "light" || savedTheme === "system" ? savedTheme : "dark";
+          if (mode === "system") root.removeAttribute("data-theme");
+          else root.dataset.theme = mode;
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const scheme = mode === "system" ? (prefersDark ? "dark" : "light") : mode;
+          root.dataset.scheme = scheme;
+          const palette = scheme === "dark" ? darkPalette : lightPalette;
+          root.dataset.palette = palettes.has(palette) ? palette : "mono";
+        } catch {
+          root.dataset.theme = "dark";
+          root.dataset.scheme = "dark";
+          root.dataset.palette = "mono";
+        }
+      })();
+    </script>
+    <meta name="description" content="Explore 23 Web3DKit components, templates, backgrounds, and interactive effects tagged Scroll, with previews and editable implementation source." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Web3DKit" />
+    <meta property="og:title" content="Scroll Components &amp; Templates | Web3DKit" />
+    <meta property="og:description" content="Explore 23 Web3DKit components, templates, backgrounds, and interactive effects tagged Scroll, with previews and editable implementation source." />
+    <meta property="og:url" content="https://web3dkit.com/browse/tag/scroll" />
+    <meta property="og:image" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/web3dkit-media/thumbnails/web3dkit-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta property="og:image:secure_url" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/web3dkit-media/thumbnails/web3dkit-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:image:alt" content="Scroll Components &amp; Templates preview" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Scroll Components &amp; Templates | Web3DKit" />
+    <meta name="twitter:description" content="Explore 23 Web3DKit components, templates, backgrounds, and interactive effects tagged Scroll, with previews and editable implementation source." />
+    <meta name="twitter:image" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/web3dkit-media/thumbnails/web3dkit-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta name="twitter:image:alt" content="Scroll Components &amp; Templates preview" />
+    <link rel="canonical" href="https://web3dkit.com/browse/tag/scroll" />
+    <link rel="icon" href="/web3dkit-mark.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Scroll Components &amp; Templates | Web3DKit</title>
+    <script type="module" crossorigin src="/assets/index-fOQwe-l-.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-x9bNS8sK.css">
+      <script id="web3dkit-structured-data" type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"Scroll components and templates","description":"Explore 23 Web3DKit components, templates, backgrounds, and interactive effects tagged Scroll, with previews and editable implementation source.","url":"https://web3dkit.com/browse/tag/scroll","hasPart":[{"@type":"TechArticle","name":"Installation","url":"https://web3dkit.com/installation"},{"@type":"TechArticle","name":"MCP","url":"https://web3dkit.com/mcp"},{"@type":"WebPage","name":"Pricing","url":"https://web3dkit.com/pricing"},{"@type":"WebPage","name":"Sponsorship","url":"https://web3dkit.com/sponsorship"}],"mainEntity":{"@type":"ItemList","numberOfItems":23,"itemListElement":[{"@type":"ListItem","position":1,"name":"Kage","url":"https://web3dkit.com/landing-pages/kage-landing-page"},{"@type":"ListItem","position":2,"name":"Bestsellers Book Showcase","url":"https://web3dkit.com/hero/bestsellers-book-showcase"},{"@type":"ListItem","position":3,"name":"Inkbound River Story","url":"https://web3dkit.com/landing-pages/inkbound-river-story"},{"@type":"ListItem","position":4,"name":"Cadence","url":"https://web3dkit.com/landing-pages/cadence-landing-page"},{"@type":"ListItem","position":5,"name":"Meridian","url":"https://web3dkit.com/landing-pages/meridian-page"},{"@type":"ListItem","position":6,"name":"Sketchbook","url":"https://web3dkit.com/landing-pages/meng-to-sketchbook-landing-page"},{"@type":"ListItem","position":7,"name":"Echo Vale","url":"https://web3dkit.com/landing-pages/echo-vale-landing-page"},{"@type":"ListItem","position":8,"name":"Mara Voss","url":"https://web3dkit.com/landing-pages/mara-voss-landing-page"},{"@type":"ListItem","position":9,"name":"MK·78 Keyboard","url":"https://web3dkit.com/landing-pages/mk78-keyboard-landing-page"},{"@type":"ListItem","position":10,"name":"NOEMA N1","url":"https://web3dkit.com/landing-pages/noema-n1-landing-page"},{"@type":"ListItem","position":11,"name":"Anthra A-40","url":"https://web3dkit.com/landing-pages/anthra-a40-landing-page"},{"@type":"ListItem","position":12,"name":"Astral Atlas","url":"https://web3dkit.com/landing-pages/astral-atlas-landing-page"},{"@type":"ListItem","position":13,"name":"MUGEN","url":"https://web3dkit.com/landing-pages/mugen-landing-page"},{"@type":"ListItem","position":14,"name":"NODAL","url":"https://web3dkit.com/landing-pages/nodal-landing-page"},{"@type":"ListItem","position":15,"name":"Kestrel 65","url":"https://web3dkit.com/landing-pages/kestrel-65-landing-page"},{"@type":"ListItem","position":16,"name":"OSCILLA M-1","url":"https://web3dkit.com/landing-pages/oscilla-m1-landing-page"},{"@type":"ListItem","position":17,"name":"Halvorsen","url":"https://web3dkit.com/landing-pages/halvorsen-landing-page"},{"@type":"ListItem","position":18,"name":"Skyfield","url":"https://web3dkit.com/hero/skyfield"},{"@type":"ListItem","position":19,"name":"Flower Field","url":"https://web3dkit.com/backgrounds/flower-field"},{"@type":"ListItem","position":20,"name":"Meridian Earth — Earth","url":"https://web3dkit.com/backgrounds/meridian-landing-page/earth"},{"@type":"ListItem","position":21,"name":"Meridian Earth — Moon","url":"https://web3dkit.com/backgrounds/meridian-landing-page/moon"},{"@type":"ListItem","position":22,"name":"Meridian Earth — Mars","url":"https://web3dkit.com/backgrounds/meridian-landing-page/mars"},{"@type":"ListItem","position":23,"name":"Meridian Earth — Saturn","url":"https://web3dkit.com/backgrounds/meridian-landing-page/saturn"}]}}</script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

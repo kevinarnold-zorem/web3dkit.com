@@ -1,0 +1,39 @@
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/vendor/24c76040e08d685739b303807635969d8b9748a58f25518b6b9f2cf5e04405b5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/vendor/98feebc75f48e003759c07b725cd530f2b91b0fe212867490604bd7374c69547.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/vendor/a10670bbc2ae0a5cdda5e5f53e065aac84651aac1d0802a7c8407c8877ecb998.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/vendor/f76a1a3496feab2a6674c273c52d41aae81806a54f72bdea690f759967052909.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/c921b0a4deab0e7f85d0ff57e1a309218499c9454deeab2aafeb579f0ad48172.ttf) format('truetype');
+}

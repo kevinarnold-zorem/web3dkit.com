@@ -1,0 +1,35 @@
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/42aaaf7a68ce5eb565c71d7a80eaa353f895577254899fac9498767988791b27.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/ba08b16a00221416a87bc114c2e29aaa904d054231271a82200739881aaac858.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/722ff42d0080d1505c01951d11645216b957ba2474e848ca353ec78df348bca5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/6d83b1a12212ea9e5ba8de1265079d8fbf457750a6454dd527e85814b5697d41.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/655ecee898b68ff3ce8c84444ed22c2f1f62bdfda9bf2f89b2b912e6319c8693.ttf) format('truetype');
+}

@@ -1,0 +1,49 @@
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/2f5bf0e5c27093562a4921cb11da89eb089174797fbad0333bca7044e00cd811.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/5ba0e240bb32bf9a3a24da50cc864f5f7265d60228e2d43c1db6e1c5c60ac547.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/aba48a3c52a959e2b9e7174268e53a3608539369c30b4a8fff4eb44fbbbb6d74.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/2711b5ffa4bc4a61e588607cc49ade9bd4735eab4c04b91f920c9dd77af98311.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/cf4b8930b864b43373e0ca07a63bfd6cb0b035d0cb2dd0b3e916dc5783cd3d29.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/bac34dd4b95374440db4215e28b8741b28329e010a6f4cc6490c8ed5e06ff18e.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/0b905a4fc43ece05793ec5fa9c6bb9d65fbfc0f099cac2945bca4fb0dd8c68ad.ttf) format('truetype');
+}

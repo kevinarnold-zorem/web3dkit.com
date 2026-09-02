@@ -1,0 +1,56 @@
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/0b9bf2ed2f4dac4ccd7ce41e89e19ee4be981be8370462d4e521f78d00b819f6.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/a81e20a242b663fcc311c7e09ad9600ec4881a941249da28bfcd0c2141a26cc9.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/2170facd35a229f6ec229c770a1bc5709d6b793b9f6bf0070cb008892eb9ddea.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/9d925bd798f544423621419f36d20c973495fa4e6d2ce2ccbb21e4bebc80c31b.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/0dfc29fde7d95ca65fe2a51c3649883a423d0d3fd86bfe63e2a35e38a0a995b5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/56632cca6632f379925bba8326ffd04478b42d23ec4f5c22d194c9a440c93eae.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/d03f1389be8c7cea7e4f4546b5715c72a75444a877838be6f0a2dc347c1c840d.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/aaf352f017a5007bcd6888e3ff12196b1ebd868d5769eac83cec687f5678c909.ttf) format('truetype');
+}

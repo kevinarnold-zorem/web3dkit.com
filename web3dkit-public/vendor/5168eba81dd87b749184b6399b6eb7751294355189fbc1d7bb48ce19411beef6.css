@@ -1,0 +1,49 @@
+@font-face {
+  font-family: 'Bebas Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/c921b0a4deab0e7f85d0ff57e1a309218499c9454deeab2aafeb579f0ad48172.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/fd9ecc6cc938147162e03edd196460cd2b1cb1f636f13badaf773ac982f74f56.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/0569c822cab6c5100c1d78c248ab3ca2033029492582839fce5cdcfa6d8ed45f.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/9bd8ba39c9d55e06580a5a593e8774cc8a2613e89db3fa59f1217f759847cee3.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/18e69125ce1f964e60c04c31bfed89ba0d4a7f2de8390da8bdf722d0d53724bc.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Roboto Slab';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/30237ecb7516fdf0004eaec295ec87f573afba321535a20630b8f8d37293f1fd.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Roboto Slab';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/vendor/a3909cd6f13f0c50c2e49d5137ad6d735fdbdc0515ab3fb76a05b23e44e61286.ttf) format('truetype');
+}

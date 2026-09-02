@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/7e0a56187ecaff85f3d03602981a2bf7bedc58b5dca3990ebce57c75c8ccdb18.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/c1e7453ea26a1d1eea2618b929d9a5f7be19492a0179cde7c3b69b460cb4cb28.ttf) format('truetype');
+}

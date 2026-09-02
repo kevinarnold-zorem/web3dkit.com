@@ -28,7 +28,7 @@ from pathlib import Path, PurePosixPath
 from typing import Iterable
 
 
-DEFAULT_ORIGIN = "https://threeui.com"
+DEFAULT_ORIGIN = "https://web3dkit.com"
 DEFAULT_USER_AGENT = "PublicReferenceDiscovery/1.0"
 TEXT_LIMIT = 8 * 1024 * 1024
 URL_ATTRIBUTES = {"href", "src", "poster", "data-src", "data-href"}
@@ -307,7 +307,7 @@ class PublicDiscovery:
         canonical = self.normalize(canonical_match.group(1), final_url)
         final_path = urllib.parse.urlsplit(final_url).path
         canonical_path = urllib.parse.urlsplit(canonical).path if canonical else ""
-        # ThreeUI intentionally serves its browse catalogue at `/` while
+        # Web3DKit intentionally serves its browse catalogue at `/` while
         # declaring `/browse` canonical. That one alias is a real homepage,
         # not the generic SPA fallback used for unknown paths.
         if final_path == "/" and canonical_path == "/browse":
@@ -508,7 +508,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--origin", default=DEFAULT_ORIGIN, help="Origen HTTPS permitido")
     parser.add_argument("--seed", action="append", default=[], help="URL o ruta inicial; se puede repetir")
-    parser.add_argument("--output", type=Path, default=Path("threeui-discovery.json"))
+    parser.add_argument("--output", type=Path, default=Path("web3dkit-discovery.json"))
     parser.add_argument("--mirror-dir", type=Path, help="Guarda byte por byte las respuestas públicas")
     parser.add_argument(
         "--complete",
@@ -550,7 +550,7 @@ def parse_args() -> argparse.Namespace:
 
     parts = urllib.parse.urlsplit(args.origin)
     if parts.scheme != "https" or not parts.netloc or parts.path not in {"", "/"}:
-        parser.error("--origin debe ser un origen HTTPS sin ruta, por ejemplo https://threeui.com")
+        parser.error("--origin debe ser un origen HTTPS sin ruta, por ejemplo https://web3dkit.com")
     if args.bruteforce and not args.wordlist and not args.derive_words:
         parser.error("--bruteforce requiere --wordlist o --derive-words")
     if args.max_requests < 1 or args.max_requests > 10_000:

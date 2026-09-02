@@ -1,0 +1,49 @@
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/a699af1dea30b799318e058c03ae61680de787476d635909fbb0354740971bab.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/e45972c7e9f24dc390848eb598daf023bc4e4284384ba7bb6696dc53c9e90a67.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/6f49e1b28bce7339f4846ecd070af9e4eb927e5b7b543fde5f0cf8e6a7730736.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/vendor/2f6c206f7c744148754eb721bcab843cce562954fa75d65e0a44c4b0152ebbfd.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/89e66686f242e6dde08477f3629dcea3144cc7bb026300e2bc91c887903cd483.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/3994a71f4212e1ed8f7191937304b682c95de2ba82019e03db65d747bf6e428a.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/11e0e738b8445e3c95d32db4f8683e23a5888c15a59d6f76149fd63be0dee47c.ttf) format('truetype');
+}

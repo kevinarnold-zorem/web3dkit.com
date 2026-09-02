@@ -1,0 +1,35 @@
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/c1e7453ea26a1d1eea2618b929d9a5f7be19492a0179cde7c3b69b460cb4cb28.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/0dfc29fde7d95ca65fe2a51c3649883a423d0d3fd86bfe63e2a35e38a0a995b5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/56632cca6632f379925bba8326ffd04478b42d23ec4f5c22d194c9a440c93eae.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/d03f1389be8c7cea7e4f4546b5715c72a75444a877838be6f0a2dc347c1c840d.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/aaf352f017a5007bcd6888e3ff12196b1ebd868d5769eac83cec687f5678c909.ttf) format('truetype');
+}

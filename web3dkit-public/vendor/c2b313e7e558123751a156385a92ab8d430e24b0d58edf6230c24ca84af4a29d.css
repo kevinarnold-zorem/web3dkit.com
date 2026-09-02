@@ -1,0 +1,119 @@
+@font-face {
+  font-family: 'Figtree';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/f13b224f0d50feb7c4d5d6d1affc12bb136be60f7e564355b1bdef511521a393.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/2f5bf0e5c27093562a4921cb11da89eb089174797fbad0333bca7044e00cd811.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/5ba0e240bb32bf9a3a24da50cc864f5f7265d60228e2d43c1db6e1c5c60ac547.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/aba48a3c52a959e2b9e7174268e53a3608539369c30b4a8fff4eb44fbbbb6d74.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/2711b5ffa4bc4a61e588607cc49ade9bd4735eab4c04b91f920c9dd77af98311.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/ea611ff711086e9f61e0186545a899888aa365989d2dfbe4f7d5b915cfaf5702.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/6d83b1a12212ea9e5ba8de1265079d8fbf457750a6454dd527e85814b5697d41.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/655ecee898b68ff3ce8c84444ed22c2f1f62bdfda9bf2f89b2b912e6319c8693.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/d0e784ef034da1aac9143171aac8718b28b6b83196db313be83f0f245c4aacef.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/013fe10123fce3293bfaaee47e14b367031fff828bdf3ac37eb4642a589b95d5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/fb084c8b15e9438303028e474cfb05ed8fe52093aa71141cceec6b1f652258bf.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/5ae86d38cfa3525e92c4f7aacdb7ef34ab325268695f2a0ec4d8854b10d8555c.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/f5a22007f7fe04ac74f0f3887e74445dd589d796a6e75a8dfd5a88820f2984ea.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/c67a6241b1e0d6ae2edabcee5df78444025d60ff618df57cea7fde70c1d71382.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/8a70c7995340f54c86f44fdb91fd01fdb09e7ce874f59299ac956dee103a8a1a.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/vendor/18ffac34dbf4b1d53bd6065269793ad1f557b9698e416ea26680ca85c49ffeb9.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url(/vendor/d13e9daa375ab859db21b3f5fa850749e2ac4464ec62b2d5fcc82348daab22ea.ttf) format('truetype');
+}

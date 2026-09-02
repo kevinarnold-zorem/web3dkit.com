@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/a699af1dea30b799318e058c03ae61680de787476d635909fbb0354740971bab.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/e45972c7e9f24dc390848eb598daf023bc4e4284384ba7bb6696dc53c9e90a67.ttf) format('truetype');
+}

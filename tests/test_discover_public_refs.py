@@ -11,7 +11,7 @@ from tools.discover_public_refs import PublicDiscovery
 class PublicDiscoveryPathTests(unittest.TestCase):
     def make_discovery(self, mirror_dir: Path) -> PublicDiscovery:
         args = SimpleNamespace(
-            origin="https://threeui.com",
+            origin="https://web3dkit.com",
             mirror_dir=mirror_dir,
             max_bytes=10 * 1024 * 1024,
             resume=True,
@@ -21,7 +21,7 @@ class PublicDiscoveryPathTests(unittest.TestCase):
     def test_rejects_encoded_parent_segments(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             discovery = self.make_discovery(Path(directory))
-            malicious_url = "https://threeui.com/%2e%2e/README.md"
+            malicious_url = "https://web3dkit.com/%2e%2e/README.md"
 
             self.assertIsNone(discovery.normalize(malicious_url))
             self.assertIsNone(discovery.local_path(malicious_url))
@@ -35,7 +35,7 @@ class PublicDiscoveryPathTests(unittest.TestCase):
             discovery = self.make_discovery(mirror)
 
             self.assertIsNone(
-                discovery.local_path("https://threeui.com/escape/outside.txt")
+                discovery.local_path("https://web3dkit.com/escape/outside.txt")
             )
 
     def test_resume_includes_local_resource_in_results(self) -> None:
@@ -45,7 +45,7 @@ class PublicDiscoveryPathTests(unittest.TestCase):
             asset.parent.mkdir()
             asset.write_bytes(b"console.log('cached');\n")
             discovery = self.make_discovery(mirror)
-            url = "https://threeui.com/assets/app.js"
+            url = "https://web3dkit.com/assets/app.js"
 
             result, body = discovery.fetch(url, "test") or (None, b"")
 

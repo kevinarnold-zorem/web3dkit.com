@@ -1,0 +1,27 @@
+/* The mirrored SVG outlined the legacy wordmark as vector paths. Replace the
+   visual outline with the owned Web3DKit name while retaining the same mark. */
+.brand-wordmark {
+  display: none !important;
+}
+
+.logo,
+.topbar-brand {
+  width: auto !important;
+}
+
+.logo::after,
+.topbar-brand::after {
+  color: var(--foreground);
+  content: "web3dkit";
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.45px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.topbar-brand::after {
+  font-size: 14px;
+  letter-spacing: -.3px;
+}

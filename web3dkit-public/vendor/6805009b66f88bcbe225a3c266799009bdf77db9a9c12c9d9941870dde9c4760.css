@@ -1,0 +1,98 @@
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 100;
+  font-display: swap;
+  src: url(/vendor/2a12439dc1721ea9d04702e76fb9f375e0debb92ff9a53bd2653af0c1b54ce39.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url(/vendor/257b7e64b7edf7ab1109e2ffc775631a53d577cea36148f3af989cef1789ddc0.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/2ba8408e6cb7666cbe2f58bb609c1df5f33a68af277d887410b50ae5763c2df6.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/0b9bf2ed2f4dac4ccd7ce41e89e19ee4be981be8370462d4e521f78d00b819f6.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/a81e20a242b663fcc311c7e09ad9600ec4881a941249da28bfcd0c2141a26cc9.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/2170facd35a229f6ec229c770a1bc5709d6b793b9f6bf0070cb008892eb9ddea.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/9d925bd798f544423621419f36d20c973495fa4e6d2ce2ccbb21e4bebc80c31b.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/vendor/ada5a835ce1800a371eb5999c8373d4406b21818a61c9559b698cffa19b360bc.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Big Shoulders Display';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url(/vendor/62e48a8203c6803d25e7e3a63f82db6197bd0f048917c5a3d80b5a8584787f52.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/ee9558be9f8a4d750ce42b6f6306687b5e535a575e9dc00323674539c17f090c.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/a699af1dea30b799318e058c03ae61680de787476d635909fbb0354740971bab.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/vendor/b95b576b0912b261b6f1e955c72ad6d060516aa0a537f13244c3fff4cef01193.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/6d83b1a12212ea9e5ba8de1265079d8fbf457750a6454dd527e85814b5697d41.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/655ecee898b68ff3ce8c84444ed22c2f1f62bdfda9bf2f89b2b912e6319c8693.ttf) format('truetype');
+}

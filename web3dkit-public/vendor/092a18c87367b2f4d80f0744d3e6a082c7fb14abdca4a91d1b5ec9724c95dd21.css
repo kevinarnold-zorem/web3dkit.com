@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/c2bef016fb9b4bcd7b5a2fe9c00f317835a811291e82b5313c8ac8c7e107c360.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/541119bccb21575e2c8a0216e10430cceb9cb943c068cbc0fa1757399741af14.ttf) format('truetype');
+}

@@ -1,0 +1,22 @@
+{
+  "name": "web3dkit-mirror",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript runtime for the byte-identical local Web3DKit mirror",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/src/server.js",
+    "test": "tsx --test tests/**/*.test.ts",
+    "verify": "tsx scripts/verify-mirror.ts",
+    "vendor": "tsx scripts/vendor-assets.ts",
+    "localize:es": "tsx scripts/localize-spanish.ts",
+    "backend:import": "tsx scripts/import-backend-data.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

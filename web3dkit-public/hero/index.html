@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5WP9FS3ECK"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-5WP9FS3ECK');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const palettes = new Set(["mono", "sepia", "azure", "moss", "mauve"]);
+        try {
+          const savedTheme = localStorage.getItem("web3dkit-theme");
+          const lightPalette = localStorage.getItem("web3dkit-palette-light");
+          const darkPalette = localStorage.getItem("web3dkit-palette-dark");
+          const mode = savedTheme === "light" || savedTheme === "system" ? savedTheme : "dark";
+          if (mode === "system") root.removeAttribute("data-theme");
+          else root.dataset.theme = mode;
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const scheme = mode === "system" ? (prefersDark ? "dark" : "light") : mode;
+          root.dataset.scheme = scheme;
+          const palette = scheme === "dark" ? darkPalette : lightPalette;
+          root.dataset.palette = palettes.has(palette) ? palette : "mono";
+        } catch {
+          root.dataset.theme = "dark";
+          root.dataset.scheme = "dark";
+          root.dataset.palette = "mono";
+        }
+      })();
+    </script>
+    <meta name="description" content="Explore interactive Three.js hero sections with WebGL scenes, responsive layouts, editable source, and production-ready website templates." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Web3DKit" />
+    <meta property="og:title" content="Three.js Hero Sections &amp; Templates | Web3DKit" />
+    <meta property="og:description" content="Explore interactive Three.js hero sections with WebGL scenes, responsive layouts, editable source, and production-ready website templates." />
+    <meta property="og:url" content="https://web3dkit.com/hero" />
+    <meta property="og:image" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/web3dkit-media/thumbnails/web3dkit-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta property="og:image:secure_url" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/web3dkit-media/thumbnails/web3dkit-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta property="og:image:alt" content="Three.js Hero Sections &amp; Templates preview" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Three.js Hero Sections &amp; Templates | Web3DKit" />
+    <meta name="twitter:description" content="Explore interactive Three.js hero sections with WebGL scenes, responsive layouts, editable source, and production-ready website templates." />
+    <meta name="twitter:image" content="https://ublctyddhtbgaersvxxb.supabase.co/storage/v1/object/public/web3dkit-media/thumbnails/web3dkit-intro.jpg?cacheNonce=077d2b612430c92d48543a15ee5895dfab9a7fd965c3f738a524ab0969fb52a1" />
+    <meta name="twitter:image:alt" content="Three.js Hero Sections &amp; Templates preview" />
+    <link rel="canonical" href="https://web3dkit.com/hero" />
+    <link rel="icon" href="/web3dkit-mark.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Three.js Hero Sections &amp; Templates | Web3DKit</title>
+    <script type="module" crossorigin src="/assets/index-fOQwe-l-.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-x9bNS8sK.css">
+      <script id="web3dkit-structured-data" type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"Three.js hero sections and templates","description":"Explore interactive Three.js hero sections with WebGL scenes, responsive layouts, editable source, and production-ready website templates.","url":"https://web3dkit.com/hero","hasPart":[{"@type":"TechArticle","name":"Installation","url":"https://web3dkit.com/installation"},{"@type":"TechArticle","name":"MCP","url":"https://web3dkit.com/mcp"},{"@type":"WebPage","name":"Pricing","url":"https://web3dkit.com/pricing"},{"@type":"WebPage","name":"Sponsorship","url":"https://web3dkit.com/sponsorship"},{"@type":"FAQPage","@id":"https://web3dkit.com/hero#faq","name":"Frequently asked questions about Three.js hero sections and templates","mainEntity":[{"@type":"Question","name":"What is a Three.js hero section?","acceptedAnswer":{"@type":"Answer","text":"It is the opening section of a website with an interactive Three.js, WebGL, or shader-driven visual combined with real interface content and calls to action."}},{"@type":"Question","name":"Can I use only the 3D background from a hero?","acceptedAnswer":{"@type":"Answer","text":"Many heroes separate the visual scene from the surrounding interface. Check the component source and variants to see whether the background can be reused on its own."}},{"@type":"Question","name":"How do I keep a Three.js hero fast?","acceptedAnswer":{"@type":"Answer","text":"Control pixel ratio, geometry and particle counts, pause work when the scene is off-screen, and provide a reduced-motion or static fallback for constrained devices."}},{"@type":"Question","name":"Can the hero match an existing brand system?","acceptedAnswer":{"@type":"Answer","text":"Yes. The source can be adapted to your typography, colors, spacing, copy, assets, lighting, camera, and motion while preserving the core interaction."}}]}],"mainEntity":{"@type":"ItemList","numberOfItems":27,"itemListElement":[{"@type":"ListItem","position":1,"name":"Complete Shelf","url":"https://web3dkit.com/hero/complete-shelf-landing-page"},{"@type":"ListItem","position":2,"name":"Bestsellers Book Showcase","url":"https://web3dkit.com/hero/bestsellers-book-showcase"},{"@type":"ListItem","position":3,"name":"Orrery","url":"https://web3dkit.com/hero/orrery-page"},{"@type":"ListItem","position":4,"name":"Cortexa","url":"https://web3dkit.com/hero/cortexa-page"},{"@type":"ListItem","position":5,"name":"Cathode — Workstation","url":"https://web3dkit.com/hero/cathode-page/workstation"},{"@type":"ListItem","position":6,"name":"Cathode — Console","url":"https://web3dkit.com/hero/cathode-page/console"},{"@type":"ListItem","position":7,"name":"Cathode — Studio","url":"https://web3dkit.com/hero/cathode-page/studio"},{"@type":"ListItem","position":8,"name":"Cathode — Cinema","url":"https://web3dkit.com/hero/cathode-page/cinema"},{"@type":"ListItem","position":9,"name":"Vella Bank","url":"https://web3dkit.com/hero/vella-bank"},{"@type":"ListItem","position":10,"name":"Attune","url":"https://web3dkit.com/hero/attune"},{"@type":"ListItem","position":11,"name":"Betawise","url":"https://web3dkit.com/hero/betawise-globe-page"},{"@type":"ListItem","position":12,"name":"Betawise","url":"https://web3dkit.com/hero/betawise-particle-page"},{"@type":"ListItem","position":13,"name":"Tidecrest","url":"https://web3dkit.com/hero/tidecrest-page"},{"@type":"ListItem","position":14,"name":"Sylva — Living Green","url":"https://web3dkit.com/hero/sylva/living-green"},{"@type":"ListItem","position":15,"name":"Sylva — Sakura Sunset","url":"https://web3dkit.com/hero/sylva/sakura-sunset"},{"@type":"ListItem","position":16,"name":"Sylva — Maple Autumn","url":"https://web3dkit.com/hero/sylva/maple-autumn"},{"@type":"ListItem","position":17,"name":"Sylva — Sequoia Mist","url":"https://web3dkit.com/hero/sylva/sequoia-mist"},{"@type":"ListItem","position":18,"name":"Aster Halftone Bloom","url":"https://web3dkit.com/hero/halftone-bloom"},{"@type":"ListItem","position":19,"name":"Advanced Glass Material","url":"https://web3dkit.com/hero/advanced-glass-material"},{"@type":"ListItem","position":20,"name":"Anima","url":"https://web3dkit.com/hero/anima"},{"@type":"ListItem","position":21,"name":"Skyfield","url":"https://web3dkit.com/hero/skyfield"},{"@type":"ListItem","position":22,"name":"Web3DKit Rings","url":"https://web3dkit.com/hero/web3dkit-rings"},{"@type":"ListItem","position":23,"name":"Foldwork","url":"https://web3dkit.com/hero/foldwork"},{"@type":"ListItem","position":24,"name":"Meridian Slow Matter","url":"https://web3dkit.com/hero/meridian-slow-matter"},{"@type":"ListItem","position":25,"name":"Tideform","url":"https://web3dkit.com/hero/tideform-page"},{"@type":"ListItem","position":26,"name":"Emberline","url":"https://web3dkit.com/hero/emberline-page"},{"@type":"ListItem","position":27,"name":"Volta Atelier","url":"https://web3dkit.com/hero/volta-atelier"}]}}</script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

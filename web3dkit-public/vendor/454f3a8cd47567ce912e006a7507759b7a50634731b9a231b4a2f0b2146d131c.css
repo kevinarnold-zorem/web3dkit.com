@@ -1,0 +1,42 @@
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/cf4b8930b864b43373e0ca07a63bfd6cb0b035d0cb2dd0b3e916dc5783cd3d29.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/vendor/bac34dd4b95374440db4215e28b8741b28329e010a6f4cc6490c8ed5e06ff18e.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/vendor/0b905a4fc43ece05793ec5fa9c6bb9d65fbfc0f099cac2945bca4fb0dd8c68ad.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/17991b2de3d6a166e95ad35805d0765638fad89443869f32f04935a619fb78fc.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/vendor/daba415d86cb6486d889797b4320d0a3e289a12b5bea3363469e3a9dece19ec5.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/vendor/9c53087cfe2d870519368ae65dbeb36db9278f1450a056f40dbc83b28c3a90f2.ttf) format('truetype');
+}
