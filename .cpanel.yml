@@ -1,0 +1,9 @@
+---
+deployment:
+  tasks:
+    - /bin/mkdir -p tmp
+    - /usr/bin/env npm ci
+    - /usr/bin/env npm run build
+    - /usr/bin/env npm prune --omit=dev
+    - /usr/bin/touch tmp/restart.txt
+

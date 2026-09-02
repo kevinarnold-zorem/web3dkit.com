@@ -73,6 +73,30 @@ python3 -m http.server 8765 \
 
 Después abre `http://127.0.0.1:8765/browse/`.
 
+## Despliegue en cPanel
+
+El repositorio incluye `app.js` para Passenger y `.cpanel.yml` para instalar,
+compilar y reiniciar la aplicación después de cada despliegue. Requiere Node.js
+22 o posterior.
+
+En **Git Version Control**, clona este repositorio y selecciona `main`. Después,
+en **Application Manager**, registra la carpeta clonada como aplicación Node.js
+de producción, con `app.js` como startup file.
+
+Variables mínimas:
+
+```text
+NODE_ENV=production
+PUBLIC_URL=https://tu-dominio
+AUTH_JWT_SECRET=una-clave-aleatoria-de-al-menos-32-caracteres
+BACKEND_DATABASE_PATH=/home/USUARIO/web3dkit-data/web3dkit.sqlite
+```
+
+Las credenciales opcionales de correo, Google y Stripe están documentadas en
+`.env.example`. En el primer despliegue usa **Update from Remote** y después
+**Deploy HEAD Commit**. Los despliegues posteriores ejecutan `npm ci`, el build,
+la eliminación de dependencias de desarrollo y el reinicio de Passenger.
+
 ## Actualizar el espejo
 
 ```bash
