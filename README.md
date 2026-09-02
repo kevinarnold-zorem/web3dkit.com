@@ -21,7 +21,8 @@ sesiones, OTP, entitlements ni métricas al backend del espejo.
 
 La persistencia utiliza SQLite en `data/web3dkit.sqlite`. Copia
 `.env.example` a `.env` o exporta sus variables antes de iniciar el servidor.
-En producción son obligatorios `AUTH_JWT_SECRET` y `EMAIL_WEBHOOK_URL`.
+En producción es obligatorio `AUTH_JWT_SECRET` y debe configurarse el correo
+SMTP de cPanel o, como alternativa, `EMAIL_WEBHOOK_URL`.
 
 Flujos disponibles:
 
@@ -98,7 +99,19 @@ NODE_ENV=production
 PUBLIC_URL=https://tu-dominio
 AUTH_JWT_SECRET=una-clave-aleatoria-de-al-menos-32-caracteres
 BACKEND_DATABASE_PATH=/home/USUARIO/web3dkit-data/web3dkit.sqlite
+SMTP_HOST=mail.web3dkit.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=no-reply@web3dkit.com
+SMTP_PASSWORD=contraseña-de-la-cuenta-de-correo
+EMAIL_FROM=Web3DKit <no-reply@web3dkit.com>
 ```
+
+Crea primero `no-reply@web3dkit.com` en **Email Accounts** de cPanel. Usa como
+`SMTP_HOST` el servidor saliente que aparece en **Connect Devices**; en muchos
+servidores es `mail.web3dkit.com`. La contraseña se guarda únicamente como
+variable de entorno de la aplicación y no debe añadirse al repositorio. Con el
+puerto 587 usa `SMTP_SECURE=false`, que activa STARTTLS.
 
 Las credenciales opcionales de correo, Google y Stripe están documentadas en
 `.env.example`. En el primer despliegue usa **Update from Remote** y después

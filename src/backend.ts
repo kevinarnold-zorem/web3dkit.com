@@ -3,6 +3,7 @@ import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { sendOtpWithSmtp, type SmtpConfig } from "./smtp.js";
 
 export interface BackendConfig {
   databasePath: string;
@@ -14,6 +15,7 @@ export interface BackendConfig {
   googleClientSecret?: string;
   emailWebhookUrl?: string;
   emailWebhookToken?: string;
+  smtp?: SmtpConfig;
   stripeSecretKey?: string;
   stripeWebhookSecret?: string;
   stripeYearlyPriceId?: string;
@@ -112,6 +114,23 @@ export function backendConfigFromEnv(port: number, host: string): BackendConfig 
   const googleClientSecret = optionalString(process.env.GOOGLE_CLIENT_SECRET);
   const emailWebhookUrl = optionalString(process.env.EMAIL_WEBHOOK_URL);
   const emailWebhookToken = optionalString(process.env.EMAIL_WEBHOOK_TOKEN);
+  const smtpHost = optionalString(process.env.SMTP_HOST);
+  const smtpUser = optionalString(process.env.SMTP_USER);
+  const smtpPassword = optionalString(process.env.SMTP_PASSWORD);
+  const smtpPort = Number(process.env.SMTP_PORT ?? "465");
+  const hasAnySmtpValue = Boolean(smtpHost || smtpUser || smtpPassword);
+  if (hasAnySmtpValue && (!smtpHost || !smtpUser || !smtpPassword)) {
+    throw new Error("SMTP_HOST, SMTP_USER and SMTP_PASSWORD must be configured together");
+  }
+  if (!Number.isSafeInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) throw new Error("SMTP_PORT is invalid");
+  const smtp = smtpHost && smtpUser && smtpPassword ? {
+    host: smtpHost,
+    port: smtpPort,
+    secure: (process.env.SMTP_SECURE ?? (smtpPort === 465 ? "true" : "false")) === "true",
+    user: smtpUser,
+    password: smtpPassword,
+    from: optionalString(process.env.EMAIL_FROM) ?? `Web3DKit <${smtpUser}>`,
+  } satisfies SmtpConfig : undefined;
   const stripeSecretKey = optionalString(process.env.STRIPE_SECRET_KEY);
   const stripeWebhookSecret = optionalString(process.env.STRIPE_WEBHOOK_SECRET);
   const stripeYearlyPriceId = optionalString(process.env.STRIPE_PRICE_YEARLY);
@@ -126,6 +145,7 @@ export function backendConfigFromEnv(port: number, host: string): BackendConfig 
     ...(googleClientSecret ? { googleClientSecret } : {}),
     ...(emailWebhookUrl ? { emailWebhookUrl } : {}),
     ...(emailWebhookToken ? { emailWebhookToken } : {}),
+    ...(smtp ? { smtp } : {}),
     ...(stripeSecretKey ? { stripeSecretKey } : {}),
     ...(stripeWebhookSecret ? { stripeWebhookSecret } : {}),
     ...(stripeYearlyPriceId ? { stripeYearlyPriceId } : {}),
@@ -322,8 +342,12 @@ export class Web3DKitBackend {
   }
 
   private async sendCode(email: string, code: string, purpose: "login" | "recovery"): Promise<void> {
+    if (this.config.smtp) {
+      await sendOtpWithSmtp(this.config.smtp, email, code, purpose);
+      return;
+    }
     if (!this.config.emailWebhookUrl) {
-      if (process.env.NODE_ENV === "production") throw new Error("EMAIL_WEBHOOK_URL is required in production");
+      if (process.env.NODE_ENV === "production") throw new Error("SMTP or EMAIL_WEBHOOK_URL is required in production");
       console.log(`[Web3DKit auth] ${purpose} code for ${email}: ${code}`);
       return;
     }
